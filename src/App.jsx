@@ -1413,7 +1413,6 @@ function FamilySetupScreen({ onDone }) {
   );
 }
 
-/
 // ══ LISTEN MODE ═══════════════════════════════════════════════════════════════
 function ListenMode({words,color,onEarn,onStat,allWords,onProgress}){
   const[phase,setPhase]=useState("quiz");
