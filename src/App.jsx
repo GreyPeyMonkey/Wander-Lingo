@@ -706,6 +706,8 @@ const loadProfiles = async () => {
     dailyScores: r.daily_scores || {}, storiesRead: r.stories_read || 0,
     level: r.level || 1,
     catProgress: r.cat_progress || {},
+    missedWords: r.missed_words || {},
+    reviewStreak: r.review_streak || {},
   }));
 };
 
@@ -721,7 +723,7 @@ const saveProfile = async (profile) => {
     speak_attempts: profile.speakAttempts, cats_played: profile.catsPlayed,
     match_wins: profile.matchWins, daily_done: profile.dailyDone,
     daily_scores: profile.dailyScores, stories_read: profile.storiesRead,
-    level: profile.level, cat_progress: profile.catProgress||{}, updated_at: new Date().toISOString()
+    level: profile.level, cat_progress: profile.catProgress||{}, missed_words: profile.missedWords||{}, review_streak: profile.reviewStreak||{}, updated_at: new Date().toISOString()
   });
 };
 
@@ -743,7 +745,7 @@ const createProfile = (name, avatar, color) => ({
   stars: 0, streak: 0, longestStreak: 0, lastDate: null,
   badges: [], quizCorrect: 0, speakAttempts: 0,
   catsPlayed: [], matchWins: 0, dailyDone: 0, dailyScores: {},
-  storiesRead: 0, level: 1, catProgress: {},
+  storiesRead: 0, level: 1, catProgress: {}, missedWords: {}, reviewStreak: {},
 });
 
 // ══ SPEECH ════════════════════════════════════════════════════════════════════
@@ -955,7 +957,7 @@ function FlashcardMode({words,color,onEarn}){
 }
 
 // ══ QUIZ ══════════════════════════════════════════════════════════════════════
-function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
+function QuizMode({words,color,onEarn,onStat,allWords,onProgress,onWordResult}){
   const [phase,setPhase]=useState("quiz"); // quiz | retry | done
   const [queue,setQueue]=useState(()=>shuffle(words));
   const [missed,setMissed]=useState([]);
@@ -971,16 +973,26 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
 
   useEffect(()=>{
     if(!word)return;
-    const wrong=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
-    setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
+    // Pull distractors from ALL vocabulary (not just current category)
+    // to prevent category-guessing and make choices genuinely challenging
+    const allVocab = [...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
+    const pool = shuffle(allVocab.filter(w=>w.en!==word.en));
+    // Try to get distractors that are similar type (both single words or both phrases)
+    const isPhrase = word.en.includes(" ");
+    const sameType = pool.filter(w=>w.en.includes(" ")===isPhrase).slice(0,2);
+    const diffType = pool.filter(w=>w.en.includes(" ")!==isPhrase).slice(0,1);
+    const wrong = shuffle([...sameType,...diffType]).slice(0,3);
+    // Pad with random if needed
+    const padded = wrong.length < 3 ? [...wrong,...pool.slice(0,3-wrong.length)] : wrong;
+    setOpts(shuffle([word,...padded.slice(0,3)]));setSelected(null);speakEs(word.es);
   },[idx,phase]);
 
   const pick=opt=>{
     if(selected||!word)return;
     setSelected(opt);setTotal(t=>t+1);
     const correct=opt.en===word.en;
-    if(correct){setScore(s=>s+1);onEarn(2);onStat("quiz");}
-    else{setMissed(m=>[...m,word]);}
+    if(correct){setScore(s=>s+1);onEarn(2);onStat("quiz");if(onWordResult)onWordResult(word,true);}
+    else{setMissed(m=>[...m,word]);if(onWordResult)onWordResult(word,false);}
     setTimeout(()=>setIdx(i=>i+1),1400);
   };
 
@@ -1046,11 +1058,10 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
         <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/currentQueue.length)*100}%`,transition:"width .4s"}}/>
       </div>
       <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:72}}>{word.emoji}</div>
         <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
         <div style={{display:"flex",justifyContent:"center",marginTop:12,gap:8,alignItems:"center"}}>
           <SpeakEsBtn text={word.es} color={color} size={44}/>
-          <span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear it again</span>
+          <span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear it</span>
         </div>
         <div style={{fontSize:13,color:"#9CA3AF",marginTop:8,fontWeight:600}}>Tap 🔈 on each answer to hear it — then choose!</div>
       </div>
@@ -1101,13 +1112,16 @@ function MatchMode({words,color,onEarn,onStat}){
           const cardBg=isM?`${color}15`:isW?"#FEE2E2":isSel?`${color}28`:"white";
           const cardBorder=isM?color:isW?"#EF4444":isSel?color:"#E5E7EB";
           return(
-            <div key={card.id} style={{position:"relative",borderRadius:16,background:cardBg,border:`2.5px solid ${cardBorder}`,transition:"all .18s",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
-              <button onClick={()=>tap(card)} style={{width:"100%",minHeight:80,padding:"10px 10px 28px",background:"none",border:"none",cursor:isM?"default":"pointer",textAlign:"center",fontFamily:"inherit",color:isM?"#9CA3AF":"#1F2937"}}>
-                {card.lang==="es"?<React.Fragment><div style={{fontSize:26}}>{card.emoji}</div><div style={{fontSize:14,fontWeight:700,...DS}}>{card.text}</div></React.Fragment>:<div style={{fontSize:13,fontWeight:700,lineHeight:1.3}}>{card.text}</div>}
+            <div key={card.id} style={{display:"flex",flexDirection:"column",gap:4}}>
+              {/* The card itself — no listen button inside */}
+              <button onClick={()=>tap(card)} style={{flex:1,minHeight:80,padding:"12px 10px",borderRadius:14,background:cardBg,border:`2.5px solid ${cardBorder}`,cursor:isM?"default":"pointer",textAlign:"center",fontFamily:"inherit",color:isM?"#9CA3AF":"#1F2937",transition:"all .18s",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
+                {card.lang==="es"
+                  ?<React.Fragment><div style={{fontSize:24}}>{card.emoji}</div><div style={{fontSize:13,fontWeight:700,...DS,marginTop:4}}>{card.text}</div></React.Fragment>
+                  :<div style={{fontSize:13,fontWeight:700,lineHeight:1.3}}>{card.text}</div>}
               </button>
-              {/* Permanent listen button on every card */}
-              <button onClick={e=>{e.stopPropagation();if(card.lang==="es")speakEs(card.text);else speakEn(card.text);}} style={{position:"absolute",bottom:4,right:4,width:24,height:24,borderRadius:"50%",background:`${color}20`,border:`1.5px solid ${color}60`,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:isM?.4:1}}>
-                🔈
+              {/* Listen button BESIDE (below) the card — clearly separate */}
+              <button onClick={e=>{e.stopPropagation();if(card.lang==="es")speakEs(card.text);else speakEn(card.text);}} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"5px 0",borderRadius:10,background:`${color}12`,border:`1.5px solid ${color}40`,fontSize:11,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:color,opacity:isM?.35:1}}>
+                <span>🔈</span><span style={{fontSize:10}}>Hear it</span>
               </button>
             </div>
           );
@@ -1173,6 +1187,140 @@ function SpeakMode({words,color,onEarn,onStat}){
         {pct<55&&<ActionBtn onClick={()=>setPhase("idle")} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>🔄 Again</ActionBtn>}
         <ActionBtn onClick={next} bg={color} style={{flex:1}}>Next →</ActionBtn>
       </div>}
+    </div>
+  );
+}
+
+
+// ══ WRITE MODE — see English, type the Spanish from memory ════════════════════
+function WriteMode({words,color,onEarn,onStat}){
+  const[queue]=useState(()=>shuffle(words));
+  const[phase,setPhase]=useState("quiz"); // quiz|retry|done
+  const[missed,setMissed]=useState([]);
+  const[idx,setIdx]=useState(0);
+  const[typed,setTyped]=useState("");
+  const[result,setResult]=useState(null); // null|"correct"|"close"|"wrong"
+  const[score,setScore]=useState(0);
+  const[showAnswer,setShowAnswer]=useState(false);
+  const inputRef=useRef(null);
+
+  const currentQueue=phase==="retry"?missed:queue;
+  const word=currentQueue[idx];
+
+  useEffect(()=>{
+    setTyped("");setResult(null);setShowAnswer(false);
+    setTimeout(()=>inputRef.current?.focus(),100);
+  },[idx,phase]);
+
+  const checkAnswer=()=>{
+    if(!word||result)return;
+    const userAns=typed.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[¿¡.,!?]/g,"");
+    const correct=word.es.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[¿¡.,!?]/g,"");
+    // Exact match
+    if(userAns===correct){
+      setResult("correct");setScore(s=>s+1);onEarn(3);onStat("quiz");
+      speakEs(word.es);
+      setTimeout(()=>next(true),1800);
+      return;
+    }
+    // Close match — within 2 character edits (handles accents/typos)
+    const editDist=(a,b)=>{
+      const m=a.length,n=b.length;
+      const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
+      for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
+        dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+      return dp[m][n];
+    };
+    if(editDist(userAns,correct)<=2){
+      setResult("close");
+    } else {
+      setResult("wrong");
+      setMissed(m=>[...m,word]);
+    }
+  };
+
+  const next=(wasCorrect)=>{
+    if(!wasCorrect&&result!=="correct")setMissed(m=>[...m,word]);
+    setIdx(i=>i+1);
+  };
+  const restart=()=>{setPhase("quiz");setMissed([]);setIdx(0);setScore(0);setResult(null);setTyped("");};
+
+  if(!word){
+    const mc=missed.length,tot=currentQueue.length;
+    if(phase==="quiz")return(
+      <div style={{textAlign:"center",padding:"28px 16px"}}>
+        <div style={{fontSize:64}}>{score===tot?"🏆":score>tot*.7?"🌟":"💪"}</div>
+        <div style={{fontSize:22,color,...DS,marginTop:8}}>Write Round Done!</div>
+        <div style={{fontSize:32,fontWeight:900,color:"#FCD34D",margin:"6px 0"}}>{score}/{tot}</div>
+        <div style={{fontSize:13,color:"#6B7280",marginBottom:16}}>{mc>0?`Missed ${mc} — practice them!`:"All correct from memory! ¡Increíble!"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {mc>0&&<ActionBtn onClick={()=>{setPhase("retry");setIdx(0);setResult(null);setTyped("");}} bg="#F59E0B" style={{width:"100%",padding:12}}>Practice Missed 🔁</ActionBtn>}
+          <ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:12}}>Start Over 🔄</ActionBtn>
+        </div>
+      </div>
+    );
+    return(<div style={{textAlign:"center",padding:"28px 16px"}}><div style={{fontSize:64}}>🎉</div><div style={{fontSize:22,color,...DS,marginTop:8}}>Retry Done!</div><ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:12,marginTop:16}}>Start Fresh 🔄</ActionBtn></div>);
+  }
+
+  const resultColors={correct:"#10B981",close:"#F59E0B",wrong:"#EF4444"};
+  const resultMsgs={
+    correct:"✅ ¡Perfecto! Exactly right!",
+    close:`✨ Almost! The correct spelling is: ${word.es}`,
+    wrong:`❌ The answer was: ${word.es}`,
+  };
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
+        {phase==="retry"?"🔁 Retry — ":""}{idx+1}/{currentQueue.length} &nbsp;•&nbsp; ✅ {score} right
+      </div>
+      <div style={{width:"100%",height:6,background:"#F3F4F6",borderRadius:99}}>
+        <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/currentQueue.length)*100}%`,transition:"width .4s"}}/>
+      </div>
+
+      {/* Question card — shows English, no Spanish visible */}
+      <div style={{width:"100%",background:"white",borderRadius:24,padding:"24px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
+        <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:10}}>✍️ TYPE THE SPANISH WORD OR PHRASE</div>
+        <div style={{fontSize:40}}>{word.emoji}</div>
+        <div style={{fontSize:28,color:"#1F2937",marginTop:8,...DS}}>{word.en}</div>
+        <div style={{display:"flex",justifyContent:"center",marginTop:10}}>
+          <SpeakEnBtn text={word.en} color={color}/>
+        </div>
+      </div>
+
+      {/* Input */}
+      <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8}}>
+        <input
+          ref={inputRef}
+          value={typed}
+          onChange={e=>!result&&setTyped(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&!result&&checkAnswer()}
+          placeholder="Type the Spanish here..."
+          disabled={!!result}
+          style={{width:"100%",padding:"16px",borderRadius:16,border:`2px solid ${result?resultColors[result]:color+"60"}`,fontSize:18,fontFamily:"inherit",fontWeight:700,color:"#1F2937",outline:"none",background:result==="correct"?"#D1FAE5":result==="close"?"#FEF3C7":result==="wrong"?"#FEE2E2":"white",transition:"all .2s",textAlign:"center"}}
+        />
+        <div style={{fontSize:11,color:"#9CA3AF",textAlign:"center"}}>Tip: accents optional — close spelling counts as "almost"!</div>
+      </div>
+
+      {/* Result message */}
+      {result&&(
+        <div style={{width:"100%",borderRadius:16,padding:"14px 16px",background:`${resultColors[result]}12`,border:`2px solid ${resultColors[result]}`,textAlign:"center"}}>
+          <div style={{fontSize:16,fontWeight:800,color:resultColors[result],lineHeight:1.4}}>{resultMsgs[result]}</div>
+          {result==="close"&&<button onClick={()=>speakEs(word.es)} style={{marginTop:8,padding:"6px 14px",borderRadius:12,background:color,border:"none",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>🔊 Hear it</button>}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {!result?(
+        <ActionBtn onClick={checkAnswer} bg={typed.trim()?color:"#9CA3AF"} style={{width:"100%",padding:14,fontSize:16,opacity:typed.trim()?1:.5}}>
+          Check Answer ✓
+        </ActionBtn>
+      ):(
+        <div style={{display:"flex",gap:10,width:"100%"}}>
+          {result!=="correct"&&<ActionBtn onClick={()=>{setTyped("");setResult(null);}} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Try Again</ActionBtn>}
+          <ActionBtn onClick={()=>next(result==="correct")} bg={color} style={{flex:1,padding:14}}>Next →</ActionBtn>
+        </div>
+      )}
     </div>
   );
 }
@@ -1305,6 +1453,104 @@ function StoryScreen({story,onBack,onComplete}){
   );
 }
 
+
+
+// ══ DAILY REVIEW SCREEN ═══════════════════════════════════════════════════════
+// Shows missed words from previous sessions before new content unlocks
+function DailyReviewScreen({profile,onComplete,onSkip}){
+  // Build review queue from missed words — those missed 2+ times get priority
+  const missedWords = profile.missedWords || {};
+  const reviewQueue = React.useMemo(()=>{
+    const entries = Object.entries(missedWords);
+    if(entries.length===0)return[];
+    // Sort by miss count descending, take up to 10
+    const sorted = entries
+      .filter(([_,data])=>data.count>=1)
+      .sort((a,b)=>b[1].count-a[1].count)
+      .slice(0,10);
+    // Rebuild word objects from all vocab
+    const allVocab=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
+    return sorted.map(([es,_])=>allVocab.find(w=>w.es===es)).filter(Boolean);
+  },[]);
+
+  const[idx,setIdx]=useState(0);
+  const[opts,setOpts]=useState([]);
+  const[selected,setSelected]=useState(null);
+  const[score,setScore]=useState(0);
+  const word=reviewQueue[idx];
+
+  useEffect(()=>{
+    if(!word)return;
+    const allVocab=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
+    const wrong=shuffle(allVocab.filter(w=>w.en!==word.en)).slice(0,3);
+    setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
+  },[idx]);
+
+  if(reviewQueue.length===0){
+    onComplete();
+    return null;
+  }
+
+  const pick=opt=>{
+    if(selected)return;
+    setSelected(opt);
+    if(opt.en===word.en)setScore(s=>s+1);
+    setTimeout(()=>{
+      if(idx<reviewQueue.length-1)setIdx(i=>i+1);
+      else onComplete(score+(opt.en===word.en?1:0),reviewQueue.map(w=>w.es),opts.map(o=>o.en===word.en));
+    },1200);
+  };
+
+  if(!word)return null;
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,color:"white",...DS}}>🔁 Daily Review</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>Words you've missed before — review before exploring!</div>
+        </div>
+        <div style={{fontSize:13,color:"#FCD34D",fontWeight:900}}>{idx+1}/{reviewQueue.length}</div>
+      </div>
+
+      {/* Explanation banner */}
+      {idx===0&&(
+        <div style={{background:"rgba(252,211,77,.12)",borderBottom:"1px solid rgba(252,211,77,.2)",padding:"10px 16px",fontSize:13,color:"#FCD34D",fontWeight:600,textAlign:"center"}}>
+          ⭐ These {reviewQueue.length} words have been tricky for you. Let's practice them first!
+        </div>
+      )}
+
+      <div style={{flex:1,padding:"20px 14px"}}>
+        <div style={{width:"100%",height:8,background:"rgba(255,255,255,.1)",borderRadius:99,marginBottom:20}}>
+          <div style={{height:"100%",borderRadius:99,background:"#FCD34D",width:`${(idx/reviewQueue.length)*100}%`,transition:"width .4s"}}/>
+        </div>
+
+        <div style={{background:"white",borderRadius:24,padding:"22px 20px",border:"3px solid #FCD34D",boxShadow:"0 8px 28px rgba(0,0,0,.3)",textAlign:"center",marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:8}}>WHAT DOES THIS MEAN?</div>
+          <div style={{fontSize:28,color:"#1F2937",...DS}}>{word.es}</div>
+          <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
+            <SpeakEsBtn text={word.es} color="#F59E0B" size={40}/>
+            <span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear</span>
+          </div>
+        </div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {opts.map((opt,i)=>{
+            const isC=opt.en===word.en,isCh=selected?.en===opt.en;
+            let bg="white",border="#E5E7EB";
+            if(selected){if(isC){bg="#D1FAE5";border="#10B981";}else if(isCh){bg="#FEE2E2";border="#EF4444";}}
+            return(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderRadius:16,background:bg,border:`2px solid ${border}`,transition:"all .2s"}}>
+                <button onClick={()=>pick(opt)} style={{flex:1,background:"none",border:"none",textAlign:"left",fontSize:16,fontWeight:700,cursor:selected?"default":"pointer",color:"#1F2937",fontFamily:"inherit",padding:0}}>{opt.en}</button>
+                <SpeakEnBtn text={opt.en} color={selected&&isC?"#10B981":"#F59E0B"}/>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ══ FAMILY SETUP SCREEN (first launch only) ════════════════════════════════════
 function FamilySetupScreen({ onDone }) {
@@ -1523,6 +1769,141 @@ function ListenMode({words,color,onEarn,onStat,allWords,onProgress}){
   );
 }
 
+
+
+// ══ CORE 1000 SCREEN ══════════════════════════════════════════════════════════
+function CoreWordsScreen({onBack,profile}){
+  const[activeSet,setActiveSet]=useState(null);
+  const[mode,setMode]=useState("flashcard");
+
+  if(activeSet!==null){
+    const set=CORE_SETS[activeSet];
+    const allCoreWords=CORE_SETS.flatMap(s=>s.words);
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setActiveSet(null)} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>←</button>
+          <div style={{fontSize:18,color:"white",...DS}}>🌟 {set.title}</div>
+        </div>
+        <div style={{display:"flex",gap:6,padding:"12px 14px",flexWrap:"wrap",justifyContent:"center"}}>
+          {[{id:"flashcard",label:"🃏 Cards"},{id:"quiz",label:"🎯 Quiz"},{id:"write",label:"✍️ Write"}].map(m=>(
+            <button key={m.id} onClick={()=>setMode(m.id)} style={{flex:"1 1 80px",maxWidth:110,padding:"9px 0",borderRadius:20,background:mode===m.id?"white":"rgba(255,255,255,.12)",border:"none",color:mode===m.id?set.color:"rgba(255,255,255,.8)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",boxShadow:mode===m.id?"0 4px 12px rgba(0,0,0,.2)":"none"}}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+        <div style={{padding:"0 14px 40px",flex:1}}>
+          <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
+            <div style={{textAlign:"center",marginBottom:16,fontSize:18,color:set.color,...DS}}>🌟 {set.title}</div>
+            {mode==="flashcard"&&<FlashcardMode key={`core${activeSet}`} words={set.words} color={set.color} onEarn={()=>{}}/>}
+            {mode==="quiz"     &&<QuizMode key={`cq${activeSet}`} words={set.words} color={set.color} onEarn={()=>{}} onStat={()=>{}} allWords={allCoreWords}/>}
+            {mode==="write"    &&<WriteMode key={`cw${activeSet}`} words={set.words} color={set.color} onEarn={()=>{}} onStat={()=>{}}/>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>←</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:20,color:"white",...DS}}>🌟 Core 1000 Words</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>The most common Spanish words in any conversation</div>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px",overflowY:"auto"}}>
+        <div style={{background:"rgba(252,211,77,.1)",border:"1px solid rgba(252,211,77,.3)",borderRadius:16,padding:"14px 16px",marginBottom:20,fontSize:13,color:"rgba(255,255,255,.8)",lineHeight:1.6}}>
+          💡 Linguists say knowing the top 1,000 most common words covers over 85% of everyday conversation. Start here and mix these into your daily practice!
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {CORE_SETS.map((set,i)=>(
+            <button key={i} onClick={()=>setActiveSet(i)} style={{width:"100%",padding:"18px",borderRadius:20,background:"rgba(255,255,255,.08)",border:`2px solid ${set.color}40`,cursor:"pointer",display:"flex",alignItems:"center",gap:14,textAlign:"left"}}>
+              <div style={{width:52,height:52,borderRadius:14,background:`${set.color}25`,border:`2px solid ${set.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🌟</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,color:"white",...DS}}>{set.title}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:3}}>Words {(i*25)+1}–{(i+1)*25} &nbsp;•&nbsp; {set.words.length} words</div>
+              </div>
+              <div style={{fontSize:22,color:set.color}}>›</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══ PROFILE EDIT SCREEN ═══════════════════════════════════════════════════════
+function EditProfileScreen({profile,familyCode,onSave,onBack}){
+  const[name,setName]=useState(profile.name);
+  const[avatar,setAvatar]=useState(profile.avatar);
+  const[color,setColor]=useState(profile.color);
+  const[copied,setCopied]=useState(false);
+  const valid=name.trim().length>0;
+
+  const copyCode=()=>{
+    if(familyCode){
+      navigator.clipboard?.writeText(familyCode).catch(()=>{});
+      setCopied(true);setTimeout(()=>setCopied(false),2000);
+    }
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 20px 40px"}}>
+      <div style={{width:"100%",maxWidth:400}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:24,cursor:"pointer",marginBottom:16,fontFamily:"inherit"}}>← Back</button>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{width:80,height:80,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 12px"}}>{avatar}</div>
+          <div style={{fontSize:22,color:"white",...DS}}>Edit Your Explorer</div>
+        </div>
+
+        {/* Name */}
+        <div style={{marginBottom:20}}>
+          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>YOUR NAME</label>
+          <input value={name} onChange={e=>setName(e.target.value)} maxLength={16} style={{width:"100%",padding:"14px 16px",borderRadius:16,border:"2px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"white",fontSize:18,fontFamily:"inherit",fontWeight:700}}/>
+        </div>
+
+        {/* Avatar */}
+        <div style={{marginBottom:20}}>
+          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>YOUR EXPLORER</label>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:8}}>
+            {AVATARS.map(a=><button key={a} onClick={()=>setAvatar(a)} style={{aspectRatio:"1",borderRadius:12,background:avatar===a?color:"rgba(255,255,255,.1)",border:avatar===a?"2px solid white":"2px solid transparent",fontSize:22,cursor:"pointer"}}>{a}</button>)}
+          </div>
+        </div>
+
+        {/* Color */}
+        <div style={{marginBottom:24}}>
+          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>YOUR COLOR</label>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            {PCOLORS.map(c=><button key={c} onClick={()=>setColor(c)} style={{width:40,height:40,borderRadius:"50%",background:c,border:color===c?"3px solid white":"3px solid transparent",cursor:"pointer",transition:"all .15s"}}/>)}
+          </div>
+        </div>
+
+        {/* Family code */}
+        {familyCode&&(
+          <div style={{marginBottom:24,background:"rgba(252,211,77,.1)",border:"2px solid rgba(252,211,77,.4)",borderRadius:18,padding:"16px"}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#FCD34D",letterSpacing:.5,marginBottom:8}}>YOUR FAMILY CODE</div>
+            <div style={{fontSize:13,color:"rgba(255,255,255,.7)",marginBottom:10,lineHeight:1.5}}>
+              Share this 6-letter code with family members so they can join your leaderboard!
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1,background:"rgba(0,0,0,.3)",borderRadius:12,padding:"12px 16px",fontSize:28,fontWeight:900,color:"#FCD34D",letterSpacing:6,textAlign:"center"}}>{familyCode}</div>
+              <button onClick={copyCode} style={{padding:"12px 16px",borderRadius:12,background:copied?"#10B981":"rgba(255,255,255,.15)",border:"none",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13,flexShrink:0}}>
+                {copied?"✓ Copied!":"Copy"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <ActionBtn onClick={()=>valid&&onSave(name.trim(),avatar,color)} bg={valid?color:"#374151"} style={{width:"100%",padding:16,fontSize:18,opacity:valid?1:.5}}>
+          Save Changes ✓
+        </ActionBtn>
+      </div>
+    </div>
+  );
+}
+
 // ══ PROFILE SELECT ════════════════════════════════════════════════════════════
 function ProfileSelectScreen({profiles,onSelect,onCreate}){
   return(
@@ -1593,7 +1974,7 @@ function CreateProfileScreen({onDone,onBack}){
 }
 
 // ══ HOME SCREEN ═══════════════════════════════════════════════════════════════
-function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,dailyDone}){
+function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onCore,dailyDone}){
   const lv=profile.level||1;
   const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
   const catKeys=Object.keys(vocab);
@@ -1622,15 +2003,19 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
           {!dailyDone&&<span style={{fontSize:22,color:"white"}}>›</span>}
         </button>
 
-        {/* Stories button */}
-        <button onClick={onStories} style={{width:"100%",padding:"18px",borderRadius:22,background:"rgba(255,255,255,.08)",border:"2px solid rgba(255,255,255,.2)",cursor:"pointer",textAlign:"left",marginBottom:20,display:"flex",alignItems:"center",gap:14}}>
-          <span style={{fontSize:36}}>📖</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:15,color:"white",...DS}}>Stories — Listen & Learn!</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:3}}>Real conversations in Cuenca — tap any line to hear it!</div>
-          </div>
-          <span style={{fontSize:22,color:"rgba(255,255,255,.5)"}}>›</span>
-        </button>
+        {/* Quick access buttons row */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+          <button onClick={onStories} style={{padding:"16px 14px",borderRadius:18,background:"rgba(255,255,255,.08)",border:"2px solid rgba(255,255,255,.2)",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:4}}>
+            <span style={{fontSize:28}}>📖</span>
+            <div style={{fontSize:14,color:"white",...DS}}>Stories</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Cuenca conversations</div>
+          </button>
+          <button onClick={onCore} style={{padding:"16px 14px",borderRadius:18,background:"rgba(255,255,255,.08)",border:"2px solid rgba(252,211,77,.4)",cursor:"pointer",textAlign:"left",display:"flex",flexDirection:"column",gap:4}}>
+            <span style={{fontSize:28}}>🌟</span>
+            <div style={{fontSize:14,color:"white",...DS}}>Core 1000</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Most common words</div>
+          </button>
+        </div>
 
         {/* Level selector with lock state */}
         <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
@@ -1656,7 +2041,12 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
           })}
         </div>
 
-        <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,marginBottom:10,letterSpacing:.5}}>{lv>=2?"INTERMEDIATE CATEGORIES":"BEGINNER CATEGORIES"}</div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>{lv>=3?"ADVANCED CATEGORIES":lv>=2?"INTERMEDIATE CATEGORIES":"BEGINNER CATEGORIES"}</div>
+          <button onClick={()=>onLearn("__review__",lv)} style={{padding:"5px 12px",borderRadius:12,background:"rgba(255,255,255,.15)",border:"1px solid rgba(255,255,255,.3)",color:"white",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            🔀 Level Review
+          </button>
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
           {catKeys.map(key=>{
             const c=vocab[key];
@@ -1697,12 +2087,17 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
 }
 
 // ══ LEARN SCREEN ══════════════════════════════════════════════════════════════
-function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress}){
+function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress,onWordResult}){
   const[mode,setMode]=useState("flashcard");
+  const isReview=catKey==="__review__";
   const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
-  const cat=vocab[catKey];
   const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const modes=[{id:"flashcard",label:"🃏 Cards"},{id:"quiz",label:"🎯 Quiz"},{id:"listen",label:"👂 Listen"},{id:"match",label:"🧩 Match"},{id:"speak",label:"🎤 Speak"}];
+  // Level Review mixes ALL categories in the current level
+  const reviewWords=React.useMemo(()=>shuffle(allWords).slice(0,20),[catLevel]);
+  const cat=isReview
+    ?{icon:"🔀",label:"Level Review",color:profile.color,words:reviewWords}
+    :vocab[catKey];
+  const modes=[{id:"flashcard",label:"🃏 Cards"},{id:"quiz",label:"🎯 Quiz"},{id:"listen",label:"👂 Listen"},{id:"write",label:"✍️ Write"},{id:"match",label:"🧩 Match"},{id:"speak",label:"🎤 Speak"}];
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
@@ -1721,9 +2116,10 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
         <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:16,fontSize:20,color:cat.color,...DS}}>{cat.icon} {cat.label}</div>
           {mode==="flashcard"&&<FlashcardMode key={`${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn}/>}
-          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
+          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)} onWordResult={onWordResult}/>}
           {mode==="match"    &&<MatchMode key={`m${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="listen"   &&<ListenMode key={`l${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
+          {mode==="write"    &&<WriteMode  key={`w${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="speak"    &&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
         </div>
       </div>
@@ -1837,7 +2233,7 @@ function LeaderboardScreen({profiles,onBack}){
 }
 
 // ══ MY PROFILE ════════════════════════════════════════════════════════════════
-function MyProfileScreen({profile,onBack}){
+function MyProfileScreen({profile,onBack,familyCode,onEdit}){
   const allBadges=Object.entries(BADGE_DEF);
   const earned=new Set(profile.badges||[]);
   return(
@@ -1845,6 +2241,7 @@ function MyProfileScreen({profile,onBack}){
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>←</button>
         <div style={{fontSize:20,color:"white",...DS}}>🎖️ Explorer Card</div>
+        <button onClick={onEdit} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,padding:"7px 14px",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>✏️ Edit</button>
       </div>
       <div style={{padding:"24px 16px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",paddingBottom:40}}>
         <div style={{background:`linear-gradient(135deg,${profile.color},${profile.color}99)`,borderRadius:24,padding:24,textAlign:"center"}}>
@@ -1856,6 +2253,13 @@ function MyProfileScreen({profile,onBack}){
             <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:900,color:"white"}}>🔥 {profile.streak}</div><div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>Streak</div></div>
             <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:900,color:"white"}}>🏅 {(profile.badges||[]).length}</div><div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>Badges</div></div>
           </div>
+          {familyCode&&(
+            <div style={{marginTop:16,background:"rgba(0,0,0,.25)",borderRadius:14,padding:"12px 16px",textAlign:"center"}}>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.6)",fontWeight:700,letterSpacing:.5,marginBottom:6}}>YOUR FAMILY CODE</div>
+              <div style={{fontSize:24,fontWeight:900,color:"#FCD34D",letterSpacing:6}}>{familyCode}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:4}}>Share this with family to join your leaderboard</div>
+            </div>
+          )}
         </div>
         <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>ALL BADGES</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -1884,6 +2288,8 @@ export default function App(){
   const[learnCatLv,setLearnCatLv]=useState(1);
   const[activeStory,setActiveStory]=useState(null);
   const[familyReady,setFamilyReady]=useState(!!getFamilyId());
+  const[familyCode,setFamilyCode]=useState(null);
+  const[showReview,setShowReview]=useState(false);
   const profile=profiles.find(p=>p.id===activeId)||null;
 
   useEffect(()=>{
@@ -1896,6 +2302,13 @@ export default function App(){
     findVoices();
     if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=findVoices;[300,1000,2500].forEach(ms=>setTimeout(findVoices,ms));}
     loadProfiles().then(ps=>{setProfiles(ps);setLoading(false);});
+    // Load family code for profile display
+    const fid=getFamilyId();
+    if(fid){
+      db.from('families').select('code').eq('id',fid).single().then(({data})=>{
+        if(data)setFamilyCode(data.code);
+      });
+    }
   },[]);
 
   const persist = async (updated) => {
@@ -1921,7 +2334,14 @@ export default function App(){
     const longestStreak=Math.max(p.longestStreak||0,streak);
     const updated={...p,streak,longestStreak,lastDate:d,badges:calcBadges({...p,streak})};
     await persist(profiles.map(x=>x.id===p.id?updated:x));
-    setActiveId(p.id);setScreen("home");
+    setActiveId(p.id);
+    // Show daily review if player has missed words to review
+    const missedCount=Object.keys(updated.missedWords||{}).length;
+    if(missedCount>0&&(updated.lastDate!==d||(updated.reviewStreak||{})[d]===undefined)){
+      setScreen("review");
+    } else {
+      setScreen("home");
+    }
   };
 
   const handleCreate=async(name,avatar,color)=>{
@@ -1962,11 +2382,33 @@ export default function App(){
     await updateProfile(activeId,{catProgress:newProgress});
   };
 
+  // Track individual word results for spaced repetition
+  const handleWordResult=async(word,correct)=>{
+    if(!activeId||!profile)return;
+    const missed={...(profile.missedWords||{})};
+    const key=word.es;
+    if(!correct){
+      missed[key]={count:(missed[key]?.count||0)+1,lastMissed:todayStr()};
+    } else if(missed[key]) {
+      // Word answered correctly — reduce miss count
+      const newCount=Math.max(0,(missed[key].count||1)-1);
+      if(newCount===0)delete missed[key];
+      else missed[key]={...missed[key],count:newCount};
+    }
+    await updateProfile(activeId,{missedWords:missed});
+  };
+
   const handleDailyComplete=async score=>{
     if(!profile)return;
     const d=todayStr();
     const dailyScores={...(profile.dailyScores||{}),[d]:score};
     await updateProfile(activeId,{stars:profile.stars+(score*3),dailyDone:(profile.dailyDone||0)+1,dailyScores});
+    setScreen("home");
+  };
+
+  const handleSaveProfile=async(name,avatar,color)=>{
+    if(!activeId||!profile)return;
+    await updateProfile(activeId,{name,avatar,color});
     setScreen("home");
   };
 
@@ -1994,11 +2436,18 @@ export default function App(){
       }}/>}
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
-      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} dailyDone={dailyDone}/>}
-      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onCatProgress={handleCatProgress}/>}
+      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={async(sc,words,results)=>{
+        // Mark today's review done and update missed word counts
+        await updateProfile(activeId,{reviewStreak:{...(profile.reviewStreak||{}),[todayStr()]:true}});
+        setScreen("home");
+      }} onSkip={()=>setScreen("home")}/>}
+      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} dailyDone={dailyDone}/>}
+      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onCatProgress={handleCatProgress} onWordResult={handleWordResult}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
-      {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} onBack={()=>setScreen("home")}/>}
+      {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")}/>}
+      {familyReady&&screen==="editprofile"&&profile&&<EditProfileScreen profile={profile} familyCode={familyCode} onSave={handleSaveProfile} onBack={()=>setScreen("myprofile")}/>}
+      {familyReady&&screen==="core"      &&<CoreWordsScreen onBack={()=>setScreen("home")} profile={profile}/>}
       {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
     </div>
