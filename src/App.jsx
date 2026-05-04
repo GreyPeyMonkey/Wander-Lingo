@@ -806,7 +806,7 @@ const getDailyWords = (level) => {
 };
 
 // â•â• PRONUNCIATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[Â¿Â¡.,!?]/g,"").trim();
+const normText=str=>str.toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("")"").replace(/[Â¿Â¡.,!?]/g,"").trim();
 const scoreMatch=(heard,target)=>{
   const h=normText(heard),t=normText(target);
   if(!h)return 0;
@@ -1394,8 +1394,8 @@ function LevelExamScreen({level,profile,onBack,onPass,onFail}){
 
   const checkProd=()=>{
     if(!prodWord||writeResult)return;
-    const userAns=typed.trim().toLowerCase().normalize("NFD").replace(/[Ì€-Í¯]/g,"").replace(/[Â¿Â¡.,!?]/g,"");
-    const correct=prodWord.es.toLowerCase().normalize("NFD").replace(/[Ì€-Í¯]/g,"").replace(/[Â¿Â¡.,!?]/g,"");
+    const userAns=typed.trim().toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("")"").replace(/[Â¿Â¡.,!?]/g,"");
+    const correct=prodWord.es.toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("")"").replace(/[Â¿Â¡.,!?]/g,"");
     const editDist=(a,b)=>{
       const m=a.length,n=b.length;
       const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
