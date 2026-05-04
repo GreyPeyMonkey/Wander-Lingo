@@ -4,218 +4,421 @@ import { createClient } from "@supabase/supabase-js";
 // ══ LEVEL 1 VOCAB — every word has a memory hook ═════════════════════════════
 const VOCAB_L1 = {
   greetings: { icon:"👋", label:"Greetings", color:"#E8445A", words:[
-    {es:"Hola",              en:"Hello",           emoji:"👋", hook:"Imagine a giant HOLE-A in the ground waving hello!"},
-    {es:"Buenos días",       en:"Good morning",    emoji:"🌅", hook:"BOO! A friendly ghost pops out saying good morning — BOO-en-os DEE-as!"},
-    {es:"Buenas tardes",     en:"Good afternoon",  emoji:"☀️", hook:"The BOO ghost is back in the afternoon! BWEH-nas TAR-days."},
-    {es:"Buenas noches",     en:"Good night",      emoji:"🌙", hook:"BOO at NIGHT — NOH-ches sounds like 'no chess at night'!"},
-    {es:"¿Cómo estás?",      en:"How are you?",    emoji:"🙂", hook:"COMO a lake asking HOW you're doing — KOH-mo es-TAS?"},
-    {es:"Estoy bien",        en:"I'm fine",        emoji:"👍", hook:"I'm STAYING (es-TOY) just BEAN (bien) fine — like a happy jumping bean!"},
-    {es:"Gracias",           en:"Thank you",       emoji:"🙏", hook:"GRAS-ee-us — you're thankful someone mowed your GRASS for you!"},
-    {es:"De nada",           en:"You're welcome",  emoji:"😊", hook:"It's NADA — NOTHING — like saying 'it was nothing at all!'"},
-    {es:"Por favor",         en:"Please",          emoji:"⭐", hook:"POUR FLAVOR on it please — por fa-VOR!"},
-    {es:"Adiós",             en:"Goodbye",         emoji:"✌️", hook:"ADD one more OH when leaving — ah-dee-OHS!"},
-    {es:"Hasta luego",       en:"See you later",   emoji:"🤗", hook:"HASTA la vista! See you LUEGO (LOO-ay-go) — like a logo you'll see again!"},
-    {es:"¿Cómo te llamas?",  en:"What's your name?",emoji:"❓", hook:"A LLAMA is calling YOUR name — YAH-mas? The llama wants to know!"},
-    {es:"Me llamo...",       en:"My name is...",   emoji:"🏷️", hook:"ME + a LLAMA — MY llama's name is... YAH-mo!"},
-    {es:"Mucho gusto",       en:"Nice to meet you",emoji:"🤝", hook:"MUCHO GUSTO — a GUST of wind blows you together — so nice to meet!"},
+    {es:"Hola",              en:"Hello",           emoji:"👋", hook:"Imagine a giant hole-A in the ground waving hello!"},
+    {es:"Buenos días",       en:"Good morning",    emoji:"🌅", hook:"BOO! A friendly ghost pops out saying good morning — BOO-en-os dee-as!"},
+    {es:"Buenas tardes",     en:"Good afternoon",  emoji:"☀️", hook:"The BOO ghost is back in the afternoon! bweh-nas tar-days."},
+    {es:"Buenas noches",     en:"Good night",      emoji:"🌙", hook:"BOO at night — noh-ches sounds like 'no chess at night'!"},
+    {es:"¿Cómo estás?",      en:"How are you?",    emoji:"🙂", hook:"como a lake asking HOW you're doing — koh-mo es-tas?"},
+    {es:"Estoy bien",        en:"I'm fine",        emoji:"👍", hook:"I'm staying (es-toy) just BEAN (bien) fine — like a happy jumping bean!"},
+    {es:"Gracias",           en:"Thank you",       emoji:"🙏", hook:"gras-ee-us — you're thankful someone mowed your grass for you!"},
+    {es:"De nada",           en:"You're welcome",  emoji:"😊", hook:"It's NADA — nothing — like saying 'it was nothing at all!'"},
+    {es:"Por favor",         en:"Please",          emoji:"⭐", hook:"pour flavor on it please — por fa-vor!"},
+    {es:"Adiós",             en:"Goodbye",         emoji:"✌️", hook:"add one more OH when leaving — ah-dee-ohs!"},
+    {es:"Hasta luego",       en:"See you later",   emoji:"🤗", hook:"hasta la vista! See you luego (loo-ay-go) — like a logo you'll see again!"},
+    {es:"¿Cómo te llamas?",  en:"What's your name?",emoji:"❓", hook:"A llama is calling YOUR name — YAH-mas? The llama wants to know!"},
+    {es:"Me llamo...",       en:"My name is...",   emoji:"🏷️", hook:"ME + a llama — my llama's name is... YAH-mo!"},
+    {es:"Mucho gusto",       en:"Nice to meet you",emoji:"🤝", hook:"mucho gusto — a gust of wind blows you together — so nice to meet!"},
   ]},
   around: { icon:"🏙️", label:"Around Town", color:"#DC6B19", words:[
-    {es:"Disculpe",                  en:"Excuse me",              emoji:"🙋", hook:"DIS-COOL-pay — excuse the super DIS-COOL person!"},
-    {es:"¿Dónde está el baño?",      en:"Where is the bathroom?", emoji:"🚻", hook:"DON'T-ay? DON'T wait — find the bathroom fast! DOHN-day es-TA?"},
-    {es:"La cuenta por favor",       en:"The check please",       emoji:"🧾", hook:"KWEN-ta — COUNT the bill before paying!"},
-    {es:"Una mesa para dos",         en:"A table for two",        emoji:"🪑", hook:"A MESA (table) for DOS — like two DOSAS on the table!"},
-    {es:"¿Cuánto cuesta?",           en:"How much does it cost?", emoji:"💰", hook:"KWAHN-to KWES-ta — HOW MUCH does this QUEST cost?"},
-    {es:"Quiero ordenar",            en:"I'd like to order",      emoji:"📋", hook:"KYER-oh — I CHEER-oh to order my food!"},
-    {es:"Un café con leche",         en:"Coffee with milk",       emoji:"☕", hook:"CAF-ay con LEH-chay — coffee with LECHY stretchy milk!"},
-    {es:"¿Habla inglés?",            en:"Do you speak English?",  emoji:"🗣️", hook:"AH-bla — is this ABLE person speaking my language?"},
-    {es:"No hablo español bien",     en:"I don't speak Spanish well",emoji:"😅", hook:"No AH-blo — I'm NOT ABLE to speak it well yet!"},
-    {es:"Más despacio por favor",    en:"More slowly please",     emoji:"🐢", hook:"MAS des-PAH-see-oh — MORE slowly like a turtle! MUCH slower!"},
+    {es:"Disculpe",                  en:"Excuse me",              emoji:"🙋", hook:"dis-cool-pay — excuse the super dis-cool person!"},
+    {es:"¿Dónde está el baño?",      en:"Where is the bathroom?", emoji:"🚻", hook:"don'T-ay? don'T wait — find the bathroom fast! dohn-day es-ta?"},
+    {es:"La cuenta por favor",       en:"The check please",       emoji:"🧾", hook:"kwen-ta — count the bill before paying!"},
+    {es:"Una mesa para dos",         en:"A table for two",        emoji:"🪑", hook:"A mesa (table) for dos — like two dosas on the table!"},
+    {es:"¿Cuánto cuesta?",           en:"How much does it cost?", emoji:"💰", hook:"kwahn-to kwes-ta — HOW MUCH does this quest cost?"},
+    {es:"Quiero ordenar",            en:"I'd like to order",      emoji:"📋", hook:"kyer-oh — I cheer-oh to order my food!"},
+    {es:"Un café con leche",         en:"Coffee with milk",       emoji:"☕", hook:"caf-ay con leh-chay — coffee with lechy stretchy milk!"},
+    {es:"¿Habla inglés?",            en:"Do you speak English?",  emoji:"🗣️", hook:"AH-bla — is this able person speaking my language?"},
+    {es:"No hablo español bien",     en:"I don't speak Spanish well",emoji:"😅", hook:"No AH-blo — I'm NOT able to speak it well yet!"},
+    {es:"Más despacio por favor",    en:"More slowly please",     emoji:"🐢", hook:"mas des-pah-see-oh — MORE slowly like a turtle! MUCH slower!"},
     {es:"A la derecha",              en:"To the right",           emoji:"➡️", hook:"DARE-echa — I DARE you to go RIGHT!"},
-    {es:"A la izquierda",            en:"To the left",            emoji:"⬅️", hook:"ees-kee-AIR-da — it's QUIRKY and airy going LEFT!"},
-    {es:"Todo recto",                en:"Straight ahead",         emoji:"⬆️", hook:"TODO RECTO — totally ERECT and straight ahead!"},
-    {es:"¿Me puede ayudar?",         en:"Can you help me?",       emoji:"🤝", hook:"AYE-oo-DAR — AYE! You DARE to help me? Please!"},
+    {es:"A la izquierda",            en:"To the left",            emoji:"⬅️", hook:"ees-kee-air-da — it's quirky and airy going left!"},
+    {es:"Todo recto",                en:"Straight ahead",         emoji:"⬆️", hook:"TODO recto — totally erect and straight ahead!"},
+    {es:"¿Me puede ayudar?",         en:"Can you help me?",       emoji:"🤝", hook:"AYE-oo-dar — AYE! You DARE to help me? Please!"},
   ]},
   family: { icon:"👨‍👩‍👧", label:"Family", color:"#10B981", words:[
-    {es:"Mamá",    en:"Mom",           emoji:"👩", hook:"MA + MA — double the love, double the MA!"},
-    {es:"Papá",    en:"Dad",           emoji:"👨", hook:"PA + PA — double the PA, double the dad hugs!"},
-    {es:"Hermana", en:"Sister",        emoji:"👧", hook:"HER MANA — SHE has the magic MANA — that's your sister!"},
-    {es:"Hermano", en:"Brother",       emoji:"👦", hook:"HER MANO — your bro is HER MAN-OH!"},
-    {es:"Abuela",  en:"Grandma",       emoji:"👵", hook:"ah-BWEH-la — grandma flies in on a propeller — BWEH!"},
-    {es:"Abuelo",  en:"Grandpa",       emoji:"👴", hook:"ah-BWEH-lo — grandpa flies in too — BWEH-lo!"},
-    {es:"Bebé",    en:"Baby",          emoji:"👶", hook:"BAY-BAY — babies say BAY-BAY and everyone smiles!"},
-    {es:"Amigo",   en:"Friend (boy)",  emoji:"🧑", hook:"ah-MEE-go — your buddy from the movie saying I GO with you amigo!"},
-    {es:"Amiga",   en:"Friend (girl)", emoji:"👩", hook:"ah-MEE-ga — your girl friend — ME + GA, she goes everywhere with you!"},
-    {es:"Mascota", en:"Pet",           emoji:"🐾", hook:"mas-KOH-ta — your pet wears a MASCOT costume at every game!"},
+    {es:"Mamá",    en:"Mom",           emoji:"👩", hook:"ma + ma — double the love, double the ma!"},
+    {es:"Papá",    en:"Dad",           emoji:"👨", hook:"pa + pa — double the pa, double the dad hugs!"},
+    {es:"Hermana", en:"Sister",        emoji:"👧", hook:"HER mana — SHE has the magic mana — that's your sister!"},
+    {es:"Hermano", en:"Brother",       emoji:"👦", hook:"HER mano — your bro is HER MAN-OH!"},
+    {es:"Abuela",  en:"Grandma",       emoji:"👵", hook:"ah-bweh-la — grandma flies in on a propeller — bweh!"},
+    {es:"Abuelo",  en:"Grandpa",       emoji:"👴", hook:"ah-bweh-lo — grandpa flies in too — bweh-lo!"},
+    {es:"Bebé",    en:"Baby",          emoji:"👶", hook:"bay-bay — babies say bay-bay and everyone smiles!"},
+    {es:"Amigo",   en:"Friend (boy)",  emoji:"🧑", hook:"ah-mee-go — your buddy from the movie saying I GO with you amigo!"},
+    {es:"Amiga",   en:"Friend (girl)", emoji:"👩", hook:"ah-mee-ga — your girl friend — ME + ga, she goes everywhere with you!"},
+    {es:"Mascota", en:"Pet",           emoji:"🐾", hook:"mas-koh-ta — your pet wears a mascot costume at every game!"},
   ]},
   food: { icon:"🍎", label:"Food", color:"#F59E0B", words:[
-    {es:"Agua",        en:"Water",       emoji:"💧", hook:"AH-gwa — water goes AH-GWA-GWA when you splash in it!"},
-    {es:"Leche",       en:"Milk",        emoji:"🥛", hook:"LEH-chay — milk is so LECHY and stretchy when it pours!"},
-    {es:"Pan",         en:"Bread",       emoji:"🍞", hook:"PAN — you cook bread IN A PAN — simple as that!"},
-    {es:"Arroz",       en:"Rice",        emoji:"🍚", hook:"ah-ROSE — rice grows in fields like a beautiful ROSE garden!"},
-    {es:"Pollo",       en:"Chicken",     emoji:"🍗", hook:"POY-yo — POLO the chicken plays polo on horseback!"},
-    {es:"Manzana",     en:"Apple",       emoji:"🍎", hook:"man-ZAH-na — a MAN-sized BANANA shaped like an apple!"},
-    {es:"Naranja",     en:"Orange",      emoji:"🍊", hook:"nah-RAN-ha — the runner RAN to grab the orange — nah-RAN-ha!"},
-    {es:"Helado",      en:"Ice cream",   emoji:"🍦", hook:"eh-LAH-do — HELD the ice cream before it melted — HELD-ado!"},
-    {es:"Tengo hambre",en:"I'm hungry",  emoji:"😋", hook:"TEN-go — I'm so TENSE because my stomach has TEN growls!"},
-    {es:"Tengo sed",   en:"I'm thirsty", emoji:"🥤", hook:"SED — so DRY and SAID to be thirsty!"},
+    {es:"Agua",        en:"Water",       emoji:"💧", hook:"AH-gwa — water goes AH-gwa-gwa when you splash in it!"},
+    {es:"Leche",       en:"Milk",        emoji:"🥛", hook:"leh-chay — milk is so lechy and stretchy when it pours!"},
+    {es:"Pan",         en:"Bread",       emoji:"🍞", hook:"pan — you cook bread in A pan — simple as that!"},
+    {es:"Arroz",       en:"Rice",        emoji:"🍚", hook:"ah-rose — rice grows in fields like a beautiful rose garden!"},
+    {es:"Pollo",       en:"Chicken",     emoji:"🍗", hook:"poy-yo — polo the chicken plays polo on horseback!"},
+    {es:"Manzana",     en:"Apple",       emoji:"🍎", hook:"man-zah-na — a MAN-sized banana shaped like an apple!"},
+    {es:"Naranja",     en:"Orange",      emoji:"🍊", hook:"nah-ran-ha — the runner ran to grab the orange — nah-ran-ha!"},
+    {es:"Helado",      en:"Ice cream",   emoji:"🍦", hook:"eh-lah-do — held the ice cream before it melted — held-ado!"},
+    {es:"Tengo hambre",en:"I'm hungry",  emoji:"😋", hook:"TEN-go — I'm so tense because my stomach has TEN growls!"},
+    {es:"Tengo sed",   en:"I'm thirsty", emoji:"🥤", hook:"sed — so dry and said to be thirsty!"},
     {es:"Delicioso",   en:"Delicious",   emoji:"😍", hook:"deh-lee-SEE-oh-so — so delicious you can SEE it glowing!"},
-    {es:"Quiero más",  en:"I want more", emoji:"🙋", hook:"KYER-oh MAS — CHEER-oh for MAS more — MORE MORE MORE!"},
+    {es:"Quiero más",  en:"I want more", emoji:"🙋", hook:"kyer-oh mas — cheer-oh for mas more — MORE MORE MORE!"},
   ]},
   feelings: { icon:"😊", label:"Feelings", color:"#8B5CF6", words:[
-    {es:"Feliz",          en:"Happy",    emoji:"😄", hook:"feh-LEES — FEEL the happiness in your knees!"},
-    {es:"Triste",         en:"Sad",      emoji:"😢", hook:"TREES-tay — a sad TREE just stood there dripping tears today!"},
-    {es:"Cansado",        en:"Tired",    emoji:"😴", hook:"kan-SAH-do — CAN'T-DO anything because I'm so tired!"},
-    {es:"Emocionado",     en:"Excited",  emoji:"🤩", hook:"eh-mo-see-OH-nah-do — your EMOTIONS explode like a volcano!"},
-    {es:"Asustado",       en:"Scared",   emoji:"😨", hook:"ah-soos-TAH-do — a GHOST says BOO and you're so SCARED-ado!"},
-    {es:"Enojado",        en:"Angry",    emoji:"😠", hook:"eh-no-HA-do — ENOUGH! No HA-do! I'm angry!"},
-    {es:"Te quiero",      en:"I love you",emoji:"❤️", hook:"tay KYER-oh — CHEER for the one you love — te CHEER-oh!"},
-    {es:"Me siento bien", en:"I feel good",emoji:"✨", hook:"see-EN-to — I SENSE I feel amazing — me see-EN-to bien!"},
+    {es:"Feliz",          en:"Happy",    emoji:"😄", hook:"feh-lees — feel the happiness in your knees!"},
+    {es:"Triste",         en:"Sad",      emoji:"😢", hook:"trees-tay — a sad tree just stood there dripping tears today!"},
+    {es:"Cansado",        en:"Tired",    emoji:"😴", hook:"kan-sah-do — CAN'T-DO anything because I'm so tired!"},
+    {es:"Emocionado",     en:"Excited",  emoji:"🤩", hook:"eh-mo-see-OH-nah-do — your emotions explode like a volcano!"},
+    {es:"Asustado",       en:"Scared",   emoji:"😨", hook:"ah-soos-tah-do — a ghost says BOO and you're so scared-ado!"},
+    {es:"Enojado",        en:"Angry",    emoji:"😠", hook:"eh-no-HA-do — enough! No HA-do! I'm angry!"},
+    {es:"Te quiero",      en:"I love you",emoji:"❤️", hook:"tay kyer-oh — cheer for the one you love — te cheer-oh!"},
+    {es:"Me siento bien", en:"I feel good",emoji:"✨", hook:"see-en-to — I sense I feel amazing — me see-en-to bien!"},
   ]},
   school: { icon:"📚", label:"School", color:"#3B82F6", words:[
-    {es:"Maestra",         en:"Teacher (f)",          emoji:"👩‍🏫", hook:"my-EHS-tra — the MASTER-A teacher rules the class!"},
-    {es:"Maestro",         en:"Teacher (m)",          emoji:"👨‍🏫", hook:"my-EHS-tro — the MAESTRO teacher leads like an orchestra!"},
-    {es:"Libro",           en:"Book",                 emoji:"📚", hook:"LEE-bro — LEE BROught his favorite book to read!"},
-    {es:"Lápiz",           en:"Pencil",               emoji:"✏️", hook:"LAH-pees — the PENCIL draws in LAPS around the page!"},
-    {es:"Escuela",         en:"School",               emoji:"🏫", hook:"es-KWAY-la — SCHOOL is the ESKIMO way of learning — es-KWAY-la!"},
-    {es:"No entiendo",     en:"I don't understand",   emoji:"🤔", hook:"en-tee-EN-do — I don't TEND-to understand this at all!"},
-    {es:"¿Me puedes ayudar?",en:"Can you help me?",  emoji:"🙋", hook:"AYE-oo-DAR — AYE! You DARE help me with this?"},
-    {es:"Entiendo",        en:"I understand",         emoji:"💡", hook:"en-tee-EN-do — NOW I TEND-to understand — the light bulb is ON!"},
+    {es:"Maestra",         en:"Teacher (f)",          emoji:"👩‍🏫", hook:"my-ehs-tra — the master-A teacher rules the class!"},
+    {es:"Maestro",         en:"Teacher (m)",          emoji:"👨‍🏫", hook:"my-ehs-tro — the maestro teacher leads like an orchestra!"},
+    {es:"Libro",           en:"Book",                 emoji:"📚", hook:"lee-bro — lee BROught his favorite book to read!"},
+    {es:"Lápiz",           en:"Pencil",               emoji:"✏️", hook:"lah-pees — the pencil draws in laps around the page!"},
+    {es:"Escuela",         en:"School",               emoji:"🏫", hook:"es-kway-la — school is the eskimo way of learning — es-kway-la!"},
+    {es:"No entiendo",     en:"I don't understand",   emoji:"🤔", hook:"en-tee-en-do — I don't tend-to understand this at all!"},
+    {es:"¿Me puedes ayudar?",en:"Can you help me?",  emoji:"🙋", hook:"AYE-oo-dar — AYE! You DARE help me with this?"},
+    {es:"Entiendo",        en:"I understand",         emoji:"💡", hook:"en-tee-en-do — NOW I tend-to understand — the light bulb is on!"},
   ]},
   numbers: { icon:"🔢", label:"Numbers", color:"#06B6D4", words:[
-    {es:"Uno",   en:"One",   emoji:"1️⃣", hook:"OO-no — ONE more OOH makes everything fun!"},
-    {es:"Dos",   en:"Two",   emoji:"2️⃣", hook:"DOSE — the doctor gives you TWO doses of medicine!"},
-    {es:"Tres",  en:"Three", emoji:"3️⃣", hook:"TRACE — THREE lines to trace on the paper!"},
-    {es:"Cuatro",en:"Four",  emoji:"4️⃣", hook:"KWAH-tro — FOUR QUARTERS make one dollar — KWAH-tro!"},
-    {es:"Cinco", en:"Five",  emoji:"5️⃣", hook:"SINK-oh — FIVE things fell into the SINK-oh!"},
-    {es:"Seis",  en:"Six",   emoji:"6️⃣", hook:"SACE — SIX geese went SACE SACE SACE!"},
-    {es:"Siete", en:"Seven", emoji:"7️⃣", hook:"see-EH-tay — SEVEN ate (see-ATE) nine for breakfast!"},
-    {es:"Ocho",  en:"Eight", emoji:"8️⃣", hook:"OH-cho — EIGHT is an OH with a CHO CHO train!"},
-    {es:"Nueve", en:"Nine",  emoji:"9️⃣", hook:"NWEH-bay — NINE bees went WHEW into the hive!"},
-    {es:"Diez",  en:"Ten",   emoji:"🔟", hook:"dee-EHS — TEN DAYS in the sun — dee-EHS days!"},
+    {es:"Uno",   en:"One",   emoji:"1️⃣", hook:"oo-no — ONE more ooh makes everything fun!"},
+    {es:"Dos",   en:"Two",   emoji:"2️⃣", hook:"dose — the doctor gives you TWO doses of medicine!"},
+    {es:"Tres",  en:"Three", emoji:"3️⃣", hook:"trace — THREE lines to trace on the paper!"},
+    {es:"Cuatro",en:"Four",  emoji:"4️⃣", hook:"kwah-tro — four quarters make one dollar — kwah-tro!"},
+    {es:"Cinco", en:"Five",  emoji:"5️⃣", hook:"sink-oh — five things fell into the sink-oh!"},
+    {es:"Seis",  en:"Six",   emoji:"6️⃣", hook:"sace — six geese went sace sace sace!"},
+    {es:"Siete", en:"Seven", emoji:"7️⃣", hook:"see-EH-tay — seven ate (see-ate) nine for breakfast!"},
+    {es:"Ocho",  en:"Eight", emoji:"8️⃣", hook:"OH-cho — eight is an OH with a cho cho train!"},
+    {es:"Nueve", en:"Nine",  emoji:"9️⃣", hook:"nweh-bay — nine bees went whew into the hive!"},
+    {es:"Diez",  en:"Ten",   emoji:"🔟", hook:"dee-ehs — TEN days in the sun — dee-ehs days!"},
   ]},
   colors: { icon:"🎨", label:"Colors", color:"#EC4899", words:[
-    {es:"Rojo",     en:"Red",    emoji:"🔴", hook:"ROH-ho — RED ROH-hos of roses everywhere!"},
-    {es:"Azul",     en:"Blue",   emoji:"🔵", hook:"ah-ZOOL — the AZURE blue sky goes ah-ZOOL!"},
-    {es:"Verde",    en:"Green",  emoji:"🟢", hook:"BAIR-day — GREEN bears eating leaves today — BEAR-day!"},
-    {es:"Amarillo", en:"Yellow", emoji:"🟡", hook:"ah-mah-REE-yo — an ARMADILLO painted itself YELLOW!"},
-    {es:"Naranja",  en:"Orange", emoji:"🟠", hook:"nah-RAN-ha — ORANGE? You RAN here to get one!"},
-    {es:"Morado",   en:"Purple", emoji:"🟣", hook:"moh-RAH-do — MORE-ado purple please — I want MORE!"},
-    {es:"Rosa",     en:"Pink",   emoji:"🩷", hook:"ROH-sa — ROSA always wears PINK roses!"},
-    {es:"Blanco",   en:"White",  emoji:"⬜", hook:"BLAN-co — a BLANK white piece of paper — BLANK-o!"},
-    {es:"Negro",    en:"Black",  emoji:"⬛", hook:"NEH-gro — NEGRO means BLACK like the night sky!"},
-    {es:"Café",     en:"Brown",  emoji:"🟤", hook:"cah-FAY — COFFEE is BROWN — cafe au lait!"},
+    {es:"Rojo",     en:"Red",    emoji:"🔴", hook:"roh-ho — red roh-hos of roses everywhere!"},
+    {es:"Azul",     en:"Blue",   emoji:"🔵", hook:"ah-zool — the azure blue sky goes ah-zool!"},
+    {es:"Verde",    en:"Green",  emoji:"🟢", hook:"bair-day — green bears eating leaves today — BEAR-day!"},
+    {es:"Amarillo", en:"Yellow", emoji:"🟡", hook:"ah-mah-ree-yo — an ARMADILLO painted itself yellow!"},
+    {es:"Naranja",  en:"Orange", emoji:"🟠", hook:"nah-ran-ha — orange? You ran here to get one!"},
+    {es:"Morado",   en:"Purple", emoji:"🟣", hook:"moh-rah-do — MORE-ado purple please — I want MORE!"},
+    {es:"Rosa",     en:"Pink",   emoji:"🩷", hook:"roh-sa — rosa always wears pink roses!"},
+    {es:"Blanco",   en:"White",  emoji:"⬜", hook:"blan-co — a blank white piece of paper — blank-o!"},
+    {es:"Negro",    en:"Black",  emoji:"⬛", hook:"neh-gro — negro means black like the night sky!"},
+    {es:"Café",     en:"Brown",  emoji:"🟤", hook:"cah-fay — coffee is brown — cafe au lait!"},
   ]},
   animals: { icon:"🐾", label:"Animals", color:"#64748B", words:[
     {es:"Perro",    en:"Dog",      emoji:"🐶", hook:"PAIR-oh — a PAIR of dogs are better than one!"},
-    {es:"Gato",     en:"Cat",      emoji:"🐱", hook:"GAH-to — the cat's GOTTA go — see ya GAH-to!"},
-    {es:"Pájaro",   en:"Bird",     emoji:"🐦", hook:"PAH-ha-ro — the bird PARACHUTES down — PAH-ha-ro!"},
-    {es:"Pez",      en:"Fish",     emoji:"🐠", hook:"PEHZ — PEZ candy is FISH-shaped — same word!"},
-    {es:"Caballo",  en:"Horse",    emoji:"🐴", hook:"cah-BAH-yo — the horse GALLOPS saying BAH-yo BAH-yo!"},
-    {es:"Vaca",     en:"Cow",      emoji:"🐮", hook:"BAH-ca — the cow says BAH! BAH-ca BAH-ca!"},
-    {es:"Mono",     en:"Monkey",   emoji:"🐒", hook:"MOH-no — MONO means alone — the lonely monkey!"},
-    {es:"Elefante", en:"Elephant", emoji:"🐘", hook:"eh-leh-FAN-tay — the ELEPHANT is a huge FAN of Spanish!"},
-    {es:"León",     en:"Lion",     emoji:"🦁", hook:"lay-ON — the LION LAYS ON the grass in the sun!"},
-    {es:"Tortuga",  en:"Turtle",   emoji:"🐢", hook:"tor-TOO-ga — the TURTLE took TOO long to get here!"},
+    {es:"Gato",     en:"Cat",      emoji:"🐱", hook:"gah-to — the cat's gotta go — see ya gah-to!"},
+    {es:"Pájaro",   en:"Bird",     emoji:"🐦", hook:"pah-ha-ro — the bird PARACHUTES down — pah-ha-ro!"},
+    {es:"Pez",      en:"Fish",     emoji:"🐠", hook:"pehz — pez candy is fish-shaped — same word!"},
+    {es:"Caballo",  en:"Horse",    emoji:"🐴", hook:"cah-bah-yo — the horse gallops saying bah-yo bah-yo!"},
+    {es:"Vaca",     en:"Cow",      emoji:"🐮", hook:"bah-ca — the cow says bah! bah-ca bah-ca!"},
+    {es:"Mono",     en:"Monkey",   emoji:"🐒", hook:"moh-no — mono means alone — the lonely monkey!"},
+    {es:"Elefante", en:"Elephant", emoji:"🐘", hook:"eh-leh-fan-tay — the elephant is a huge fan of Spanish!"},
+    {es:"León",     en:"Lion",     emoji:"🦁", hook:"lay-on — the lion lays on the grass in the sun!"},
+    {es:"Tortuga",  en:"Turtle",   emoji:"🐢", hook:"tor-TOO-ga — the turtle took TOO long to get here!"},
   ]},
 };
 
 // ══ LEVEL 2 VOCAB — Intermediate ═════════════════════════════════════════════
 const VOCAB_L2 = {
   verbs: { icon:"⚡", label:"Verbs & Actions", color:"#7C3AED", words:[
-    {es:"Quiero",           en:"I want",          emoji:"🙋", hook:"KYER-oh — I CHEER-oh for what I want!"},
+    {es:"Quiero",           en:"I want",          emoji:"🙋", hook:"kyer-oh — I cheer-oh for what I want!"},
     {es:"Necesito",         en:"I need",           emoji:"❗", hook:"neh-seh-SEE-to — I NEED to SEE-to it right now!"},
     {es:"Tengo",            en:"I have",           emoji:"✋", hook:"TEN-go — I HAVE ten things to go do!"},
-    {es:"Voy",              en:"I'm going",        emoji:"🚶", hook:"BOY — I'm going like a BOY SCOUT on a mission!"},
-    {es:"Me gusta",         en:"I like",           emoji:"👍", hook:"me GOOS-ta — I like it with GUSTO — goos-TA!"},
-    {es:"Puedo",            en:"I can",            emoji:"💪", hook:"PWEH-do — I can POWER through anything!"},
+    {es:"Voy",              en:"I'm going",        emoji:"🚶", hook:"BOY — I'm going like a BOY scout on a mission!"},
+    {es:"Me gusta",         en:"I like",           emoji:"👍", hook:"me goos-ta — I like it with gusto — goos-ta!"},
+    {es:"Puedo",            en:"I can",            emoji:"💪", hook:"pweh-do — I can power through anything!"},
     {es:"Sé",               en:"I know",           emoji:"🧠", hook:"SAY — I KNOW what to SAY about that!"},
-    {es:"Hablo",            en:"I speak",          emoji:"🗣️", hook:"AH-blo — I speak BLOW by blow — AH-blo!"},
-    {es:"Busco",            en:"I'm looking for",  emoji:"🔍", hook:"BOOS-co — I'm BOOSTING my search — BOOS-co!"},
-    {es:"Vivo en",          en:"I live in",        emoji:"🏠", hook:"BEE-bo — I LIVE like a BEE in my hive — BEE-bo!"},
+    {es:"Hablo",            en:"I speak",          emoji:"🗣️", hook:"AH-blo — I speak blow by blow — AH-blo!"},
+    {es:"Busco",            en:"I'm looking for",  emoji:"🔍", hook:"boos-co — I'm boosting my search — boos-co!"},
+    {es:"Vivo en",          en:"I live in",        emoji:"🏠", hook:"bee-bo — I LIVE like a bee in my hive — bee-bo!"},
     {es:"No sé",            en:"I don't know",     emoji:"🤷", hook:"SAY — I can't SAY because I just don't know!"},
-    {es:"¿Puedes repetir?", en:"Can you repeat?",  emoji:"🔁", hook:"reh-peh-TEER — REPEAT it like a spinning TIRE — TEER TEER!"},
-    {es:"Entendí",          en:"I understood",     emoji:"💡", hook:"en-ten-DEE — I DID understand — past tense — DID-ee!"},
-    {es:"Quiero aprender",  en:"I want to learn",  emoji:"📖", hook:"ah-pren-DAIR — I want to learn from the thin AIR — DAIR!"},
+    {es:"¿Puedes repetir?", en:"Can you repeat?",  emoji:"🔁", hook:"reh-peh-teer — repeat it like a spinning tire — teer teer!"},
+    {es:"Entendí",          en:"I understood",     emoji:"💡", hook:"en-ten-dee — I DID understand — past tense — DID-ee!"},
+    {es:"Quiero aprender",  en:"I want to learn",  emoji:"📖", hook:"ah-pren-dair — I want to learn from the thin air — dair!"},
   ]},
   time: { icon:"🕐", label:"Time & Days", color:"#0369A1", words:[
-    {es:"Hoy",            en:"Today",         emoji:"📅", hook:"OY — TODAY I say OY what a day!"},
-    {es:"Mañana",         en:"Tomorrow",      emoji:"🌅", hook:"mahn-YAH-na — TOMORROW is like a man eating a BANANA — man-YANA!"},
-    {es:"Ayer",           en:"Yesterday",     emoji:"⏪", hook:"ah-YAIR — YESTERDAY the AIR smelled different!"},
-    {es:"Ahora",          en:"Right now",     emoji:"⚡", hook:"ah-OH-ra — RIGHT NOW say AH-OH-RA really fast!"},
-    {es:"Lunes",          en:"Monday",        emoji:"1️⃣", hook:"LOO-nes — MONDAY on the MOON — LUNAR Monday!"},
-    {es:"Martes",         en:"Tuesday",       emoji:"2️⃣", hook:"MAR-tays — TUESDAY on MARS with the MARTIANS!"},
-    {es:"Miércoles",      en:"Wednesday",     emoji:"3️⃣", hook:"mee-AIR-coh-les — WEDNESDAY in the AIR with the MERCURIANS!"},
-    {es:"Jueves",         en:"Thursday",      emoji:"4️⃣", hook:"HWEH-bes — THURSDAY we have WEBS — like JOVE the spider!"},
-    {es:"Viernes",        en:"Friday",        emoji:"5️⃣", hook:"bee-AIR-nes — FRIDAY in the AIR near VENUS — vee-AIR-nes!"},
-    {es:"Sábado",         en:"Saturday",      emoji:"🎉", hook:"SAH-bah-do — SATURDAY in the SAHARA DESERT!"},
-    {es:"Domingo",        en:"Sunday",        emoji:"☀️", hook:"doh-MING-go — SUNDAY with DOMINOES — dom-INGO!"},
-    {es:"¿Qué hora es?",  en:"What time is it?",emoji:"🕐", hook:"KAY OH-ra — WHAT HOUR is it — KAY say the clock!"},
-    {es:"Por la mañana",  en:"In the morning", emoji:"🌄", hook:"mahn-YAH-na — MORNING banana time with the man!"},
-    {es:"Por la noche",   en:"At night",      emoji:"🌙", hook:"NOH-chay — NO CHESS at night — NIGHT time!"},
+    {es:"Hoy",            en:"Today",         emoji:"📅", hook:"OY — today I say OY what a day!"},
+    {es:"Mañana",         en:"Tomorrow",      emoji:"🌅", hook:"mahn-YAH-na — tomorrow is like a man eating a banana — man-yana!"},
+    {es:"Ayer",           en:"Yesterday",     emoji:"⏪", hook:"ah-yair — YESTERDAY the air smelled different!"},
+    {es:"Ahora",          en:"Right now",     emoji:"⚡", hook:"ah-OH-ra — RIGHT NOW say AH-OH-ra really fast!"},
+    {es:"Lunes",          en:"Monday",        emoji:"1️⃣", hook:"loo-nes — monday on the moon — lunar Monday!"},
+    {es:"Martes",         en:"Tuesday",       emoji:"2️⃣", hook:"mar-tays — tuesday on mars with the martians!"},
+    {es:"Miércoles",      en:"Wednesday",     emoji:"3️⃣", hook:"mee-air-coh-les — WEDNESDAY in the air with the MERCURIANS!"},
+    {es:"Jueves",         en:"Thursday",      emoji:"4️⃣", hook:"hweh-bes — thursday we have webs — like jove the spider!"},
+    {es:"Viernes",        en:"Friday",        emoji:"5️⃣", hook:"bee-air-nes — friday in the air near venus — vee-air-nes!"},
+    {es:"Sábado",         en:"Saturday",      emoji:"🎉", hook:"sah-bah-do — saturday in the sahara desert!"},
+    {es:"Domingo",        en:"Sunday",        emoji:"☀️", hook:"doh-ming-go — sunday with dominoes — dom-ingo!"},
+    {es:"¿Qué hora es?",  en:"What time is it?",emoji:"🕐", hook:"kay OH-ra — WHAT hour is it — kay say the clock!"},
+    {es:"Por la mañana",  en:"In the morning", emoji:"🌄", hook:"mahn-YAH-na — morning banana time with the man!"},
+    {es:"Por la noche",   en:"At night",      emoji:"🌙", hook:"noh-chay — NO chess at night — night time!"},
   ]},
   body: { icon:"💪", label:"Body & Health", color:"#DC2626", words:[
-    {es:"Cabeza",              en:"Head",          emoji:"🤯", hook:"cah-BAY-sah — a CAB drove into your HEAD — cah-BAY!"},
-    {es:"Mano",                en:"Hand",          emoji:"✋", hook:"MAH-no — your HAND is your MAN-O helper!"},
-    {es:"Pie",                 en:"Foot",          emoji:"🦶", hook:"pee-EH — your FOOT makes a PIE shape in the mud!"},
-    {es:"Ojo",                 en:"Eye",           emoji:"👁️", hook:"OH-ho — your EYE goes OH-HO when it sees something amazing!"},
-    {es:"Estómago",            en:"Stomach",       emoji:"😣", hook:"es-TOH-mah-go — your STOMACH says STOP-mago I'm full!"},
-    {es:"Espalda",             en:"Back",          emoji:"🔙", hook:"es-PAL-da — your BACK is your best PAL-da!"},
-    {es:"Me duele",            en:"It hurts",      emoji:"😣", hook:"DWEH-lay — it HURTS like a duel — DWELL on the pain!"},
-    {es:"Estoy enfermo",       en:"I'm sick",      emoji:"🤒", hook:"en-FAIR-mo — it's NOT FAIR-mo to be sick!"},
-    {es:"Necesito un médico",  en:"I need a doctor",emoji:"👨‍⚕️", hook:"MEH-dee-co — the MEDIC is your MEDICAL doctor!"},
-    {es:"La farmacia",         en:"The pharmacy",  emoji:"💊", hook:"far-MAH-see-ah — the PHARMACY is FAR-macia away!"},
-    {es:"Tengo fiebre",        en:"I have a fever", emoji:"🌡️", hook:"fee-EH-bray — FEVER is like a FEE you pay — fee-EH!"},
-    {es:"Me siento mal",       en:"I feel bad",    emoji:"😞", hook:"MAL — feeling BAD is just plain MAL-icious!"},
+    {es:"Cabeza",              en:"Head",          emoji:"🤯", hook:"cah-bay-sah — a cab drove into your head — cah-bay!"},
+    {es:"Mano",                en:"Hand",          emoji:"✋", hook:"mah-no — your hand is your MAN-O helper!"},
+    {es:"Pie",                 en:"Foot",          emoji:"🦶", hook:"pee-EH — your foot makes a pie shape in the mud!"},
+    {es:"Ojo",                 en:"Eye",           emoji:"👁️", hook:"OH-ho — your eye goes OH-ho when it sees something amazing!"},
+    {es:"Estómago",            en:"Stomach",       emoji:"😣", hook:"es-toh-mah-go — your stomach says stop-mago I'm full!"},
+    {es:"Espalda",             en:"Back",          emoji:"🔙", hook:"es-pal-da — your back is your best pal-da!"},
+    {es:"Me duele",            en:"It hurts",      emoji:"😣", hook:"dweh-lay — it hurts like a duel — dwell on the pain!"},
+    {es:"Estoy enfermo",       en:"I'm sick",      emoji:"🤒", hook:"en-fair-mo — it's NOT fair-mo to be sick!"},
+    {es:"Necesito un médico",  en:"I need a doctor",emoji:"👨‍⚕️", hook:"meh-dee-co — the medic is your medical doctor!"},
+    {es:"La farmacia",         en:"The pharmacy",  emoji:"💊", hook:"far-mah-see-ah — the pharmacy is FAR-macia away!"},
+    {es:"Tengo fiebre",        en:"I have a fever", emoji:"🌡️", hook:"fee-EH-bray — fever is like a fee you pay — fee-EH!"},
+    {es:"Me siento mal",       en:"I feel bad",    emoji:"😞", hook:"mal — feeling bad is just plain mal-icious!"},
   ]},
   descriptions: { icon:"🎭", label:"Describing Things", color:"#B45309", words:[
-    {es:"Grande",   en:"Big",       emoji:"🐘", hook:"GRAN-day — GRAND and BIG — it's a GRAND day!"},
-    {es:"Pequeño",  en:"Small",     emoji:"🐭", hook:"peh-KEN-yo — SMALL like little KENNY YO!"},
-    {es:"Bonito",   en:"Beautiful", emoji:"😍", hook:"boh-NEE-to — BEAUTIFUL like a BONITO fish in the sea!"},
+    {es:"Grande",   en:"Big",       emoji:"🐘", hook:"gran-day — grand and BIG — it's a grand day!"},
+    {es:"Pequeño",  en:"Small",     emoji:"🐭", hook:"peh-ken-yo — SMALL like little kenny YO!"},
+    {es:"Bonito",   en:"Beautiful", emoji:"😍", hook:"boh-nee-to — BEAUTIFUL like a bonito fish in the sea!"},
     {es:"Caro",     en:"Expensive", emoji:"💸", hook:"CAR-oh — as EXPENSIVE as a CAR — CAR-oh!"},
-    {es:"Barato",   en:"Cheap",     emoji:"🤑", hook:"bah-RAH-to — CHEAP like a BURRITO that costs almost nothing!"},
-    {es:"Cerca",    en:"Near",      emoji:"📍", hook:"SAIR-ca — NEAR the CIRCUS — sair-CA!"},
-    {es:"Lejos",    en:"Far",       emoji:"🗺️", hook:"LEH-hos — FAR like a LEGION of miles away!"},
-    {es:"Rápido",   en:"Fast",      emoji:"⚡", hook:"RAH-pee-do — RAPID and FAST like a RAPID-o rocket!"},
-    {es:"Lento",    en:"Slow",      emoji:"🐢", hook:"LEN-to — SLOW like LENTO music — nice and slow!"},
-    {es:"Caliente", en:"Hot",       emoji:"🔥", hook:"cah-lee-EN-tay — HOT like a KALEIDOSCOPE of fire!"},
-    {es:"Frío",     en:"Cold",      emoji:"🧊", hook:"FREE-oh — COLD and FREE-zing cold — FREE-oh!"},
-    {es:"Fácil",    en:"Easy",      emoji:"😊", hook:"FAH-seel — EASY peasy like a FOSSIL in the ground!"},
-    {es:"Difícil",  en:"Difficult", emoji:"😤", hook:"dee-FEE-seel — DIFFICULT FEE to pay — dee-FEE!"},
-    {es:"Mucho",    en:"A lot",     emoji:"📦", hook:"MOO-cho — A LOT of MOOs from the cow — MOO-cho!"},
+    {es:"Barato",   en:"Cheap",     emoji:"🤑", hook:"bah-rah-to — cheap like a burrito that costs almost nothing!"},
+    {es:"Cerca",    en:"Near",      emoji:"📍", hook:"sair-ca — near the circus — sair-ca!"},
+    {es:"Lejos",    en:"Far",       emoji:"🗺️", hook:"leh-hos — FAR like a legion of miles away!"},
+    {es:"Rápido",   en:"Fast",      emoji:"⚡", hook:"rah-pee-do — RAPID and fast like a RAPID-o rocket!"},
+    {es:"Lento",    en:"Slow",      emoji:"🐢", hook:"len-to — slow like lento music — nice and slow!"},
+    {es:"Caliente", en:"Hot",       emoji:"🔥", hook:"cah-lee-en-tay — hot like a KALEIDOSCOPE of fire!"},
+    {es:"Frío",     en:"Cold",      emoji:"🧊", hook:"free-oh — cold and free-zing cold — free-oh!"},
+    {es:"Fácil",    en:"Easy",      emoji:"😊", hook:"fah-seel — easy peasy like a fossil in the ground!"},
+    {es:"Difícil",  en:"Difficult", emoji:"😤", hook:"dee-fee-seel — DIFFICULT fee to pay — dee-fee!"},
+    {es:"Mucho",    en:"A lot",     emoji:"📦", hook:"moo-cho — A lot of MOOs from the cow — moo-cho!"},
   ]},
   shopping: { icon:"🛒", label:"Shopping & Market", color:"#065F46", words:[
-    {es:"El mercado",            en:"The market",          emoji:"🏪", hook:"mehr-CAH-do — the MARKET is your MERCADO adventure!"},
-    {es:"¿Tiene cambio?",        en:"Do you have change?", emoji:"💰", hook:"CAHM-bee-oh — CHANGE your CAMBIA coins!"},
-    {es:"Es muy caro",           en:"It's very expensive", emoji:"😱", hook:"MOO-ee CAR-oh — the CAR is VERY expensive — moo-ee!"},
-    {es:"Me llevo esto",         en:"I'll take this",      emoji:"🛍️", hook:"YEH-bo — I'll TAKE it YEBO style — YEH-bo!"},
-    {es:"¿Cuánto es todo?",      en:"How much is everything?",emoji:"🧾", hook:"KWAHN-to — HOW MUCH in this QUANTUM universe?"},
-    {es:"Quiero comprar",        en:"I want to buy",       emoji:"💳", hook:"cohm-PRAR — I want to COMPARE prices before buying!"},
-    {es:"¿Acepta tarjeta?",      en:"Do you accept card?", emoji:"💳", hook:"tar-HEH-ta — CARD like a TARGET credit card!"},
-    {es:"El precio",             en:"The price",           emoji:"🏷️", hook:"PREH-see-oh — the PRICE is oh so PRECIOUS!"},
-    {es:"La bolsa",              en:"The bag",             emoji:"🛍️", hook:"BOWL-sah — the BAG is shaped like a BOWL!"},
-    {es:"¿Puede bajar el precio?",en:"Can you lower the price?",emoji:"🙏", hook:"bah-HAR — can you lower it like going DOWN to a BAR?"},
-    {es:"¿Dónde encuentro...?",  en:"Where do I find...?", emoji:"🔍", hook:"en-KWEN-tro — WHERE do I ENCOUNTER what I'm looking for?"},
-    {es:"Me da uno más",         en:"Give me one more",    emoji:"✌️", hook:"Give me UNO MAS — one MORE please!"},
+    {es:"El mercado",            en:"The market",          emoji:"🏪", hook:"mehr-cah-do — the market is your mercado adventure!"},
+    {es:"¿Tiene cambio?",        en:"Do you have change?", emoji:"💰", hook:"cahm-bee-oh — change your cambia coins!"},
+    {es:"Es muy caro",           en:"It's very expensive", emoji:"😱", hook:"moo-ee CAR-oh — the CAR is VERY expensive — moo-ee!"},
+    {es:"Me llevo esto",         en:"I'll take this",      emoji:"🛍️", hook:"yeh-bo — I'll TAKE it yebo style — yeh-bo!"},
+    {es:"¿Cuánto es todo?",      en:"How much is everything?",emoji:"🧾", hook:"kwahn-to — HOW MUCH in this quantum universe?"},
+    {es:"Quiero comprar",        en:"I want to buy",       emoji:"💳", hook:"cohm-prar — I want to compare prices before buying!"},
+    {es:"¿Acepta tarjeta?",      en:"Do you accept card?", emoji:"💳", hook:"tar-heh-ta — card like a target credit card!"},
+    {es:"El precio",             en:"The price",           emoji:"🏷️", hook:"preh-see-oh — the price is oh so precious!"},
+    {es:"La bolsa",              en:"The bag",             emoji:"🛍️", hook:"bowl-sah — the bag is shaped like a bowl!"},
+    {es:"¿Puede bajar el precio?",en:"Can you lower the price?",emoji:"🙏", hook:"bah-har — can you lower it like going DOWN to a bar?"},
+    {es:"¿Dónde encuentro...?",  en:"Where do I find...?", emoji:"🔍", hook:"en-kwen-tro — WHERE do I ENCOUNTER what I'm looking for?"},
+    {es:"Me da uno más",         en:"Give me one more",    emoji:"✌️", hook:"Give me uno mas — one MORE please!"},
   ]},
   weather: { icon:"🌤️", label:"Weather", color:"#1D4ED8", words:[
-    {es:"Hace calor",        en:"It's hot",          emoji:"☀️", hook:"AH-say cah-LOR — it makes CALOR — HOT HOT HOT!"},
-    {es:"Hace frío",         en:"It's cold",         emoji:"🧊", hook:"FREE-oh — it's COLD and FREE-zing cold!"},
-    {es:"Está lloviendo",    en:"It's raining",      emoji:"🌧️", hook:"yo-bee-EN-do — it's raining LOVING drops from the sky!"},
-    {es:"Hace viento",       en:"It's windy",        emoji:"💨", hook:"bee-EN-to — WINDY like a VENT blowing hard!"},
-    {es:"Está nublado",      en:"It's cloudy",       emoji:"☁️", hook:"noo-BLAH-do — CLOUDY and totally BLAH-do gray!"},
-    {es:"¿Cómo está el clima?",en:"What's the weather like?",emoji:"🌡️", hook:"KLEE-mah — the CLIMATE CLIME changes fast in Cuenca!"},
-    {es:"Va a llover",       en:"It's going to rain",emoji:"⛈️", hook:"yo-BAIR — it's going to rain like a LOVER of water!"},
-    {es:"Hace buen tiempo",  en:"The weather is nice",emoji:"🌈", hook:"tee-EM-po — nice weather TEMPO — what a GOOD time!"},
-    {es:"El sol",            en:"The sun",           emoji:"☀️", hook:"SOLE — the SUN is your SOLE friend on cold days!"},
-    {es:"La lluvia",         en:"The rain",          emoji:"🌧️", hook:"YOO-bee-ah — the rain goes YOOBIA YOOBIA down!"},
-    {es:"La neblina",        en:"The fog",           emoji:"🌫️", hook:"neh-BLEE-nah — FOG like a NEBULA floating down!"},
-    {es:"Qué fresco",        en:"How pleasant",      emoji:"😌", hook:"FRES-co — how FRESH and pleasant — FRESCO cool!"},
+    {es:"Hace calor",        en:"It's hot",          emoji:"☀️", hook:"AH-say cah-lor — it makes calor — hot hot hot!"},
+    {es:"Hace frío",         en:"It's cold",         emoji:"🧊", hook:"free-oh — it's cold and free-zing cold!"},
+    {es:"Está lloviendo",    en:"It's raining",      emoji:"🌧️", hook:"yo-bee-en-do — it's raining loving drops from the sky!"},
+    {es:"Hace viento",       en:"It's windy",        emoji:"💨", hook:"bee-en-to — windy like a vent blowing hard!"},
+    {es:"Está nublado",      en:"It's cloudy",       emoji:"☁️", hook:"noo-blah-do — cloudy and totally blah-do gray!"},
+    {es:"¿Cómo está el clima?",en:"What's the weather like?",emoji:"🌡️", hook:"klee-mah — the climate clime changes fast in Cuenca!"},
+    {es:"Va a llover",       en:"It's going to rain",emoji:"⛈️", hook:"yo-bair — it's going to rain like a lover of water!"},
+    {es:"Hace buen tiempo",  en:"The weather is nice",emoji:"🌈", hook:"tee-em-po — nice weather tempo — what a GOOD time!"},
+    {es:"El sol",            en:"The sun",           emoji:"☀️", hook:"sole — the sun is your sole friend on cold days!"},
+    {es:"La lluvia",         en:"The rain",          emoji:"🌧️", hook:"yoo-bee-ah — the rain goes yoobia yoobia down!"},
+    {es:"La neblina",        en:"The fog",           emoji:"🌫️", hook:"neh-blee-nah — fog like a nebula floating down!"},
+    {es:"Qué fresco",        en:"How pleasant",      emoji:"😌", hook:"fres-co — how fresh and pleasant — fresco cool!"},
   ]},
 };
 
+
+// ══ LEVEL 3 VOCAB (Advanced Intermediate) ════════════════════════════════════
+const VOCAB_L3 = {
+  opinions: { icon:"💬", label:"Opinions & Ideas", color:"#BE185D", words:[
+    {es:"Creo que",en:"I think that",emoji:"💭",hook:"kreh-oh — I create my own thoughts — creo que!"},
+    {es:"En mi opinión",en:"In my opinion",emoji:"🗣️",hook:"oh-pee-nyon — your opinion is your own onion — unique and layered!"},
+    {es:"Estoy de acuerdo",en:"I agree",emoji:"👍",hook:"ah-kwair-do — I agree to meet at the square-do!"},
+    {es:"No estoy de acuerdo",en:"I disagree",emoji:"👎",hook:"No agreement — the square is the wrong shape!"},
+    {es:"Depende",en:"It depends",emoji:"🤷",hook:"deh-pen-day — it depends on which pen-day you pick!"},
+    {es:"Me parece bien",en:"It seems fine to me",emoji:"✅",hook:"pah-reh-seh — it appears and seems just right to me!"},
+    {es:"No me gusta",en:"I don't like it",emoji:"😕",hook:"No goose-ta — the goose did NOT like that at all!"},
+    {es:"Me encanta",en:"I love it",emoji:"😍",hook:"en-kan-ta — it enchants me — en-chant-a!"},
+    {es:"Es interesante",en:"It's interesting",emoji:"🤔",hook:"in-teh-reh-san-tay — it's INTERESTING like a saint dancing!"},
+    {es:"Tiene razón",en:"You are right",emoji:"🎯",hook:"rah-sohn — you have reason — rah-sohn is right!"},
+    {es:"No tiene razón",en:"You are wrong",emoji:"❌",hook:"No reason — no rah-sohn for that!"},
+    {es:"Quizás",en:"Maybe",emoji:"🤷",hook:"kee-sas — maybe a kiss-as will help!"},
+    {es:"Desde luego",en:"Of course",emoji:"💯",hook:"des-day lweh-go — of course from THERE to HERE!"},
+    {es:"Sin embargo",en:"However",emoji:"↔️",hook:"em-bar-go — however the embargo stopped it!"},
+  ]},
+  travel: { icon:"✈️", label:"Travel", color:"#0F766E", words:[
+    {es:"El aeropuerto",en:"The airport",emoji:"✈️",hook:"ah-roh-pwair-to — the air-o-port opens to the sky!"},
+    {es:"El vuelo",en:"The flight",emoji:"🛫",hook:"bweh-lo — the flight goes whoa up into the sky!"},
+    {es:"El pasaporte",en:"The passport",emoji:"📕",hook:"pah-sah-por-tay — your pass-a-port-ay gets you through the port!"},
+    {es:"La maleta",en:"The suitcase",emoji:"🧳",hook:"mah-leh-ta — your suitcase holds your maleta of memories!"},
+    {es:"El equipaje",en:"The luggage",emoji:"🧳",hook:"eh-kee-pah-hey — EQUIPMENT for your journey — eh-kee-pah!"},
+    {es:"La reservación",en:"The reservation",emoji:"📋",hook:"reh-sair-bah-syon — reserve your spot at the station!"},
+    {es:"El hotel",en:"The hotel",emoji:"🏨",hook:"oh-tel — hotel sounds the same — oh-tel!"},
+    {es:"La habitación",en:"The room",emoji:"🛏️",hook:"ah-bee-tah-syon — HABITATION — your living space!"},
+    {es:"¿A qué hora sale?",en:"What time does it leave?",emoji:"🕐",hook:"sah-leh — what hour does it sail away?"},
+    {es:"¿Dónde está la salida?",en:"Where is the exit?",emoji:"🚪",hook:"sah-lee-da — the exit sails you out the door!"},
+    {es:"Perdí mi equipaje",en:"I lost my luggage",emoji:"😱",hook:"pair-dee — I'm in a PAIR of trouble — lost it!"},
+    {es:"Quiero cambiar dinero",en:"I want to exchange money",emoji:"💱",hook:"kahm-bee-ar — change money at the cambio!"},
+  ]},
+  health: { icon:"🏥", label:"Health & Emergency", color:"#DC2626", words:[
+    {es:"Llame a la policía",en:"Call the police",emoji:"🚔",hook:"YAH-meh — call the llama police — YAH-meh!"},
+    {es:"Necesito ayuda",en:"I need help",emoji:"🆘",hook:"ah-yoo-da — I need aid — ayu-da!"},
+    {es:"¿Dónde está el hospital?",en:"Where is the hospital?",emoji:"🏥",hook:"ohs-pee-tal — the hospital is the os-pee-tal!"},
+    {es:"Tengo una alergia",en:"I have an allergy",emoji:"🤧",hook:"ah-lair-hee-ah — allergy — ah-lair in the air!"},
+    {es:"Soy diabético",en:"I am diabetic",emoji:"💉",hook:"dee-ah-beh-tee-co — DIAbetic — dia-beh!"},
+    {es:"Necesito mis medicamentos",en:"I need my medication",emoji:"💊",hook:"meh-dee-kah-men-tos — MEDICATION MENtos!"},
+    {es:"Me robaron",en:"I was robbed",emoji:"🚨",hook:"roh-bah-ron — rob-aron — they robbed me!"},
+    {es:"Estoy perdido",en:"I am lost",emoji:"😟",hook:"pair-dee-do — lost in a PAIR of streets!"},
+    {es:"¿Puede llamar a alguien?",en:"Can you call someone?",emoji:"📞",hook:"YAH-mar — can you call someone — llama them!"},
+    {es:"No me siento bien",en:"I don't feel well",emoji:"🤒",hook:"see-en-to — I don't sense wellness — no see-en-to!"},
+    {es:"¿Tiene un seguro médico?",en:"Do you have insurance?",emoji:"📋",hook:"seh-goo-ro — secure medical coverage — seh-guro!"},
+    {es:"Necesito descansar",en:"I need to rest",emoji:"😴",hook:"des-kan-sar — I need to descend into rest — des-kan!"},
+  ]},
+  socialLife: { icon:"🎉", label:"Social & Daily Life", color:"#7C3AED", words:[
+    {es:"¿Qué haces en tu tiempo libre?",en:"What do you do in your free time?",emoji:"🕐",hook:"tee-em-po lee-breh — tempo libre — free time music!"},
+    {es:"Me gusta leer",en:"I like to read",emoji:"📚",hook:"leh-air — I like to READ the air — leh-air!"},
+    {es:"Salgo con amigos",en:"I go out with friends",emoji:"🎉",hook:"sal-go — I sally forth with friends — sal-go!"},
+    {es:"Trabajo desde casa",en:"I work from home",emoji:"🏠",hook:"kasa — I work from my casa — home sweet home!"},
+    {es:"¿Tienes planes?",en:"Do you have plans?",emoji:"📅",hook:"plah-nes — planes of plans ahead!"},
+    {es:"¡Qué pena!",en:"What a shame!",emoji:"😞",hook:"peh-nah — what a pain — peh-nah!"},
+    {es:"¡Qué suerte!",en:"What luck!",emoji:"🍀",hook:"swair-teh — sweet luck — swair-teh!"},
+    {es:"¿Cómo fue?",en:"How did it go?",emoji:"❓",hook:"fweh — HOW did it FLY by — fweh!"},
+    {es:"Fue genial",en:"It was great",emoji:"🌟",hook:"heh-nee-al — it was genial — GENIus-al!"},
+    {es:"La próxima vez",en:"Next time",emoji:"⏭️",hook:"prohk-see-mah — PROXIMATE time — next and near!"},
+    {es:"A veces",en:"Sometimes",emoji:"🔄",hook:"AH beh-ses — AH sometimes the bases change!"},
+    {es:"Siempre",en:"Always",emoji:"♾️",hook:"see-em-preh — sempre — always in music means always!"},
+  ]},
+  technology: { icon:"📱", label:"Technology", color:"#1D4ED8", words:[
+    {es:"El teléfono",en:"The phone",emoji:"📱",hook:"teh-leh-foh-no — TELEPHONE — tele-fono!"},
+    {es:"La contraseña",en:"The password",emoji:"🔑",hook:"kon-tra-seh-nya — contra the entrance — kon-tra-SEÑ!"},
+    {es:"¿Tiene WiFi?",en:"Do you have WiFi?",emoji:"📶",hook:"wee-fee — WiFi sounds the same worldwide!"},
+    {es:"¿Cuál es la clave?",en:"What is the code/key?",emoji:"🔐",hook:"kla-beh — the clave is the key — kla-beh!"},
+    {es:"La aplicación",en:"The app",emoji:"📲",hook:"ah-plee-kah-syon — APPLICATION — ah-plee-kay!"},
+    {es:"Buscar en internet",en:"Search the internet",emoji:"🔍",hook:"boos-kar — boost your search on the internet!"},
+    {es:"Mandar un mensaje",en:"Send a message",emoji:"💬",hook:"men-sah-heh — manage to send your message!"},
+    {es:"La batería está baja",en:"The battery is low",emoji:"🔋",hook:"bah-teh-ree-ah bah-ha — battery going low-ha!"},
+    {es:"¿Puedo cargar mi teléfono?",en:"Can I charge my phone?",emoji:"🔌",hook:"kar-gar — can I charge — cargo my phone up!"},
+    {es:"Tomar una foto",en:"Take a photo",emoji:"📸",hook:"foh-to — foto — photo sounds almost the same!"},
+  ]},
+};
+
+// ══ CORE 1000 — Most Common Spanish Words ════════════════════════════════════
+// Organized in sets of 25, prioritized by frequency of use in conversation
+const CORE_SETS = [
+  {
+    setNum:1, title:"Top 25 Essential Words", color:"#DC2626",
+    words:[
+      {es:"El / La",en:"The",emoji:"📌",hook:"el/la — THE most used word — just el or la!"},
+      {es:"De",en:"Of / From",emoji:"📍",hook:"deh — de-liver from — coming FROM somewhere!"},
+      {es:"Y",en:"And",emoji:"➕",hook:"ee — E-asy AND simple — just say ee!"},
+      {es:"En",en:"In / On",emoji:"📦",hook:"en — in the box — like English 'in'!"},
+      {es:"Un / Una",en:"A / An",emoji:"1️⃣",hook:"oon/oo-na — A single ONE thing — oon!"},
+      {es:"Que",en:"That / What",emoji:"❓",hook:"keh — THAT's what — keh said that?"},
+      {es:"Se",en:"Oneself / Each other",emoji:"🔄",hook:"seh — self — like reFLEXive self!"},
+      {es:"No",en:"No / Not",emoji:"🚫",hook:"no — NO needs no hook — it's the same!"},
+      {es:"Con",en:"With",emoji:"🤝",hook:"kon — con-nect WITH someone — kon!"},
+      {es:"Por",en:"For / By / Through",emoji:"🛣️",hook:"por — por-tal through which things pass!"},
+      {es:"Su",en:"His / Her / Their",emoji:"👤",hook:"soo — su-e owns everything — soo!"},
+      {es:"Para",en:"For / In order to",emoji:"🎯",hook:"pah-ra — PARAllel FOR a purpose!"},
+      {es:"Como",en:"Like / As / How",emoji:"🔍",hook:"koh-mo — como — HOW like a comma pausing!"},
+      {es:"Más",en:"More",emoji:"➕",hook:"mas — MORE mMAS — just like mas in music!"},
+      {es:"Pero",en:"But",emoji:"↔️",hook:"peh-ro — BUT a pear-oh stops the sentence!"},
+      {es:"Si",en:"If",emoji:"🤔",hook:"see — if you SEE it — see!"},
+      {es:"Ya",en:"Already / Now",emoji:"⚡",hook:"yah — YAH already done — YAH!"},
+      {es:"Todo",en:"All / Everything",emoji:"🌐",hook:"toh-do — TODO list has EVERYTHING!"},
+      {es:"Le",en:"To him / To her",emoji:"👆",hook:"leh — le-t him have it — leh!"},
+      {es:"Bien",en:"Well / Good",emoji:"✅",hook:"bee-en — BEAN good — feeling bee-en!"},
+      {es:"Cuando",en:"When",emoji:"🕐",hook:"kwan-do — WHEN is it quando?"},
+      {es:"Muy",en:"Very",emoji:"‼️",hook:"moo-ee — VERY moo-ee like a cow yelling VERY loud!"},
+      {es:"Sin",en:"Without",emoji:"🚫",hook:"seen — sin — without good it's a sin!"},
+      {es:"Sobre",en:"About / On top of",emoji:"📋",hook:"soh-breh — SOBER thoughts ABOUT things!"},
+      {es:"Hay",en:"There is / There are",emoji:"🗺️",hook:"eye — THERE is — AYE there's something there!"},
+    ]
+  },
+  {
+    setNum:2, title:"Words 26–50: Actions & States", color:"#D97706",
+    words:[
+      {es:"Ser",en:"To be (permanent)",emoji:"♾️",hook:"sair — to be forever — sair always!"},
+      {es:"Estar",en:"To be (temporary)",emoji:"⏳",hook:"es-tar — star position — where you're standing now!"},
+      {es:"Tener",en:"To have",emoji:"✋",hook:"teh-nair — tennis player has a racket — TEN-er!"},
+      {es:"Hacer",en:"To do / To make",emoji:"🔨",hook:"ah-sair — to DO — a sayer does things!"},
+      {es:"Ir",en:"To go",emoji:"🚶",hook:"eer — GO —eer away!"},
+      {es:"Ver",en:"To see",emoji:"👁️",hook:"bair — to SEE — BEAR sees you!"},
+      {es:"Dar",en:"To give",emoji:"🎁",hook:"dar — DARE to GIVE — dar!"},
+      {es:"Saber",en:"To know (facts)",emoji:"🧠",hook:"sah-bair — savvy — to KNOW the facts!"},
+      {es:"Querer",en:"To want / To love",emoji:"❤️",hook:"keh-rair — to CARE and WANT — keh-rair!"},
+      {es:"Llegar",en:"To arrive",emoji:"🏁",hook:"yeh-gar — yeah I arrived — yeh-gar!"},
+      {es:"Pasar",en:"To pass / To happen",emoji:"➡️",hook:"pah-sar — to pass — pah-pass!"},
+      {es:"Deber",en:"Should / Must",emoji:"⚠️",hook:"deh-bair — debt — you should pay your debts!"},
+      {es:"Poner",en:"To put / To place",emoji:"📌",hook:"poh-nair — to PUT — poner places things!"},
+      {es:"Venir",en:"To come",emoji:"👋",hook:"beh-neer — COME here veneer!"},
+      {es:"Seguir",en:"To follow / To continue",emoji:"▶️",hook:"seh-geer — seguir — seek and follow!"},
+      {es:"Encontrar",en:"To find / To meet",emoji:"🔍",hook:"en-kon-trar — ENCOUNTER — to find and meet!"},
+      {es:"Llamar",en:"To call",emoji:"📞",hook:"yah-mar — call the llama — yah-mar!"},
+      {es:"Creer",en:"To believe",emoji:"🙏",hook:"kreh-air — to believe — create belief!"},
+      {es:"Hablar",en:"To speak",emoji:"🗣️",hook:"ah-blar — able to speak — ah-blar!"},
+      {es:"Llevar",en:"To carry / To take",emoji:"🎒",hook:"yeh-bar — carry the lever — yeh-bar!"},
+      {es:"Dejar",en:"To leave / To let",emoji:"🚪",hook:"deh-har — depart and leave — deh-har!"},
+      {es:"Sentir",en:"To feel",emoji:"💓",hook:"sen-teer — sentient feeling — sen-teer!"},
+      {es:"Vivir",en:"To live",emoji:"🌱",hook:"bee-beer — to LIVE and drink beer of life — vee-veer!"},
+      {es:"Pensar",en:"To think",emoji:"💭",hook:"pen-sar — pensive thinker — pen-sar!"},
+      {es:"Salir",en:"To leave / To go out",emoji:"🚶",hook:"sah-leer — sally out — sal-leer!"},
+    ]
+  },
+  {
+    setNum:3, title:"Words 51–75: People & Places", color:"#059669",
+    words:[
+      {es:"La persona",en:"The person",emoji:"👤",hook:"pair-soh-na — persona — your personal self!"},
+      {es:"El hombre",en:"The man",emoji:"👨",hook:"ohm-breh — the MAN is sombre — ohm-breh!"},
+      {es:"La mujer",en:"The woman",emoji:"👩",hook:"moo-hair — the woman has the hair — moo-hair!"},
+      {es:"El niño",en:"The boy",emoji:"👦",hook:"nee-nyo — the BOY is ninja — nee-nyo!"},
+      {es:"La niña",en:"The girl",emoji:"👧",hook:"nee-nya — the girl is a ninja too — nee-nya!"},
+      {es:"La ciudad",en:"The city",emoji:"🏙️",hook:"see-oo-dad — dad lives in the city — see-oo-dad!"},
+      {es:"El país",en:"The country",emoji:"🗺️",hook:"pah-ees — the country is a peace of land!"},
+      {es:"La casa",en:"The house",emoji:"🏠",hook:"kah-sah — casa — house is casa!"},
+      {es:"El trabajo",en:"The work / Job",emoji:"💼",hook:"trah-bah-ho — trouble at WORK — trah-bah!"},
+      {es:"El tiempo",en:"Time / Weather",emoji:"⏰",hook:"tee-em-po — tempo of time and weather!"},
+      {es:"El año",en:"The year",emoji:"📅",hook:"AH-nyo — annual year — AH-nyo!"},
+      {es:"El día",en:"The day",emoji:"🌞",hook:"dee-ah — the DAY — dee-lightful day!"},
+      {es:"La vida",en:"Life",emoji:"🌱",hook:"bee-da — vita — vida is life!"},
+      {es:"El mundo",en:"The world",emoji:"🌍",hook:"moon-do — the world has a moon-do!"},
+      {es:"La mano",en:"The hand",emoji:"✋",hook:"mah-no — MAN-o hand — MAN of hands!"},
+      {es:"El lugar",en:"The place",emoji:"📍",hook:"loo-gar — the PLACE — lure to a gar-den!"},
+      {es:"La vez",en:"The time (occasion)",emoji:"🔁",hook:"behs — once upon a vez — time!"},
+      {es:"La parte",en:"The part",emoji:"🧩",hook:"par-teh — PART of the party!"},
+      {es:"El lado",en:"The side",emoji:"↔️",hook:"lah-do — the SIDE — laid-o on one side!"},
+      {es:"El punto",en:"The point",emoji:"🎯",hook:"poon-to — point — point-o right there!"},
+      {es:"El tipo",en:"The type / Guy",emoji:"👤",hook:"tee-po — type of person — tee-po!"},
+      {es:"La manera",en:"The way / Manner",emoji:"🛣️",hook:"mah-neh-rah — manner of the WAY!"},
+      {es:"La forma",en:"The form / Way",emoji:"📝",hook:"FOR-mah — form — FOR-ma!"},
+      {es:"El nombre",en:"The name",emoji:"🏷️",hook:"nohm-breh — nombre — the name!"},
+      {es:"El caso",en:"The case",emoji:"🗂️",hook:"kah-so — the case — kah-so!"},
+    ]
+  },
+  {
+    setNum:4, title:"Words 76–100: Connectors & Expressions", color:"#7C3AED",
+    words:[
+      {es:"También",en:"Also / Too",emoji:"➕",hook:"tahm-bee-en — TAMBOURINE also makes music!"},
+      {es:"Sólo",en:"Only / Just",emoji:"1️⃣",hook:"soh-lo — SOLO — ONLY one person!"},
+      {es:"Así",en:"Like this / So",emoji:"👆",hook:"ah-SEE — so — AH-SEE like this!"},
+      {es:"Ahí",en:"There",emoji:"📍",hook:"ah-ee — AH-ee there it is!"},
+      {es:"Aquí",en:"Here",emoji:"📍",hook:"ah-kee — ah-key is HERE!"},
+      {es:"Allí",en:"Over there",emoji:"👉",hook:"ah-yee — ah-yee over THERE!"},
+      {es:"Después",en:"After / Later",emoji:"⏭️",hook:"des-pwes — AFTER — des-pass the time!"},
+      {es:"Antes",en:"Before",emoji:"⏮️",hook:"ahn-tes — ante — before the ante!"},
+      {es:"Ahora",en:"Now",emoji:"⚡",hook:"ah-OH-rah — NOW — ah-OH-ra right now!"},
+      {es:"Siempre",en:"Always",emoji:"♾️",hook:"see-em-preh — sempre — always in music!"},
+      {es:"Nunca",en:"Never",emoji:"🚫",hook:"noon-kah — NEVER at noon-kah!"},
+      {es:"Poco",en:"A little / Few",emoji:"🤏",hook:"poh-ko — POCO — a little POCO!"},
+      {es:"Mucho",en:"A lot / Much",emoji:"📦",hook:"moo-cho — MUCH moo from the cow!"},
+      {es:"Muy",en:"Very",emoji:"‼️",hook:"moo-ee — VERY moo — very loud cow!"},
+      {es:"Tanto",en:"So much / As much",emoji:"⚖️",hook:"tan-to — tan-much in the tan skin!"},
+      {es:"Mismo",en:"Same / Itself",emoji:"🪞",hook:"mees-mo — SAME mirror — mees-mo!"},
+      {es:"Cada",en:"Each / Every",emoji:"🔢",hook:"kah-da — EACH cada-et learns every day!"},
+      {es:"Entre",en:"Between / Among",emoji:"↔️",hook:"en-treh — entre-ance between two doors!"},
+      {es:"Dentro",en:"Inside",emoji:"📦",hook:"den-tro — inside the den-tro!"},
+      {es:"Fuera",en:"Outside",emoji:"🌳",hook:"fwair-ah — outside — it's fair outside!"},
+      {es:"Contra",en:"Against",emoji:"⚔️",hook:"kon-trah — contra — against the enemy!"},
+      {es:"Hacia",en:"Toward",emoji:"➡️",hook:"AH-see-ah — toward — AH-see the direction!"},
+      {es:"Desde",en:"Since / From",emoji:"📅",hook:"des-deh — since — from THAT des-k!"},
+      {es:"Hasta",en:"Until / Up to",emoji:"🏁",hook:"ahs-tah — hasta la vista — UNTIL we meet!"},
+      {es:"Durante",en:"During",emoji:"⏱️",hook:"doo-ran-teh — during the DURAtion!"},
+    ]
+  },
+];
+
+const CORE_ALL_WORDS = CORE_SETS.flatMap(s => s.words);
+
 const ALL_WORDS_L1 = Object.values(VOCAB_L1).flatMap(c => c.words);
 const ALL_WORDS_L2 = Object.values(VOCAB_L2).flatMap(c => c.words);
-const ALL_WORDS    = [...ALL_WORDS_L1, ...ALL_WORDS_L2];
+const ALL_WORDS_L3 = Object.values(VOCAB_L3).flatMap(c => c.words);
+const ALL_WORDS    = [...ALL_WORDS_L1, ...ALL_WORDS_L2, ...ALL_WORDS_L3, ...CORE_ALL_WORDS];
 
 // ══ STORY MODE DATA — set in Cuenca, full audio on every line ════════════════
 const STORIES = [
@@ -391,6 +594,52 @@ const AVATARS = ["🦁","🦜","🐬","🦋","🌺","🐢","🦅","🐆","⭐","
 const PCOLORS = ["#E8445A","#10B981","#8B5CF6","#F59E0B","#3B82F6","#EC4899","#DC6B19","#06B6D4"];
 const DS = { fontFamily:"'Nunito', sans-serif", fontWeight:900 };
 
+
+// ══ LEVEL PROGRESSION SYSTEM ═════════════════════════════════════════════════
+// Stars earned per category (0-3) based on quiz performance
+// 0 = untouched, 1 = tried, 2 = good (70%+), 3 = mastered (90%+)
+const LEVEL_REQUIREMENTS = {
+  2: { catsNeeded: 5, minStars: 2, label: "Complete 5 Beginner categories at 2+ stars" },
+  3: { catsNeeded: 4, minStars: 2, label: "Complete 4 Intermediate categories at 2+ stars" },
+  core: { catsNeeded: 3, minStars: 2, label: "Complete 3 categories at any level" },
+};
+
+const getCatProgress = (profile, catKey, catLevel) => {
+  const key = `progress_${catLevel}_${catKey}`;
+  return (profile.catProgress || {})[key] || 0; // 0-3 stars
+};
+
+const setCatProgress = (profile, catKey, catLevel, stars) => {
+  const key = `progress_${catLevel}_${catKey}`;
+  const existing = (profile.catProgress || {})[key] || 0;
+  if (stars <= existing) return profile.catProgress || {}; // never downgrade
+  return { ...(profile.catProgress || {}), [key]: stars };
+};
+
+const canUnlockLevel = (profile, targetLevel) => {
+  if (targetLevel <= 1) return true;
+  if ((profile.level || 1) >= targetLevel) return true;
+  const req = LEVEL_REQUIREMENTS[targetLevel];
+  if (!req) return false;
+  const sourceLevel = targetLevel - 1;
+  const sourceVocab = sourceLevel === 1 ? VOCAB_L1 : VOCAB_L2;
+  const catKeys = Object.keys(sourceVocab);
+  const qualifyingCats = catKeys.filter(k =>
+    getCatProgress(profile, k, sourceLevel) >= req.minStars
+  );
+  return qualifyingCats.length >= req.catsNeeded;
+};
+
+const getLevelProgress = (profile, forLevel) => {
+  const req = LEVEL_REQUIREMENTS[forLevel];
+  if (!req) return { current: 0, needed: 0 };
+  const sourceLevel = forLevel - 1;
+  const sourceVocab = sourceLevel === 1 ? VOCAB_L1 : VOCAB_L2;
+  const catKeys = Object.keys(sourceVocab);
+  const qualifying = catKeys.filter(k => getCatProgress(profile, k, sourceLevel) >= req.minStars);
+  return { current: qualifying.length, needed: req.catsNeeded };
+};
+
 const BADGE_DEF = {
   first_star: {icon:"🌟",name:"First Star",    desc:"Earned your first star!"},
   stars_50:   {icon:"⭐",name:"Star Collector",desc:"50 stars earned!"},
@@ -456,6 +705,7 @@ const loadProfiles = async () => {
     matchWins: r.match_wins || 0, dailyDone: r.daily_done || 0,
     dailyScores: r.daily_scores || {}, storiesRead: r.stories_read || 0,
     level: r.level || 1,
+    catProgress: r.cat_progress || {},
   }));
 };
 
@@ -471,7 +721,7 @@ const saveProfile = async (profile) => {
     speak_attempts: profile.speakAttempts, cats_played: profile.catsPlayed,
     match_wins: profile.matchWins, daily_done: profile.dailyDone,
     daily_scores: profile.dailyScores, stories_read: profile.storiesRead,
-    level: profile.level, updated_at: new Date().toISOString()
+    level: profile.level, cat_progress: profile.catProgress||{}, updated_at: new Date().toISOString()
   });
 };
 
@@ -493,7 +743,7 @@ const createProfile = (name, avatar, color) => ({
   stars: 0, streak: 0, longestStreak: 0, lastDate: null,
   badges: [], quizCorrect: 0, speakAttempts: 0,
   catsPlayed: [], matchWins: 0, dailyDone: 0, dailyScores: {},
-  storiesRead: 0, level: 1,
+  storiesRead: 0, level: 1, catProgress: {},
 });
 
 // ══ SPEECH ════════════════════════════════════════════════════════════════════
@@ -522,6 +772,24 @@ const speakEn = (text,onEnd) => {
   if(onEnd)u.onend=onEnd;
   window.speechSynthesis.speak(u);
 };
+const speakEnSlow = (text,onEnd) => {
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="en-US"; u.rate=0.68; u.pitch=1.0;
+  if(enVoice)u.voice=enVoice;
+  if(onEnd)u.onend=onEnd;
+  window.speechSynthesis.speak(u);
+};
+const speakEsFast = (text,onEnd) => {
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.lang="es-MX"; u.rate=1.18; u.pitch=1.0;
+  if(esVoice)u.voice=esVoice;
+  if(onEnd)u.onend=onEnd;
+  window.speechSynthesis.speak(u);
+};
 
 // ══ DAILY ═════════════════════════════════════════════════════════════════════
 const getDailyWords = (level) => {
@@ -541,10 +809,17 @@ const getDailyWords = (level) => {
 const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[¿¡.,!?]/g,"").trim();
 const scoreMatch=(heard,target)=>{
   const h=normText(heard),t=normText(target);
-  if(!h)return 0;if(h===t)return 100;
+  if(!h)return 0;
+  if(h===t)return 100;
   const tw=t.split(" "),hw=h.split(" ");
-  const hits=tw.filter(tw=>hw.some(hw=>hw===tw||(tw.length>3&&(hw.includes(tw)||tw.includes(hw)))));
-  return Math.min(99,Math.round((hits.length/tw.length)*100));
+  // Strict: exact word matches only
+  const exactHits=tw.filter(tw=>hw.some(hw=>hw===tw));
+  const exactPct=Math.round((exactHits.length/tw.length)*100);
+  // Loose: allow substring for longer words
+  const looseHits=tw.filter(tw=>hw.some(hw=>hw===tw||(tw.length>4&&(hw.includes(tw)||tw.includes(hw)))));
+  const loosePct=Math.round((looseHits.length/tw.length)*100);
+  // Weight toward strict scoring — harder threshold
+  return Math.min(97,Math.round((exactPct*0.72)+(loosePct*0.28)));
 };
 const SRClass=typeof window!=="undefined"?(window.SpeechRecognition||window.webkitSpeechRecognition):null;
 const BG="linear-gradient(160deg,#0f172a 0%,#1e3a5f 50%,#0d4f3c 100%)";
@@ -646,7 +921,7 @@ function FlashcardMode({words,color,onEarn}){
           </button>
           {showHook&&(
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,paddingTop:10,borderTop:`1px solid ${color}20`}}>
-              <button onClick={e=>{e.stopPropagation();speakEn(word.hook);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
+              <button onClick={e=>{e.stopPropagation();speakEnSlow(word.hook);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
                 <span style={{fontSize:16}}>🔊</span><span>Hear the hook!</span>
               </button>
               <span style={{fontSize:12,color:"#6B7280"}}>Tap to listen!</span>
@@ -680,30 +955,96 @@ function FlashcardMode({words,color,onEarn}){
 }
 
 // ══ QUIZ ══════════════════════════════════════════════════════════════════════
-function QuizMode({words,color,onEarn,onStat,allWords}){
-  const queue=useRef(shuffle(words));
-  const[idx,setIdx]=useState(0);
-  const[opts,setOpts]=useState([]);
-  const[selected,setSelected]=useState(null);
-  const[score,setScore]=useState(0);
-  const[total,setTotal]=useState(0);
-  const word=queue.current[idx%queue.current.length];
+function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
+  const [phase,setPhase]=useState("quiz"); // quiz | retry | done
+  const [queue,setQueue]=useState(()=>shuffle(words));
+  const [missed,setMissed]=useState([]);
+  const [idx,setIdx]=useState(0);
+  const [opts,setOpts]=useState([]);
+  const [selected,setSelected]=useState(null);
+  const [score,setScore]=useState(0);
+  const [total,setTotal]=useState(0);
+
+  const currentQueue = phase==="retry" ? missed : queue;
+  const word = currentQueue[idx];
+  const isFinished = !word;
 
   useEffect(()=>{
     if(!word)return;
     const wrong=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
     setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
-  },[idx]);
+  },[idx,phase]);
 
   const pick=opt=>{
-    if(selected)return;setSelected(opt);setTotal(t=>t+1);
-    if(opt.en===word.en){setScore(s=>s+1);onEarn(2);onStat("quiz");}
+    if(selected||!word)return;
+    setSelected(opt);setTotal(t=>t+1);
+    const correct=opt.en===word.en;
+    if(correct){setScore(s=>s+1);onEarn(2);onStat("quiz");}
+    else{setMissed(m=>[...m,word]);}
     setTimeout(()=>setIdx(i=>i+1),1400);
   };
 
+  const restart=()=>{
+    setPhase("quiz");setQueue(shuffle(words));setMissed([]);
+    setIdx(0);setScore(0);setTotal(0);setSelected(null);
+  };
+
+  // End of first pass
+  if(isFinished && phase==="quiz"){
+    const missedCount=missed.length;
+    const pct=total>0?score/total:0;
+    const earnedStars=pct>=0.9?3:pct>=0.7?2:pct>0?1:0;
+    // Report progress for level unlocking
+    if(onProgress)onProgress(earnedStars);
+    if(missedCount===0){
+      return(
+        <div style={{textAlign:"center",padding:"32px 16px"}}>
+          <div style={{fontSize:72}}>🏆</div>
+          <div style={{fontSize:26,color,marginTop:8,...DS}}>¡Perfecto! All correct!</div>
+          <div style={{display:"flex",justifyContent:"center",gap:4,margin:"8px 0"}}>{[1,2,3].map(i=><span key={i} style={{fontSize:28,opacity:earnedStars>=i?1:.2}}>⭐</span>)}</div>
+          <div style={{fontSize:15,color:"#6B7280",marginTop:4}}>{score} / {total} — flawless round!</div>
+          <ActionBtn onClick={restart} bg={color} style={{marginTop:20,width:"100%",padding:14,fontSize:16}}>Play Again 🔄</ActionBtn>
+        </div>
+      );
+    }
+    return(
+      <div style={{textAlign:"center",padding:"32px 16px"}}>
+        <div style={{fontSize:64}}>{pct>=0.9?"🌟":pct>=0.7?"👍":"💪"}</div>
+        <div style={{fontSize:24,color,...DS,marginTop:8}}>Round Complete!</div>
+        <div style={{display:"flex",justifyContent:"center",gap:4,margin:"6px 0"}}>{[1,2,3].map(i=><span key={i} style={{fontSize:24,opacity:earnedStars>=i?1:.2}}>⭐</span>)}</div>
+        <div style={{fontSize:32,fontWeight:900,color:"#FCD34D",margin:"4px 0"}}>{score}/{total}</div>
+        {missedCount>0&&<div style={{fontSize:14,color:"#6B7280",marginBottom:16}}>You missed {missedCount} word{missedCount>1?"s":""}. Practice them below!</div>}
+        <div style={{display:"flex",gap:10,flexDirection:"column"}}>
+          {missedCount>0&&<ActionBtn onClick={()=>{setPhase("retry");setIdx(0);setSelected(null);}} bg="#F59E0B" style={{width:"100%",padding:14,fontSize:15}}>Practice Missed Words 🔁</ActionBtn>}
+          <ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:14,fontSize:15}}>Start Over 🔄</ActionBtn>
+        </div>
+      </div>
+    );
+  }
+
+  // End of retry pass
+  if(isFinished && phase==="retry"){
+    return(
+      <div style={{textAlign:"center",padding:"32px 16px"}}>
+        <div style={{fontSize:72}}>🎉</div>
+        <div style={{fontSize:24,color,...DS,marginTop:8}}>Retry Complete!</div>
+        <div style={{fontSize:15,color:"#6B7280",margin:"8px 0 20px"}}>Great work practicing the tricky ones!</div>
+        <ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:14,fontSize:16}}>Start Fresh 🔄</ActionBtn>
+      </div>
+    );
+  }
+
+  if(!word)return null;
+
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>✅ {score} right &nbsp;•&nbsp; {total} answered</div>
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
+        {phase==="retry"?"🔁 Retry — ":""}
+        {idx+1} / {currentQueue.length} &nbsp;•&nbsp; ✅ {score} right
+      </div>
+      <div style={{width:"100%",height:6,background:"#F3F4F6",borderRadius:99}}>
+        <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/currentQueue.length)*100}%`,transition:"width .4s"}}/>
+      </div>
       <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
         <div style={{fontSize:72}}>{word.emoji}</div>
         <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
@@ -757,10 +1098,18 @@ function MatchMode({words,color,onEarn,onStat}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,width:"100%"}}>
         {cards.map(card=>{
           const isSel=sel.some(s=>s.id===card.id),isM=matched.has(card.id),isW=wrong.has(card.id);
+          const cardBg=isM?`${color}15`:isW?"#FEE2E2":isSel?`${color}28`:"white";
+          const cardBorder=isM?color:isW?"#EF4444":isSel?color:"#E5E7EB";
           return(
-            <button key={card.id} onClick={()=>tap(card)} style={{padding:"14px 10px",borderRadius:16,minHeight:80,background:isM?`${color}15`:isW?"#FEE2E2":isSel?`${color}28`:"white",border:`2.5px solid ${isM?color:isW?"#EF4444":isSel?color:"#E5E7EB"}`,fontSize:13,fontWeight:700,cursor:isM?"default":"pointer",transition:"all .18s",color:isM?"#9CA3AF":"#1F2937",textAlign:"center",fontFamily:"inherit",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
-              {card.lang==="es"?<React.Fragment><div style={{fontSize:26}}>{card.emoji}</div><div style={{fontSize:14,...DS}}>{card.text}</div></React.Fragment>:<div style={{fontSize:14,lineHeight:1.3}}>{card.text}</div>}
-            </button>
+            <div key={card.id} style={{position:"relative",borderRadius:16,background:cardBg,border:`2.5px solid ${cardBorder}`,transition:"all .18s",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
+              <button onClick={()=>tap(card)} style={{width:"100%",minHeight:80,padding:"10px 10px 28px",background:"none",border:"none",cursor:isM?"default":"pointer",textAlign:"center",fontFamily:"inherit",color:isM?"#9CA3AF":"#1F2937"}}>
+                {card.lang==="es"?<React.Fragment><div style={{fontSize:26}}>{card.emoji}</div><div style={{fontSize:14,fontWeight:700,...DS}}>{card.text}</div></React.Fragment>:<div style={{fontSize:13,fontWeight:700,lineHeight:1.3}}>{card.text}</div>}
+              </button>
+              {/* Permanent listen button on every card */}
+              <button onClick={e=>{e.stopPropagation();if(card.lang==="es")speakEs(card.text);else speakEn(card.text);}} style={{position:"absolute",bottom:4,right:4,width:24,height:24,borderRadius:"50%",background:`${color}20`,border:`1.5px solid ${color}60`,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:isM?.4:1}}>
+                🔈
+              </button>
+            </div>
           );
         })}
       </div>
@@ -1064,7 +1413,118 @@ function FamilySetupScreen({ onDone }) {
   );
 }
 
-// ══ PROFILE SELECT ════════════════════════════════════════════════════════════
+/
+// ══ LISTEN MODE ═══════════════════════════════════════════════════════════════
+function ListenMode({words,color,onEarn,onStat,allWords,onProgress}){
+  const[phase,setPhase]=useState("quiz");
+  const[queue]=useState(()=>shuffle(words));
+  const[missed,setMissed]=useState([]);
+  const[idx,setIdx]=useState(0);
+  const[opts,setOpts]=useState([]);
+  const[selected,setSelected]=useState(null);
+  const[played,setPlayed]=useState(false);
+  const[score,setScore]=useState(0);
+  const[speed,setSpeed]=useState("normal");
+  const currentQueue=phase==="retry"?missed:queue;
+  const word=currentQueue[idx];
+
+  const playWord=useCallback((spd)=>{
+    if(!word)return;
+    setPlayed(true);
+    if((spd||speed)==="fast")speakEsFast(word.es);
+    else speakEs(word.es);
+  },[word,speed]);
+
+  useEffect(()=>{
+    if(!word)return;
+    const wrong=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
+    setOpts(shuffle([word,...wrong]));setSelected(null);setPlayed(false);
+    const t=setTimeout(()=>playWord(),500);return()=>clearTimeout(t);
+  },[idx,phase]);
+
+  const pick=opt=>{
+    if(selected||!word)return;setSelected(opt);
+    const ok=opt.en===word.en;
+    if(ok){setScore(s=>s+1);onEarn(2);onStat("quiz");}
+    else setMissed(m=>[...m,word]);
+    setTimeout(()=>setIdx(i=>i+1),1500);
+  };
+
+  const restart=()=>{setPhase("quiz");setMissed([]);setIdx(0);setScore(0);setSelected(null);setPlayed(false);};
+
+  if(!word){
+    const mc=missed.length;
+    if(phase==="quiz")return(
+      <div style={{textAlign:"center",padding:"28px 16px"}}>
+        <div style={{fontSize:64}}>{score===queue.length?"🏆":score>queue.length*0.7?"🌟":"💪"}</div>
+        <div style={{fontSize:22,color,...DS,marginTop:8}}>Listen Round Done!</div>
+        <div style={{fontSize:36,fontWeight:900,color:"#FCD34D",margin:"6px 0"}}>{score}/{queue.length}</div>
+        <div style={{fontSize:13,color:"#6B7280",marginBottom:16}}>{mc>0?`Missed ${mc} — practice them!`:"Perfect ears! ¡Increíble!"}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {mc>0&&<ActionBtn onClick={()=>{setPhase("retry");setIdx(0);setSelected(null);}} bg="#F59E0B" style={{width:"100%",padding:12}}>Practice Missed 🔁</ActionBtn>}
+          <ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:12}}>Start Over 🔄</ActionBtn>
+        </div>
+      </div>
+    );
+    return(<div style={{textAlign:"center",padding:"28px 16px"}}><div style={{fontSize:64}}>🎉</div><div style={{fontSize:22,color,...DS,marginTop:8}}>Retry Done!</div><ActionBtn onClick={restart} bg={color} style={{width:"100%",padding:12,marginTop:16}}>Start Fresh 🔄</ActionBtn></div>);
+  }
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        <span style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>Speed:</span>
+        {[{id:"normal",label:"🐢 Slow & Clear"},{id:"fast",label:"⚡ Real Speed"}].map(s=>(
+          <button key={s.id} onClick={()=>setSpeed(s.id)} style={{padding:"5px 12px",borderRadius:16,background:speed===s.id?color:"#F3F4F6",border:"none",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",color:speed===s.id?"white":"#6B7280"}}>
+            {s.label}
+          </button>
+        ))}
+      </div>
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
+        {phase==="retry"?"🔁 Retry — ":""}{idx+1}/{currentQueue.length} &nbsp;•&nbsp; ✅ {score} right
+      </div>
+      <div style={{width:"100%",height:6,background:"#F3F4F6",borderRadius:99}}>
+        <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/currentQueue.length)*100}%`,transition:"width .4s"}}/>
+      </div>
+
+      <div style={{width:"100%",background:"white",borderRadius:24,padding:"28px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
+        <div style={{fontSize:12,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:14}}>👂 LISTEN — WHAT DO YOU HEAR?</div>
+        <button onClick={()=>playWord(speed)} style={{width:96,height:96,borderRadius:"50%",background:`linear-gradient(135deg,${color},${color}cc)`,border:"none",fontSize:40,cursor:"pointer",boxShadow:`0 8px 28px ${color}50`,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto"}}>
+          {played?"🔊":"▶️"}
+        </button>
+        <div style={{fontSize:13,color:"#9CA3AF",marginTop:10}}>
+          {played?"Tap to hear again!":"Tap ▶️ to hear the Spanish word"}
+        </div>
+        {played&&!selected&&<div style={{fontSize:40,marginTop:10,opacity:.6}}>{word.emoji}</div>}
+        {selected&&(
+          <div style={{marginTop:12,padding:"10px 16px",background:`${color}12`,borderRadius:14}}>
+            <div style={{fontSize:22,color,...DS}}>{word.es}</div>
+            <div style={{fontSize:12,color:"#6B7280",marginTop:2}}>The Spanish word revealed</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:600,textAlign:"center"}}>
+        {!played?"Tap ▶️ first — then choose the English meaning!":"Choose the English meaning:"}
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",opacity:played?1:0.35,pointerEvents:played?"auto":"none",transition:"opacity .3s"}}>
+        {opts.map((opt,i)=>{
+          const isC=opt.en===word.en,isCh=selected?.en===opt.en;
+          let bg="white",bdr="#E5E7EB",tc="#1F2937";
+          if(selected){if(isC){bg="#D1FAE5";bdr="#10B981";}else if(isCh){bg="#FEE2E2";bdr="#EF4444";}}
+          return(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderRadius:16,background:bg,border:`2px solid ${bdr}`,transition:"all .2s"}}>
+              <button onClick={()=>pick(opt)} style={{flex:1,background:"none",border:"none",textAlign:"left",fontSize:16,fontWeight:700,cursor:selected?"default":"pointer",color:tc,fontFamily:"inherit",padding:0,lineHeight:1.3}}>{opt.en}</button>
+              <SpeakEnBtn text={opt.en} color={isC&&selected?"#10B981":isCh&&selected?"#EF4444":color}/>
+            </div>
+          );
+        })}
+      </div>
+      {selected&&<div style={{fontSize:13,color:selected.en===word.en?"#10B981":"#EF4444",fontWeight:800,textAlign:"center"}}>{selected.en===word.en?"✅ ¡Correcto! Your ears are sharp!":"❌ Keep training! It was ""+word.en+"""}</div>}
+    </div>
+  );
+}
+
+/ ══ PROFILE SELECT ════════════════════════════════════════════════════════════
 function ProfileSelectScreen({profiles,onSelect,onCreate}){
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:"0 20px 40px"}}>
@@ -1136,7 +1596,7 @@ function CreateProfileScreen({onDone,onBack}){
 // ══ HOME SCREEN ═══════════════════════════════════════════════════════════════
 function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,dailyDone}){
   const lv=profile.level||1;
-  const vocab=lv>=2?VOCAB_L2:VOCAB_L1;
+  const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
   const catKeys=Object.keys(vocab);
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
@@ -1173,24 +1633,42 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
           <span style={{fontSize:22,color:"rgba(255,255,255,.5)"}}>›</span>
         </button>
 
-        {/* Level toggle */}
-        <div style={{display:"flex",marginBottom:14,background:"rgba(255,255,255,.08)",borderRadius:16,padding:4}}>
-          {[{lv:1,label:"⭐ Beginner"},{lv:2,label:"🚀 Intermediate"}].map(({lv:l,label})=>(
-            <button key={l} onClick={()=>onLevelChange(l)} style={{flex:1,padding:"10px 0",borderRadius:12,background:lv===l?"white":"transparent",border:"none",color:lv===l?profile.color:"rgba(255,255,255,.6)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
-              {label}
-            </button>
-          ))}
+        {/* Level selector with lock state */}
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+          {[
+            {lv:1,label:"⭐ Beginner",emoji:"⭐"},
+            {lv:2,label:"🚀 Intermediate",emoji:"🚀"},
+            {lv:3,label:"🔥 Advanced",emoji:"🔥"},
+          ].map(({lv:l,label,emoji})=>{
+            const unlocked=canUnlockLevel(profile,l);
+            const prog=l>1?getLevelProgress(profile,l):null;
+            const active=lv===l;
+            return(
+              <button key={l} onClick={()=>unlocked&&onLevelChange(l)} style={{width:"100%",padding:"12px 16px",borderRadius:16,background:active?"white":unlocked?"rgba(255,255,255,.1)":"rgba(255,255,255,.04)",border:active?`2px solid ${profile.color}`:"2px solid rgba(255,255,255,.15)",cursor:unlocked?"pointer":"default",display:"flex",alignItems:"center",gap:10,transition:"all .2s"}}>
+                <span style={{fontSize:22}}>{unlocked?emoji:"🔒"}</span>
+                <div style={{flex:1,textAlign:"left"}}>
+                  <div style={{fontSize:14,fontWeight:800,color:active?profile.color:unlocked?"white":"rgba(255,255,255,.35)"}}>{label}</div>
+                  {!unlocked&&prog&&<div style={{fontSize:11,color:"rgba(255,255,255,.4)",marginTop:2}}>{prog.current}/{prog.needed} categories mastered to unlock</div>}
+                  {unlocked&&active&&<div style={{fontSize:11,color:profile.color,marginTop:2}}>Currently selected</div>}
+                </div>
+                {active&&<div style={{width:8,height:8,borderRadius:"50%",background:profile.color}}/>}
+              </button>
+            );
+          })}
         </div>
 
         <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,marginBottom:10,letterSpacing:.5}}>{lv>=2?"INTERMEDIATE CATEGORIES":"BEGINNER CATEGORIES"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
           {catKeys.map(key=>{
             const c=vocab[key];
+            const stars=getCatProgress(profile,key,lv);
+            const starDisplay=["","⭐","⭐⭐","⭐⭐⭐"][stars]||"";
             return(
-              <button key={key} onClick={()=>onLearn(key,lv)} style={{padding:"16px 8px",borderRadius:18,background:"rgba(255,255,255,.07)",border:`2px solid ${c.color}40`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                <span style={{fontSize:28}}>{c.icon}</span>
-                <span style={{fontSize:11,fontWeight:800,color:"white",textAlign:"center",lineHeight:1.2}}>{c.label}</span>
-                <div style={{width:32,height:4,borderRadius:99,background:`${c.color}80`}}/>
+              <button key={key} onClick={()=>onLearn(key,lv)} style={{padding:"14px 8px",borderRadius:18,background:stars>=3?`${c.color}22`:"rgba(255,255,255,.07)",border:`2px solid ${stars>=1?c.color:c.color+"40"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5,position:"relative"}}>
+                {stars>=3&&<div style={{position:"absolute",top:4,right:4,fontSize:9,background:c.color,color:"white",borderRadius:6,padding:"1px 5px",fontWeight:800}}>✓</div>}
+                <span style={{fontSize:26}}>{c.icon}</span>
+                <span style={{fontSize:10,fontWeight:800,color:"white",textAlign:"center",lineHeight:1.2}}>{c.label}</span>
+                <div style={{fontSize:10,minHeight:14,color:"#FCD34D"}}>{starDisplay}</div>
               </button>
             );
           })}
@@ -1220,12 +1698,12 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
 }
 
 // ══ LEARN SCREEN ══════════════════════════════════════════════════════════════
-function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat}){
+function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress}){
   const[mode,setMode]=useState("flashcard");
-  const vocab=catLevel>=2?VOCAB_L2:VOCAB_L1;
+  const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
   const cat=vocab[catKey];
-  const allWords=catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const modes=[{id:"flashcard",label:"🃏 Cards"},{id:"quiz",label:"🎯 Quiz"},{id:"match",label:"🧩 Match"},{id:"speak",label:"🎤 Speak"}];
+  const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
+  const modes=[{id:"flashcard",label:"🃏 Cards"},{id:"quiz",label:"🎯 Quiz"},{id:"listen",label:"👂 Listen"},{id:"match",label:"🧩 Match"},{id:"speak",label:"🎤 Speak"}];
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
@@ -1244,8 +1722,9 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat}){
         <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:16,fontSize:20,color:cat.color,...DS}}>{cat.icon} {cat.label}</div>
           {mode==="flashcard"&&<FlashcardMode key={`${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn}/>}
-          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords}/>}
+          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
           {mode==="match"    &&<MatchMode key={`m${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
+          {mode==="listen"   &&<ListenMode key={`l${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
           {mode==="speak"    &&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
         </div>
       </div>
@@ -1256,7 +1735,8 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat}){
 // ══ DAILY CHALLENGE ═══════════════════════════════════════════════════════════
 function DailyScreen({profile,onBack,onComplete}){
   const{words}=getDailyWords(profile.level||1);
-  const pool=(profile.level||1)>=2?ALL_WORDS_L2:ALL_WORDS_L1;
+  const lv=profile.level||1;
+  const pool=lv>=3?ALL_WORDS_L3:lv>=2?ALL_WORDS_L2:ALL_WORDS_L1;
   const[idx,setIdx]=useState(0);
   const[opts,setOpts]=useState([]);
   const[selected,setSelected]=useState(null);
@@ -1476,6 +1956,13 @@ export default function App(){
     await updateProfile(activeId,{level:lv});
   };
 
+  const handleCatProgress=async(catKey,catLevel,stars)=>{
+    if(!activeId||!profile)return;
+    const newProgress=setCatProgress(profile,catKey,catLevel,stars);
+    if(JSON.stringify(newProgress)===JSON.stringify(profile.catProgress||{}))return;
+    await updateProfile(activeId,{catProgress:newProgress});
+  };
+
   const handleDailyComplete=async score=>{
     if(!profile)return;
     const d=todayStr();
@@ -1509,7 +1996,7 @@ export default function App(){
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
       {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} dailyDone={dailyDone}/>}
-      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat}/>}
+      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onCatProgress={handleCatProgress}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
       {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} onBack={()=>setScreen("home")}/>}
