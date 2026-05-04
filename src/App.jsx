@@ -1518,12 +1518,12 @@ function ListenMode({words,color,onEarn,onStat,allWords,onProgress}){
           );
         })}
       </div>
-      {selected&&<div style={{fontSize:13,color:selected.en===word.en?"#10B981":"#EF4444",fontWeight:800,textAlign:"center"}}>{selected.en===word.en?"✅ ¡Correcto! Your ears are sharp!":"❌ Keep training! It was ""+word.en+"""}</div>}}
+      {selected&&<div style={{fontSize:13,color:selected.en===word.en?"#10B981":"#EF4444",fontWeight:800,textAlign:"center"}}>{selected.en===word.en?"✅ ¡Correcto! Your ears are sharp!":"❌ Keep training! It was \""+word.en+"\""}</div>}
     </div>
   );
 }
 
-/ ══ PROFILE SELECT ════════════════════════════════════════════════════════════
+// ══ PROFILE SELECT ════════════════════════════════════════════════════════════
 function ProfileSelectScreen({profiles,onSelect,onCreate}){
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:"0 20px 40px"}}>
