@@ -2151,7 +2151,7 @@ function EditProfileScreen({profile,familyCode,onSave,onBack,onDelete}){
 }
 
 // == DAILY REVIEW SCREEN ==
-function DailyReviewScreen({profile,onComplete,onBookmark}){
+function DailyReviewScreen({profile,onComplete,onBookmark,onWordResult}){
   const missedWords=profile.missedWords||{};
   const bookmarked=profile.bookmarked||[];
   const allVocab=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
@@ -2181,8 +2181,13 @@ function DailyReviewScreen({profile,onComplete,onBookmark}){
   const pick=opt=>{
     if(selected)return;
     setSelected(opt);
-    if(opt.en===word.en)setScore(s=>s+1);
-    setTimeout(()=>{if(idx<reviewQueue.length-1)setIdx(i=>i+1);else onComplete(score+(opt.en===word.en?1:0));},1200);
+    const correct=opt.en===word.en;
+    if(correct){
+      setScore(s=>s+1);
+      // Correct answer auto-removes word from missed list
+      if(onWordResult)onWordResult(word,true);
+    }
+    setTimeout(()=>{if(idx<reviewQueue.length-1)setIdx(i=>i+1);else onComplete(score+(correct?1:0));},1200);
   };
 
   if(!word)return null;
@@ -2224,15 +2229,17 @@ function DailyReviewScreen({profile,onComplete,onBookmark}){
             );
           })}
         </div>
-        {onBookmark&&(
-          <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,
-            background:(profile.bookmarked||[]).includes(word.es)?"rgba(252,211,77,.15)":"rgba(255,255,255,.06)",
-            border:`1px solid ${(profile.bookmarked||[]).includes(word.es)?"rgba(252,211,77,.5)":"rgba(255,255,255,.15)"}`,
-            color:(profile.bookmarked||[]).includes(word.es)?"#FCD34D":"rgba(255,255,255,.5)",
-            fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
-            <span>🔖</span>
-            <span>{(profile.bookmarked||[]).includes(word.es)?"I know this now — remove bookmark":"Save for extra review"}</span>
+        {/* For bookmarked words: show remove option */}
+        {onBookmark&&(profile.bookmarked||[]).includes(word.es)&&(
+          <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,background:"rgba(252,211,77,.1)",border:"1px solid rgba(252,211,77,.4)",color:"#FCD34D",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+            <span>🔖</span><span>I know this now — remove bookmark</span>
           </button>
+        )}
+        {/* For missed quiz words: explain auto-clear */}
+        {!(profile.bookmarked||[]).includes(word.es)&&selected&&selected.en===word.es&&(
+          <div style={{fontSize:12,color:"rgba(255,255,255,.4)",textAlign:"center",marginTop:6}}>
+            Got it right — this word will drop off your review list!
+          </div>
         )}
       </div>
     </div>
@@ -2991,7 +2998,7 @@ export default function App(){
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
       {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")} onSwitchFamily={()=>setScreen("switchfamily")} onManageMembers={()=>setScreen("managemembers")}/>}
-      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")} onBookmark={handleBookmark}/>}
+      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")} onBookmark={handleBookmark} onWordResult={handleWordResult}/>}
       {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass}/>}
       {familyReady&&screen==="switchfamily" &&<SwitchFamilyScreen onSwitch={handleFamilySwitch} onBack={()=>setScreen("myprofile")}/>}
       {familyReady&&screen==="managemembers"&&profile&&<ManageFamilyScreen profile={profile} profiles={profiles} onBack={()=>setScreen("myprofile")} onMemberRemoved={handleMemberRemoved}/>}
