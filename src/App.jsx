@@ -686,9 +686,9 @@ const isCatUnlocked = (profile, catKey, catLevel) => {
   const keys = Object.keys(vocab);
   const idx = keys.indexOf(catKey);
   if (idx <= 0) return true; // First category always unlocked
-  // Previous category needs at least 1 star
+  // Previous category needs at least 2 stars (quiz score 70%+) to unlock next
   const prevKey = keys[idx - 1];
-  return getCatStars(profile, prevKey, catLevel) >= 1;
+  return getCatStars(profile, prevKey, catLevel) >= 2;
 };
 
 const BADGE_DEF = {
@@ -1000,10 +1000,13 @@ function FlashcardMode({words,color,onEarn,bookmarked,onBookmark}){
       </div>
 
       {!flipped&&<div style={{fontSize:12,color:"#9CA3AF",textAlign:"center"}}>Tap 🔈 to hear it · Tap 💡 for a memory trick · Tap card to flip</div>}
-      {/* Bookmark button — saves word to struggle list */}
-      <button onClick={()=>onBookmark&&onBookmark(word)} title="Mark for review"
-        style={{alignSelf:"center",background:"none",border:"none",fontSize:22,cursor:"pointer",opacity:.7,padding:"4px 8px"}}>
-        {bookmarked?.includes(word.es)?"🔖":"🏷️"}
+      {/* Bookmark button — clearly labelled */}
+      <button onClick={()=>onBookmark&&onBookmark(word)}
+        style={{alignSelf:"center",display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:bookmarked?.includes(word.es)?"#FEF3C7":"rgba(252,211,77,.1)",border:`1.5px solid ${bookmarked?.includes(word.es)?"#F59E0B":"rgba(252,211,77,.3)"}`,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
+        <span style={{fontSize:16}}>{bookmarked?.includes(word.es)?"🔖":"🏷️"}</span>
+        <span style={{fontSize:12,fontWeight:700,color:bookmarked?.includes(word.es)?"#92400E":"#9CA3AF"}}>
+          {bookmarked?.includes(word.es)?"Saved for review":"Save for daily review"}
+        </span>
       </button>
 
       <div style={{display:"flex",gap:10,width:"100%"}}>
@@ -2396,9 +2399,10 @@ function CreateProfileScreen({onDone,onBack}){
 }
 
 // ══ HOME SCREEN ═══════════════════════════════════════════════════════════════
-function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onCore,onExam,onExamPrompt,dailyDone}){
+function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onCore,onExam,onExamPrompt,onShowStarInfo,dailyDone}){
   const lv=profile.level||1;
   const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
+  const[showStarInfo,setShowStarInfo]=useState(false);
   const catKeys=Object.keys(vocab);
   const nextSuggested=getNextSuggestedCat(profile);
   return(
@@ -2427,6 +2431,29 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
             </div>
             <div style={{fontSize:22,color:nextSuggested.cat.color}}>›</div>
           </button>
+        )}
+
+        {/* Star system info modal — shows when tapping locked category */}
+        {showStarInfo&&(
+          <div onClick={()=>setShowStarInfo(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:500,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:16}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#1E293B",borderRadius:24,padding:24,width:"100%",maxWidth:440,border:"1px solid rgba(255,255,255,.15)"}}>
+              <div style={{fontSize:20,color:"white",fontWeight:800,marginBottom:16}}>How to unlock categories</div>
+              {[
+                {stars:"⭐",label:"1 Star",desc:"Try the Quiz in this category — any score counts!"},
+                {stars:"⭐⭐",label:"2 Stars — unlocks next category",desc:"Score 70% or higher on the Quiz"},
+                {stars:"⭐⭐⭐",label:"3 Stars — master status",desc:"Score 90%+ on Quiz AND complete 3 Say It rounds"},
+              ].map(({stars,label,desc})=>(
+                <div key={label} style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:14}}>
+                  <div style={{fontSize:20,minWidth:52,textAlign:"center"}}>{stars}</div>
+                  <div>
+                    <div style={{fontSize:14,color:"#FCD34D",fontWeight:800}}>{label}</div>
+                    <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginTop:2}}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+              <button onClick={()=>setShowStarInfo(false)} style={{width:"100%",padding:"12px",borderRadius:14,background:"#2563EB",border:"none",color:"white",fontWeight:800,cursor:"pointer",fontFamily:"inherit",fontSize:15,marginTop:4}}>Got it!</button>
+            </div>
+          </div>
         )}
 
         {/* Daily Challenge */}
@@ -2492,7 +2519,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
             const suggested=nextSuggested&&nextSuggested.key===key&&nextSuggested.lv===lv;
             const starDisplay=["","⭐","⭐⭐","⭐⭐⭐"][stars]||"";
             return(
-              <button key={key} onClick={()=>unlocked?onLearn(key,lv):null}
+              <button key={key} onClick={()=>unlocked?onLearn(key,lv):onShowStarInfo&&onShowStarInfo()}
                 style={{padding:"14px 8px",borderRadius:18,
                   background:suggested?`${cat.color}35`:stars>=3?`${cat.color}18`:"rgba(255,255,255,.07)",
                   border:suggested?`2.5px solid ${cat.color}`:stars>=3?`2px solid ${cat.color}60`:`2px solid ${unlocked?cat.color+"40":"rgba(255,255,255,.1)"}`,
@@ -2538,7 +2565,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
 }
 
 // ══ LEARN SCREEN ══════════════════════════════════════════════════════════════
-function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress,onBookmark,onSayItAttempt}){
+function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress,onBookmark,onSayItAttempt,onWordResult}){
   const[mode,setMode]=useState(catKey==="__review__"?"quiz":"flashcard");
   const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
   const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
@@ -2564,8 +2591,8 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
       <div style={{padding:"0 14px 40px",flex:1}}>
         <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
           <div style={{textAlign:"center",marginBottom:16,fontSize:20,color:cat.color,...DS}}>{cat.icon} {cat.label}</div>
-          {mode==="flashcard"&&<FlashcardMode key={`${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn}/>}
-          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
+          {mode==="flashcard"&&<FlashcardMode key={`${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} bookmarked={profile.bookmarked||[]} onBookmark={onBookmark}/>}
+          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)} onWordResult={onWordResult}/>}
           {mode==="match"    &&<MatchMode key={`m${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="listen"   &&<ListenMode key={`l${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
           {mode==="scramble"&&<ScrambleMode key={`sc${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
@@ -2716,6 +2743,19 @@ function MyProfileScreen({profile,onBack,familyCode,onEdit,onSwitchFamily,onMana
           <button onClick={onSwitchFamily} style={{flex:1,padding:"10px",borderRadius:14,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Switch Family</button>
           <button onClick={onManageMembers} style={{flex:1,padding:"10px",borderRadius:14,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Manage Members</button>
         </div>
+        {/* Bookmarked words summary */}
+        {(profile.bookmarked||[]).length>0&&(
+          <div style={{background:"rgba(252,211,77,.08)",border:"1px solid rgba(252,211,77,.2)",borderRadius:16,padding:"14px 16px"}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#FCD34D",letterSpacing:.5,marginBottom:8}}>🔖 SAVED FOR REVIEW ({(profile.bookmarked||[]).length} words)</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {(profile.bookmarked||[]).slice(0,12).map(es=>(
+                <div key={es} style={{padding:"4px 10px",borderRadius:20,background:"rgba(252,211,77,.15)",border:"1px solid rgba(252,211,77,.3)",fontSize:12,color:"white",fontWeight:600}}>{es}</div>
+              ))}
+              {(profile.bookmarked||[]).length>12&&<div style={{padding:"4px 10px",fontSize:12,color:"rgba(255,255,255,.4)",alignSelf:"center"}}>+{(profile.bookmarked||[]).length-12} more</div>}
+            </div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,.4)",marginTop:8}}>These appear in your daily review when you log in.</div>
+          </div>
+        )}
         <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>ALL BADGES</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {allBadges.map(([key,bd])=>{
@@ -2788,8 +2828,13 @@ export default function App(){
     const updated={...p,streak,longestStreak,lastDate:d,badges:calcBadges({...p,streak})};
     await persist(profiles.map(x=>x.id===p.id?updated:x));
     setActiveId(p.id);
-    const hasMissed=Object.keys(updated.missedWords||{}).length>0;
-    setScreen(hasMissed?"review":"home");
+    // Load fresh from Supabase to get latest missedWords and bookmarked
+    const freshProfiles = await loadProfiles();
+    const freshP = freshProfiles.find(x=>x.id===updated.id)||updated;
+    const missedCount = Object.keys(freshP.missedWords||{}).length;
+    const bookmarkCount = (freshP.bookmarked||[]).length;
+    setProfiles(freshProfiles);
+    setScreen((missedCount>0||bookmarkCount>0)?"review":"home");
   };
 
   const handleCreate=async(name,avatar,color)=>{
@@ -2919,7 +2964,7 @@ export default function App(){
       }}/>}
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
-      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} onExamPrompt={(lv)=>{setExamLevel(lv);setScreen("exam");}} dailyDone={dailyDone}/>}
+      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} onExamPrompt={(lv)=>{setExamLevel(lv);setScreen("exam");}} onShowStarInfo={()=>{}} dailyDone={dailyDone}/>}
       {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onWordResult={handleWordResult} onBookmark={handleBookmark} onSayItAttempt={handleSayItAttempt} onCatProgress={handleCatProgress}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
