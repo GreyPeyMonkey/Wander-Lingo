@@ -1010,9 +1010,11 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
 
   useEffect(()=>{
     if(!word)return;
-    const sameCat=shuffle(allWords.filter(w=>w.en!==word.en));
-    const globalPool=shuffle([...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3].filter(w=>w.en!==word.en&&!sameCat.find(s=>s.en===w.en)));
-    const wrong=sameCat.length>=3?sameCat.slice(0,3):[...sameCat,...globalPool].slice(0,3);
+    // words = THIS category's words — use for same-cat distractors
+    // allWords = all level words — fallback if category too small
+    const sameCatPool=shuffle(words.filter(w=>w.en!==word.en));
+    const globalPool=shuffle(allWords.filter(w=>w.en!==word.en&&!sameCatPool.find(s=>s.en===w.en)));
+    const wrong=sameCatPool.length>=3?sameCatPool.slice(0,3):[...sameCatPool,...globalPool].slice(0,3);
     setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
   },[idx,phase]);
 
@@ -1087,7 +1089,6 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
         <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/currentQueue.length)*100}%`,transition:"width .4s"}}/>
       </div>
       <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:72}}>{word.emoji}</div>
         <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
         <div style={{display:"flex",justifyContent:"center",marginTop:12,gap:8,alignItems:"center"}}>
           <SpeakEsBtn text={word.es} color={color} size={44}/>
@@ -1144,7 +1145,7 @@ function MatchMode({words,color,onEarn,onStat}){
           return(
             <div key={card.id} style={{position:"relative",borderRadius:16,background:cardBg,border:`2.5px solid ${cardBorder}`,transition:"all .18s",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
               <button onClick={()=>tap(card)} style={{width:"100%",minHeight:80,padding:"10px 10px 28px",background:"none",border:"none",cursor:isM?"default":"pointer",textAlign:"center",fontFamily:"inherit",color:isM?"#9CA3AF":"#1F2937"}}>
-                {card.lang==="es"?<React.Fragment><div style={{fontSize:26}}>{card.emoji}</div><div style={{fontSize:14,fontWeight:700,...DS}}>{card.text}</div></React.Fragment>:<div style={{fontSize:13,fontWeight:700,lineHeight:1.3}}>{card.text}</div>}
+                {card.lang==="es"?<div style={{fontSize:14,fontWeight:700,...DS}}>{card.text}</div>:<div style={{fontSize:13,fontWeight:700,lineHeight:1.3}}>{card.text}</div>}
               </button>
               {/* Permanent listen button on every card */}
               <button onClick={e=>{e.stopPropagation();if(card.lang==="es")speakEs(card.text);else speakEn(card.text);}} style={{position:"absolute",bottom:4,right:4,width:24,height:24,borderRadius:"50%",background:`${color}20`,border:`1.5px solid ${color}60`,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",opacity:isM?.4:1}}>
@@ -1237,7 +1238,8 @@ function ScrambleMode({words,color,onEarn,onStat}){
   };
   useEffect(()=>{if(!word)return;setScrambled(makeScramble(word));setChosen([]);setPhase("playing");speakEs(word.es);},[idx]);
   useEffect(()=>{
-    if(phase!=="playing"||scrambled.length>0)return;
+    // Guard: don't check until at least one letter has been placed
+    if(phase!=="playing"||scrambled.length>0||chosen.length===0)return;
     if(chosen.map(l=>l.ch).join("")===word.es){setPhase("correct");setScore(s=>s+1);onEarn(3);onStat("quiz");speakEs(word.es);setTimeout(()=>setIdx(i=>i+1),1800);}
     else setPhase("wrong");
   },[scrambled,chosen,phase,word]);
@@ -1246,7 +1248,17 @@ function ScrambleMode({words,color,onEarn,onStat}){
     if(fromBank){setScrambled(p=>p.filter(x=>x.id!==l.id));setChosen(p=>[...p,l]);}
     else{setChosen(p=>p.filter(x=>x.id!==l.id));setScrambled(p=>[...p,l]);}
   };
-  const clear=()=>{setScrambled(p=>[...p,...chosen]);setChosen([]);setPhase("playing");};
+  // All letters in original order — shown or hidden based on selection
+  const allLetters=React.useMemo(()=>makeScramble(word),[word]);
+  const chosenIds=new Set(chosen.map(l=>l.id));
+  const backspace=()=>{
+    if(chosen.length===0||phase!=="playing")return;
+    const last=chosen[chosen.length-1];
+    setChosen(p=>p.slice(0,-1));
+    setScrambled(p=>[...p,last]);
+    if(phase==="wrong")setPhase("playing");
+  };
+  const clearAll=()=>{setScrambled(p=>[...p,...chosen]);setChosen([]);setPhase("playing");};
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
       <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>Unscramble the Spanish! Score: {score}</div>
@@ -1258,15 +1270,43 @@ function ScrambleMode({words,color,onEarn,onStat}){
           <span style={{fontSize:12,color:"#9CA3AF"}}>Tap to hear the answer</span>
         </div>
       </div>
+      {/* Answer area — chosen letters in order */}
       <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,minHeight:52,width:"100%",padding:"10px",borderRadius:16,background:phase==="correct"?"#D1FAE5":phase==="wrong"?"#FEE2E2":"#F8FAFC",border:`2px solid ${phase==="correct"?"#10B981":phase==="wrong"?"#EF4444":"#E5E7EB"}`,transition:"all .2s"}}>
-        {chosen.length===0?<span style={{fontSize:13,color:"#9CA3AF",alignSelf:"center"}}>Tap letters below to build the word</span>:chosen.map(l=><button key={l.id} onClick={()=>phase==="playing"&&pick(l,false)} style={{width:38,height:42,borderRadius:10,background:color,border:"none",fontSize:18,fontWeight:900,color:"white",cursor:"pointer",fontFamily:"inherit"}}>{l.ch}</button>)}
+        {chosen.length===0
+          ?<span style={{fontSize:13,color:"#9CA3AF",alignSelf:"center"}}>Tap letters below to build the word</span>
+          :chosen.map(l=><button key={l.id} onClick={()=>phase==="playing"&&pick(l,false)} style={{width:38,height:42,borderRadius:10,background:color,border:"none",fontSize:18,fontWeight:900,color:"white",cursor:phase==="playing"?"pointer":"default",fontFamily:"inherit"}}>{l.ch}</button>)
+        }
       </div>
       {phase==="correct"&&<div style={{fontSize:15,color:"#10B981",fontWeight:800}}>Perfecto! {word.es}</div>}
-      {phase==="wrong"&&<div style={{fontSize:13,color:"#EF4444",fontWeight:700}}>Not quite - try a different order!</div>}
-      <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:8}}>{scrambled.map(l=><button key={l.id} onClick={()=>phase==="playing"&&pick(l,true)} style={{width:42,height:46,borderRadius:10,background:"white",border:`2px solid ${color}60`,fontSize:20,fontWeight:900,color:"#1F2937",cursor:"pointer",fontFamily:"inherit"}}>{l.ch}</button>)}</div>
-      <div style={{display:"flex",gap:10,width:"100%"}}>
-        {chosen.length>0&&phase==="playing"&&<ActionBtn onClick={clear} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Clear</ActionBtn>}
-        {phase==="wrong"&&<ActionBtn onClick={clear} bg="#F59E0B" style={{flex:1}}>Try Again</ActionBtn>}
+      {phase==="wrong"&&<div style={{fontSize:13,color:"#EF4444",fontWeight:700}}>Not quite — try removing the last letter or clear all!</div>}
+      {/* Letter bank — FIXED positions, selected letters hidden in place */}
+      <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:8}}>
+        {allLetters.map(l=>{
+          const isChosen=chosenIds.has(l.id);
+          return(
+            <button key={l.id} onClick={()=>!isChosen&&phase==="playing"&&pick(l,true)}
+              disabled={isChosen||phase!=="playing"}
+              style={{width:42,height:46,borderRadius:10,
+                background:isChosen?"rgba(255,255,255,.1)":"white",
+                border:`2px solid ${isChosen?"rgba(255,255,255,.15)":color+"60"}`,
+                fontSize:20,fontWeight:900,
+                color:isChosen?"transparent":"#1F2937",
+                cursor:isChosen||phase!=="playing"?"default":"pointer",
+                fontFamily:"inherit",transition:"all .15s"}}>
+              {isChosen?" ":l.ch}
+            </button>
+          );
+        })}
+      </div>
+      {/* Action buttons */}
+      <div style={{display:"flex",gap:8,width:"100%"}}>
+        {chosen.length>0&&phase==="playing"&&(
+          <ActionBtn onClick={backspace} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>⌫ Back</ActionBtn>
+        )}
+        {chosen.length>1&&phase==="playing"&&(
+          <ActionBtn onClick={clearAll} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Clear All</ActionBtn>
+        )}
+        {phase==="wrong"&&<ActionBtn onClick={clearAll} bg="#F59E0B" style={{flex:2}}>Try Again</ActionBtn>}
         <ActionBtn onClick={()=>setIdx(i=>i+1)} bg={phase==="wrong"?color:"#F9FAFB"} color={phase==="wrong"?"white":"#6B7280"} style={{flex:1,border:phase==="wrong"?"none":"2px solid #E5E7EB"}}>Skip</ActionBtn>
       </div>
     </div>
