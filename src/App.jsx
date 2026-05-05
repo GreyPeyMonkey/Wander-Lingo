@@ -2961,6 +2961,14 @@ export default function App(){
     await updateProfile(activeId,{name,avatar,color});
     setScreen("myprofile");
   };
+  // Used by daily review — one correct answer clears the word completely
+  const handleReviewCorrect=async(word)=>{
+    if(!activeId||!profile)return;
+    const missed={...(profile.missedWords||{})};
+    delete missed[word.es];
+    await updateProfile(activeId,{missedWords:missed});
+  };
+
   const handleWordResult=async(word,correct)=>{
     if(!activeId||!profile)return;
     const missed={...(profile.missedWords||{})};
@@ -2998,7 +3006,7 @@ export default function App(){
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
       {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")} onSwitchFamily={()=>setScreen("switchfamily")} onManageMembers={()=>setScreen("managemembers")}/>}
-      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")} onBookmark={handleBookmark} onWordResult={handleWordResult}/>}
+      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")} onBookmark={handleBookmark} onWordResult={handleReviewCorrect}/>}
       {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass}/>}
       {familyReady&&screen==="switchfamily" &&<SwitchFamilyScreen onSwitch={handleFamilySwitch} onBack={()=>setScreen("myprofile")}/>}
       {familyReady&&screen==="managemembers"&&profile&&<ManageFamilyScreen profile={profile} profiles={profiles} onBack={()=>setScreen("myprofile")} onMemberRemoved={handleMemberRemoved}/>}
