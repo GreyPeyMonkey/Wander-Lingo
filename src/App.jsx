@@ -2003,3 +2003,4 @@ export default function App(){
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
     </div>
   );
+}
