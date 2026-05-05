@@ -702,6 +702,372 @@ const isCatUnlocked = (profile, catKey, catLevel) => {
   return getCatStars(profile, prevKey, catLevel) >= 2;
 };
 
+
+// ══ CONJUGATION DATA ══════════════════════════════════════════════════════════
+
+// Present tense endings — the patterns that unlock the whole system
+const CONJ_PATTERNS = {
+  ar: {
+    label: "-AR verbs",
+    color: "#2563EB",
+    example: "hablar (to speak)",
+    hook: "Think: I SPEAK = yo habl-O. The O ending = me, myself, I.",
+    endings: {
+      yo: "o", tu: "as", el: "a",
+      nosotros: "amos", vosotros: "ais", ellos: "an"
+    },
+    memory: {
+      yo: "yo = O — I always end in O",
+      tu: "tu = AS — you AS k questions",
+      el: "el/ella = A — she/he/it ends in A",
+      nosotros: "nosotros = AMOS — WE AMOS love doing things",
+      vosotros: "vosotros = AIS — Spain only, sounds like ICE",
+      ellos: "ellos = AN — they AN always agree"
+    }
+  },
+  er: {
+    label: "-ER verbs",
+    color: "#7C3AED",
+    example: "comer (to eat)",
+    hook: "ER verbs swap A for E — comER, comES, comE",
+    endings: {
+      yo: "o", tu: "es", el: "e",
+      nosotros: "emos", vosotros: "eis", ellos: "en"
+    },
+    memory: {
+      yo: "yo = O — same as -AR, I always end in O",
+      tu: "tu = ES — you ES cape to eat",
+      el: "el/ella = E — he/she E ats",
+      nosotros: "nosotros = EMOS — we EMOS tionally eat together",
+      vosotros: "vosotros = EIS — Spain only",
+      ellos: "ellos = EN — they EN joy eating"
+    }
+  },
+  ir: {
+    label: "-IR verbs",
+    color: "#059669",
+    example: "vivir (to live)",
+    hook: "IR verbs are like ER but nosotros changes — vivIMOS not vivEMOS",
+    endings: {
+      yo: "o", tu: "es", el: "e",
+      nosotros: "imos", vosotros: "is", ellos: "en"
+    },
+    memory: {
+      yo: "yo = O — still O, always",
+      tu: "tu = ES — same as ER verbs",
+      el: "el/ella = E — same as ER verbs",
+      nosotros: "nosotros = IMOS — IR verbs say I MOST live",
+      vosotros: "vosotros = IS — shortest ending",
+      ellos: "ellos = EN — same as ER verbs"
+    }
+  }
+};
+
+const PRONOUNS = [
+  { es: "yo", en: "I", color: "#E8445A" },
+  { es: "tu", en: "you (informal)", color: "#DC6B19" },
+  { es: "el/ella", en: "he/she/it", color: "#10B981" },
+  { es: "nosotros", en: "we", color: "#3B82F6" },
+  { es: "vosotros", en: "you all (Spain)", color: "#8B5CF6" },
+  { es: "ellos", en: "they", color: "#F59E0B" },
+];
+
+// Regular verbs for practice — grouped by type
+const REGULAR_VERBS = {
+  ar: [
+    { inf: "hablar", en: "to speak", stem: "habl",
+      yo:"hablo", tu:"hablas", el:"habla", nosotros:"hablamos", vosotros:"hablais", ellos:"hablan",
+      hook: "HABL sounds like ABLE — you are able to speak" },
+    { inf: "trabajar", en: "to work", stem: "trabaj",
+      yo:"trabajo", tu:"trabajas", el:"trabaja", nosotros:"trabajamos", vosotros:"trabajais", ellos:"trabajan",
+      hook: "trab-AH-har — work is HARD (harsh sound)" },
+    { inf: "caminar", en: "to walk", stem: "camin",
+      yo:"camino", tu:"caminas", el:"camina", nosotros:"caminamos", vosotros:"caminais", ellos:"caminan",
+      hook: "CAMIN sounds like COMING — walking is coming somewhere" },
+    { inf: "comprar", en: "to buy", stem: "compr",
+      yo:"compro", tu:"compras", el:"compra", nosotros:"compramos", vosotros:"comprais", ellos:"compran",
+      hook: "COMPR sounds like COMPARE prices before buying" },
+    { inf: "escuchar", en: "to listen", stem: "escuch",
+      yo:"escucho", tu:"escuchas", el:"escucha", nosotros:"escuchamos", vosotros:"escuchais", ellos:"escuchan",
+      hook: "es-COOCH-ar — listening is a COUCH potato activity" },
+    { inf: "tomar", en: "to take/drink", stem: "tom",
+      yo:"tomo", tu:"tomas", el:"toma", nosotros:"tomamos", vosotros:"tomais", ellos:"toman",
+      hook: "TOMAR — TOM takes everything" },
+    { inf: "necesitar", en: "to need", stem: "necesit",
+      yo:"necesito", tu:"necesitas", el:"necesita", nosotros:"necesitamos", vosotros:"necesitais", ellos:"necesitan",
+      hook: "necesito sounds like NECESSITY — I need it" },
+    { inf: "buscar", en: "to look for", stem: "busc",
+      yo:"busco", tu:"buscas", el:"busca", nosotros:"buscamos", vosotros:"buscais", ellos:"buscan",
+      hook: "BUSCAR — BUS driver searches for passengers" },
+  ],
+  er: [
+    { inf: "comer", en: "to eat", stem: "com",
+      yo:"como", tu:"comes", el:"come", nosotros:"comemos", vosotros:"comeis", ellos:"comen",
+      hook: "COMER — a COMEr who eats everything in sight" },
+    { inf: "beber", en: "to drink", stem: "beb",
+      yo:"bebo", tu:"bebes", el:"bebe", nosotros:"bebemos", vosotros:"bebeis", ellos:"beben",
+      hook: "BEBER — a BABY BEBer drinks milk" },
+    { inf: "leer", en: "to read", stem: "le",
+      yo:"leo", tu:"lees", el:"lee", nosotros:"leemos", vosotros:"leeis", ellos:"leen",
+      hook: "LEER — LEE reads everything" },
+    { inf: "correr", en: "to run", stem: "corr",
+      yo:"corro", tu:"corres", el:"corre", nosotros:"corremos", vosotros:"correis", ellos:"corren",
+      hook: "CORRER — CORE strength needed to run" },
+    { inf: "aprender", en: "to learn", stem: "aprend",
+      yo:"aprendo", tu:"aprendes", el:"aprende", nosotros:"aprendemos", vosotros:"aprendeis", ellos:"aprenden",
+      hook: "aprENDer — learning never ENDS" },
+    { inf: "comprender", en: "to understand", stem: "comprend",
+      yo:"comprendo", tu:"comprendes", el:"comprende", nosotros:"comprendemos", vosotros:"comprendeis", ellos:"comprenden",
+      hook: "comprENDer — understanding COMPREhension never ENDS" },
+  ],
+  ir: [
+    { inf: "vivir", en: "to live", stem: "viv",
+      yo:"vivo", tu:"vives", el:"vive", nosotros:"vivimos", vosotros:"vivis", ellos:"viven",
+      hook: "VIVIR — VIVID life is worth living" },
+    { inf: "escribir", en: "to write", stem: "escrib",
+      yo:"escribo", tu:"escribes", el:"escribe", nosotros:"escribimos", vosotros:"escribis", ellos:"escriben",
+      hook: "escRIBir — SCRIBE writes everything" },
+    { inf: "recibir", en: "to receive", stem: "recib",
+      yo:"recibo", tu:"recibes", el:"recibe", nosotros:"recibimos", vosotros:"recibis", ellos:"reciben",
+      hook: "reCIBir — receive like a SIEVE catches things" },
+    { inf: "abrir", en: "to open", stem: "abr",
+      yo:"abro", tu:"abres", el:"abre", nosotros:"abrimos", vosotros:"abris", ellos:"abren",
+      hook: "ABRIR — APRIL opens spring" },
+    { inf: "subir", en: "to go up/upload", stem: "sub",
+      yo:"subo", tu:"subes", el:"sube", nosotros:"subimos", vosotros:"subis", ellos:"suben",
+      hook: "SUBIR — SUBmarine goes up" },
+  ]
+};
+
+// Irregular verbs — the most important ones to memorize
+const IRREGULAR_VERBS = [
+  {
+    inf: "ser", en: "to be (permanent)", color: "#E8445A",
+    hook: "SER is for permanent things — SER-iously forever",
+    forms: { yo:"soy", tu:"eres", el:"es", nosotros:"somos", vosotros:"sois", ellos:"son" },
+    examples: [
+      { es: "Yo soy americana", en: "I am American (always true)" },
+      { es: "El es doctor", en: "He is a doctor (profession)" },
+      { es: "Somos familia", en: "We are family (permanent)" },
+    ]
+  },
+  {
+    inf: "estar", en: "to be (temporary)", color: "#DC6B19",
+    hook: "ESTAR is for temporary states — where you ESTAR-t today may change",
+    forms: { yo:"estoy", tu:"estas", el:"esta", nosotros:"estamos", vosotros:"estais", ellos:"estan" },
+    examples: [
+      { es: "Estoy cansada", en: "I am tired (right now, not forever)" },
+      { es: "Esta en Cuenca", en: "She is in Cuenca (location, can change)" },
+      { es: "Estamos felices", en: "We are happy (current mood)" },
+    ]
+  },
+  {
+    inf: "tener", en: "to have", color: "#10B981",
+    hook: "TENER — TEN things to HAVE today",
+    forms: { yo:"tengo", tu:"tienes", el:"tiene", nosotros:"tenemos", vosotros:"teneis", ellos:"tienen" },
+    examples: [
+      { es: "Tengo hambre", en: "I am hungry (lit: I have hunger)" },
+      { es: "Tienes razon", en: "You are right (lit: you have reason)" },
+      { es: "Tiene 10 anos", en: "She is 10 years old (lit: has 10 years)" },
+    ]
+  },
+  {
+    inf: "ir", en: "to go", color: "#3B82F6",
+    hook: "IR is tiny but wild — totally irregular, just memorize it",
+    forms: { yo:"voy", tu:"vas", el:"va", nosotros:"vamos", vosotros:"vais", ellos:"van" },
+    examples: [
+      { es: "Voy al mercado", en: "I am going to the market" },
+      { es: "Vamos a Cuenca", en: "We are going to Cuenca" },
+      { es: "Van a comer", en: "They are going to eat (ir + a + inf)" },
+    ]
+  },
+  {
+    inf: "hacer", en: "to do / to make", color: "#8B5CF6",
+    hook: "HACER — only yo is weird: HAGO. Rest follow -ER pattern",
+    forms: { yo:"hago", tu:"haces", el:"hace", nosotros:"hacemos", vosotros:"haceis", ellos:"hacen" },
+    examples: [
+      { es: "Que haces?", en: "What are you doing?" },
+      { es: "Hago ejercicio", en: "I exercise (I make exercise)" },
+      { es: "Hace calor", en: "It is hot (it makes heat)" },
+    ]
+  },
+  {
+    inf: "querer", en: "to want / to love", color: "#F59E0B",
+    hook: "QUERER — stem changes E to IE except nosotros/vosotros",
+    forms: { yo:"quiero", tu:"quieres", el:"quiere", nosotros:"queremos", vosotros:"quereis", ellos:"quieren" },
+    examples: [
+      { es: "Quiero aprender", en: "I want to learn" },
+      { es: "Te quiero", en: "I love you (family/friends)" },
+      { es: "Quieren comer", en: "They want to eat" },
+    ]
+  },
+  {
+    inf: "poder", en: "to be able to / can", color: "#059669",
+    hook: "PODER — stem changes O to UE. POder becomes PUEdo",
+    forms: { yo:"puedo", tu:"puedes", el:"puede", nosotros:"podemos", vosotros:"podeis", ellos:"pueden" },
+    examples: [
+      { es: "Puedo hablar", en: "I can speak" },
+      { es: "Puedes ayudarme?", en: "Can you help me?" },
+      { es: "No podemos ir", en: "We cannot go" },
+    ]
+  },
+  {
+    inf: "saber", en: "to know (facts)", color: "#DC2626",
+    hook: "SABER — only yo is weird: SE. Rest follow -ER pattern",
+    forms: { yo:"se", tu:"sabes", el:"sabe", nosotros:"sabemos", vosotros:"sabeis", ellos:"saben" },
+    examples: [
+      { es: "Se hablar espanol", en: "I know how to speak Spanish" },
+      { es: "Sabes donde esta?", en: "Do you know where it is?" },
+      { es: "No saben nada", en: "They don't know anything" },
+    ]
+  },
+];
+
+// Grammar lessons — bite-sized explanations with examples
+const GRAMMAR_LESSONS = [
+  {
+    id: "ser_estar",
+    title: "Ser vs. Estar — Both Mean To Be",
+    icon: "two",
+    color: "#E8445A",
+    difficulty: "Essential",
+    hook: "SER = permanent identity. ESTAR = temporary state. Ask: will this change?",
+    sections: [
+      {
+        heading: "Use SER for...",
+        points: [
+          { rule: "Identity & origin", example: "Soy americana — I am American", note: "Always true" },
+          { rule: "Profession", example: "Es medica — She is a doctor", note: "Who you are" },
+          { rule: "Relationships", example: "Es mi mama — She is my mom", note: "Permanent bond" },
+          { rule: "Time & dates", example: "Son las tres — It is three o'clock", note: "Factual" },
+          { rule: "Descriptions of character", example: "Eres inteligente — You are smart", note: "Core trait" },
+        ]
+      },
+      {
+        heading: "Use ESTAR for...",
+        points: [
+          { rule: "Location", example: "Estoy en Cuenca — I am in Cuenca", note: "Can change" },
+          { rule: "Feelings & mood", example: "Estoy feliz — I am happy", note: "Right now" },
+          { rule: "Health", example: "Esta enferma — She is sick", note: "Temporary" },
+          { rule: "Ongoing actions", example: "Estamos comiendo — We are eating", note: "In progress" },
+          { rule: "Appearance (vs. usual)", example: "Estas muy guapa — You look beautiful today", note: "Today, not always" },
+        ]
+      },
+      {
+        heading: "The classic trick question",
+        points: [
+          { rule: "El cafe es malo", example: "The coffee is bad (bad brand/taste always)", note: "Use SER" },
+          { rule: "El cafe esta frio", example: "The coffee is cold (right now, heat it up)", note: "Use ESTAR" },
+        ]
+      }
+    ]
+  },
+  {
+    id: "tu_usted",
+    title: "Tu vs. Usted — When to Be Formal",
+    icon: "formal",
+    color: "#2563EB",
+    difficulty: "Essential",
+    hook: "Tu is casual (friends, family, kids). Usted is respectful (strangers, elders, authority).",
+    sections: [
+      {
+        heading: "Use TU (informal) with...",
+        points: [
+          { rule: "Friends & family", example: "Como estas, mama? — How are you, mom?", note: "" },
+          { rule: "Children", example: "Como te llamas? — What is your name?", note: "Speaking to kids" },
+          { rule: "Peers your age", example: "Quieres comer? — Do you want to eat?", note: "Same generation" },
+          { rule: "Casual settings", example: "Hablas espanol? — Do you speak Spanish?", note: "At a cafe with a peer" },
+        ]
+      },
+      {
+        heading: "Use USTED (formal) with...",
+        points: [
+          { rule: "Older people", example: "Como esta usted? — How are you? (to elder)", note: "Show respect" },
+          { rule: "Strangers in service", example: "Puede ayudarme? — Can you help me?", note: "Doctor, official" },
+          { rule: "Professional settings", example: "Usted habla ingles? — Do you speak English?", note: "Formal" },
+          { rule: "People in authority", example: "Buenos dias, senor — Good morning, sir", note: "Police, mayor" },
+        ]
+      },
+      {
+        heading: "In Ecuador specifically...",
+        points: [
+          { rule: "Ecuadorians are quite formal", example: "Default to usted with adults you just met", note: "Safe rule" },
+          { rule: "They will invite you to use tu", example: "Tutear — when they say this, switch to tu", note: "They will tell you" },
+          { rule: "Kids always get tu", example: "Como te llamas, nino?", note: "Always informal with children" },
+        ]
+      }
+    ]
+  },
+  {
+    id: "gender",
+    title: "Gender — El and La, O and A",
+    icon: "gender",
+    color: "#10B981",
+    difficulty: "Foundation",
+    hook: "Every Spanish noun is masculine (el) or feminine (la). Adjectives must match.",
+    sections: [
+      {
+        heading: "The basic rule",
+        points: [
+          { rule: "Words ending in -O are usually masculine", example: "el libro (the book), el nino (the boy)", note: "Use el" },
+          { rule: "Words ending in -A are usually feminine", example: "la casa (the house), la nina (the girl)", note: "Use la" },
+          { rule: "Adjectives change to match", example: "el libro rojo / la casa roja — red book / red house", note: "O becomes A" },
+        ]
+      },
+      {
+        heading: "Common exceptions (just memorize these)",
+        points: [
+          { rule: "el dia (the day)", example: "Ends in A but masculine — el dia perfecto", note: "Exception!" },
+          { rule: "la mano (the hand)", example: "Ends in O but feminine — la mano derecha", note: "Exception!" },
+          { rule: "el problema, el tema", example: "Greek-origin words ending -ma are masculine", note: "Pattern" },
+          { rule: "la foto, la moto", example: "Short for fotografia — feminine stays", note: "Abbreviations" },
+        ]
+      },
+      {
+        heading: "Plural: use los and las",
+        points: [
+          { rule: "los + masculine plural", example: "los libros rojos — the red books", note: "" },
+          { rule: "las + feminine plural", example: "las casas rojas — the red houses", note: "" },
+          { rule: "Mixed group? Use masculine", example: "los ninos — boys, OR a mixed group", note: "Spanish default" },
+        ]
+      }
+    ]
+  },
+  {
+    id: "verb_order",
+    title: "Word Order — More Flexible Than English",
+    icon: "order",
+    color: "#8B5CF6",
+    difficulty: "Helpful",
+    hook: "English is rigid: Subject-Verb-Object. Spanish lets you rearrange for emphasis.",
+    sections: [
+      {
+        heading: "Basic order is similar to English",
+        points: [
+          { rule: "Subject + Verb + Object works fine", example: "Yo como una manzana — I eat an apple", note: "Safe default" },
+          { rule: "You can drop the subject entirely", example: "Como una manzana — (I) eat an apple", note: "Verb ending shows who" },
+        ]
+      },
+      {
+        heading: "Questions — just add tone or flip verb",
+        points: [
+          { rule: "Add question marks and raise voice", example: "Hablas espanol? — You speak Spanish?", note: "Same words, question tone" },
+          { rule: "Flip verb and subject", example: "Hablas tu espanol? — Do you speak Spanish?", note: "More formal question" },
+          { rule: "Add a question word first", example: "Donde esta el bano? — Where is the bathroom?", note: "Question word leads" },
+        ]
+      },
+      {
+        heading: "Negation — just add NO before verb",
+        points: [
+          { rule: "Put no directly before the verb", example: "No hablo espanol bien — I don't speak Spanish well", note: "Simple!" },
+          { rule: "Double negatives are correct in Spanish", example: "No tengo nada — I don't have nothing", note: "Both negatives stay" },
+          { rule: "No + verb + nunca = never", example: "No como nunca carne — I never eat meat", note: "Double negative = correct" },
+        ]
+      }
+    ]
+  },
+];
+
 const BADGE_DEF = {
   first_star: {icon:"🌟",name:"First Star",    desc:"Earned your first star!"},
   stars_50:   {icon:"⭐",name:"Star Collector",desc:"50 stars earned!"},
@@ -2358,6 +2724,396 @@ function ManageFamilyScreen({profile, profiles, onBack, onMemberRemoved}) {
     </div>
   );
 }
+
+// ══ VERB CHART SCREEN ═════════════════════════════════════════════════════════
+function VerbChartScreen({verb, isIrregular, onBack, color}) {
+  const forms = isIrregular ? verb.forms : {
+    yo: verb.stem + (verb.type === 'ar' ? 'o' : 'o'),
+    tu: verb.stem + (verb.type === 'ar' ? 'as' : 'es'),
+    el: verb.stem + (verb.type === 'ar' ? 'a' : 'e'),
+    nosotros: verb.stem + (verb.type === 'ar' ? 'amos' : verb.type === 'er' ? 'emos' : 'imos'),
+    vosotros: verb.stem + (verb.type === 'ar' ? 'ais' : verb.type === 'er' ? 'eis' : 'is'),
+    ellos: verb.stem + (verb.type === 'ar' ? 'an' : 'en'),
+  };
+  const pronLabels = {yo:"yo (I)", tu:"tu (you)", el:"el/ella (he/she)", nosotros:"nosotros (we)", vosotros:"vosotros (y'all)", ellos:"ellos (they)"};
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:20,color:"white",...DS}}>{verb.inf} — {verb.en}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{isIrregular ? "Irregular verb — memorize these forms" : "Regular verb — follows the pattern"}</div>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        {/* Hook */}
+        <div style={{background:`${color}12`,border:`1.5px solid ${color}40`,borderRadius:16,padding:"12px 14px",fontSize:13,color:"rgba(255,255,255,.8)",lineHeight:1.6}}>
+          <span style={{color,fontWeight:800}}>Memory Hook: </span>{verb.hook}
+        </div>
+        {/* Conjugation table */}
+        <div style={{background:"white",borderRadius:20,overflow:"hidden",boxShadow:`0 8px 28px ${color}25`}}>
+          {Object.entries(forms).map(([pron, form], i) => (
+            <div key={pron} style={{display:"flex",alignItems:"center",padding:"14px 16px",borderBottom:i<5?"1px solid #F3F4F6":"none",background:i%2===0?"white":"#FAFAFA"}}>
+              <div style={{width:140,fontSize:13,color:"#6B7280",fontWeight:600}}>{pronLabels[pron]}</div>
+              <div style={{flex:1,fontSize:20,color,fontWeight:900,...DS}}>{form}</div>
+              <button onClick={()=>speakEs(form)} style={{width:36,height:36,borderRadius:"50%",background:`${color}15`,border:`1.5px solid ${color}40`,fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>🔊</button>
+            </div>
+          ))}
+        </div>
+        {/* Examples if irregular */}
+        {isIrregular && verb.examples && (
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>REAL EXAMPLES</div>
+            {verb.examples.map((ex,i) => (
+              <div key={i} style={{background:"rgba(255,255,255,.08)",borderRadius:14,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15,color:"white",fontWeight:700}}>{ex.es}</div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:2}}>{ex.en}</div>
+                </div>
+                <button onClick={()=>speakEs(ex.es)} style={{width:34,height:34,borderRadius:"50%",background:`${color}15`,border:`1.5px solid ${color}40`,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🔊</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══ CONJUGATION PRACTICE MODE ═════════════════════════════════════════════════
+function ConjugationPractice({verbs, type, color, onBack, onEarn}) {
+  const allForms = verbs.flatMap(v =>
+    Object.entries(v.forms || {yo: v.stem+(type==='ar'?'o':'o'), tu: v.stem+(type==='ar'?'as':'es'), el: v.stem+(type==='ar'?'a':'e'), nosotros: v.stem+(type==='ar'?'amos':type==='er'?'emos':'imos'), vosotros: v.stem+(type==='ar'?'ais':type==='er'?'eis':'is'), ellos: v.stem+(type==='ar'?'an':'en')}).map(([pron, form]) => ({
+      inf: v.inf, en: v.en, stem: v.stem || null,
+      pronoun: pron, pronEn: {yo:"I", tu:"you", el:"he/she", nosotros:"we", vosotros:"you all", ellos:"they"}[pron],
+      answer: form, type
+    }))
+  );
+
+  const[queue]=useState(()=>shuffle(allForms));
+  const[idx,setIdx]=useState(0);
+  const[typed,setTyped]=useState("");
+  const[result,setResult]=useState(null);
+  const[score,setScore]=useState(0);
+  const inputRef=useRef(null);
+  const q=queue[idx%queue.length];
+
+  useEffect(()=>{setTyped("");setResult(null);setTimeout(()=>inputRef.current?.focus(),100);},[idx]);
+
+  const normV=s=>s.toLowerCase().replace(/á/g,"a").replace(/é/g,"e").replace(/í/g,"i").replace(/ó/g,"o").replace(/ú/g,"u").replace(/ñ/g,"n").trim();
+
+  const check=()=>{
+    if(!q||result)return;
+    const ua=normV(typed), ca=normV(q.answer);
+    if(ua===ca){setResult("correct");setScore(s=>s+1);onEarn(3);speakEs(q.answer);setTimeout(()=>setIdx(i=>i+1),1500);}
+    else setResult("wrong");
+  };
+
+  const pColors={yo:"#E8445A",tu:"#DC6B19","el/ella":"#10B981",nosotros:"#3B82F6",vosotros:"#8B5CF6",ellos:"#F59E0B"};
+  const pc=pColors[q?.pronoun]||color;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>Conjugate the verb! Score: {score} right</div>
+      <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
+        {/* Pronoun — prominent */}
+        <div style={{display:"inline-block",background:pc,borderRadius:20,padding:"6px 18px",fontSize:16,fontWeight:900,color:"white",marginBottom:12}}>
+          {q.pronoun} ({q.pronEn})
+        </div>
+        {/* Infinitive */}
+        <div style={{fontSize:28,color:"#1F2937",...DS}}>{q.inf}</div>
+        <div style={{fontSize:14,color:"#6B7280",marginTop:4}}>{q.en}</div>
+        <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
+          <button onClick={()=>speakEs(`${q.pronoun} ${q.answer}`)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:`${color}15`,border:`1.5px solid ${color}50`,fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color}}>
+            🔊 Hear answer
+          </button>
+        </div>
+      </div>
+      <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8}}>
+        <input ref={inputRef} value={typed} onChange={e=>!result&&setTyped(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!result&&check()} placeholder={`${q.pronoun} _____ (${q.en})`} disabled={!!result} style={{width:"100%",padding:"16px",borderRadius:16,border:`2px solid ${result==="correct"?"#10B981":result==="wrong"?"#EF4444":color+"60"}`,fontSize:18,fontFamily:"inherit",fontWeight:700,color:"#1F2937",outline:"none",background:result==="correct"?"#D1FAE5":result==="wrong"?"#FEE2E2":"white",textAlign:"center",transition:"all .2s"}}/>
+        <div style={{fontSize:11,color:"#9CA3AF",textAlign:"center"}}>Accents are optional — close spelling accepted</div>
+      </div>
+      {result&&(
+        <div style={{width:"100%",borderRadius:16,padding:"14px",background:result==="correct"?"#D1FAE5":"#FEE2E2",border:`2px solid ${result==="correct"?"#10B981":"#EF4444"}`,textAlign:"center"}}>
+          <div style={{fontSize:16,fontWeight:800,color:result==="correct"?"#10B981":"#EF4444"}}>
+            {result==="correct"?"Perfecto!":"The answer: "+q.pronoun+" "+q.answer}
+          </div>
+        </div>
+      )}
+      {!result
+        ?<ActionBtn onClick={check} bg={typed.trim()?color:"#9CA3AF"} style={{width:"100%",padding:14,fontSize:16,opacity:typed.trim()?1:.5}}>Check</ActionBtn>
+        :<div style={{display:"flex",gap:10,width:"100%"}}>
+          {result==="wrong"&&<ActionBtn onClick={()=>{setTyped("");setResult(null);}} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Try Again</ActionBtn>}
+          <ActionBtn onClick={()=>setIdx(i=>i+1)} bg={color} style={{flex:1,padding:14}}>Next</ActionBtn>
+        </div>
+      }
+    </div>
+  );
+}
+
+// ══ GRAMMAR LESSON SCREEN ═════════════════════════════════════════════════════
+function GrammarLessonScreen({lesson, onBack}) {
+  const[section,setSection]=useState(0);
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:18,color:"white",...DS}}>{lesson.title}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{lesson.difficulty}</div>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px",overflowY:"auto",paddingBottom:80}}>
+        {/* Hook card */}
+        <div style={{background:`${lesson.color}15`,border:`2px solid ${lesson.color}40`,borderRadius:18,padding:"16px",marginBottom:16}}>
+          <div style={{fontSize:12,fontWeight:800,color:lesson.color,letterSpacing:.5,marginBottom:6}}>THE BIG IDEA</div>
+          <div style={{fontSize:15,color:"white",lineHeight:1.6}}>{lesson.hook}</div>
+          <button onClick={()=>speakEn(lesson.hook)} style={{display:"flex",alignItems:"center",gap:6,marginTop:10,padding:"6px 12px",borderRadius:12,background:`${lesson.color}20`,border:`1px solid ${lesson.color}40`,fontSize:12,cursor:"pointer",fontFamily:"inherit",color:lesson.color,fontWeight:700}}>
+            🔊 Hear this
+          </button>
+        </div>
+        {/* Section tabs */}
+        <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+          {lesson.sections.map((s,i)=>(
+            <button key={i} onClick={()=>setSection(i)} style={{padding:"6px 12px",borderRadius:14,background:section===i?lesson.color:"rgba(255,255,255,.1)",border:"none",color:section===i?"white":"rgba(255,255,255,.6)",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+              {s.heading.split(" — ")[0].substring(0,20)}
+            </button>
+          ))}
+        </div>
+        {/* Current section */}
+        {lesson.sections[section]&&(
+          <div>
+            <div style={{fontSize:15,color:lesson.color,fontWeight:800,marginBottom:12}}>{lesson.sections[section].heading}</div>
+            {lesson.sections[section].points.map((pt,i)=>(
+              <div key={i} style={{background:"rgba(255,255,255,.07)",borderRadius:14,padding:"14px 16px",marginBottom:8,borderLeft:`3px solid ${lesson.color}`}}>
+                <div style={{fontSize:14,color:"white",fontWeight:700,marginBottom:4}}>{pt.rule}</div>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:pt.note?4:0}}>
+                  <div style={{flex:1,fontSize:14,color:lesson.color,fontStyle:"italic"}}>{pt.example}</div>
+                  <button onClick={()=>speakEs(pt.example.split(" — ")[0])} style={{width:30,height:30,borderRadius:"50%",background:`${lesson.color}15`,border:`1px solid ${lesson.color}30`,fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>🔊</button>
+                </div>
+                {pt.note&&<div style={{fontSize:11,color:"rgba(255,255,255,.4)",fontWeight:700}}>{pt.note}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══ MAIN CONJUGATION HUB ══════════════════════════════════════════════════════
+function ConjugationScreen({onBack, profile, onEarn}) {
+  const[view,setView]=useState("hub"); // hub|patterns|regular|irregular|grammar|chart|practice|lesson
+  const[selectedType,setSelectedType]=useState(null);
+  const[selectedVerb,setSelectedVerb]=useState(null);
+  const[selectedLesson,setSelectedLesson]=useState(null);
+  const[isIrregular,setIsIrregular]=useState(false);
+
+  if(view==="chart"&&selectedVerb){
+    return <VerbChartScreen verb={selectedVerb} isIrregular={isIrregular} color={isIrregular?selectedVerb.color:CONJ_PATTERNS[selectedType]?.color||"#2563EB"} onBack={()=>setView(isIrregular?"irregular":"regular")}/>;
+  }
+  if(view==="practice"&&selectedType){
+    const verbs=selectedType==="irregular"?IRREGULAR_VERBS:REGULAR_VERBS[selectedType]||[];
+    const color=selectedType==="irregular"?"#E8445A":CONJ_PATTERNS[selectedType]?.color||"#2563EB";
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setView(selectedType==="irregular"?"irregular":"regular")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+          <div style={{fontSize:18,color:"white",...DS}}>Conjugation Practice</div>
+        </div>
+        <div style={{flex:1,padding:"14px 14px 40px"}}>
+          <div style={{background:"white",borderRadius:24,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
+            <ConjugationPractice verbs={verbs} type={selectedType} color={color} onBack={()=>setView(selectedType==="irregular"?"irregular":"regular")} onEarn={onEarn}/>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if(view==="lesson"&&selectedLesson){
+    return <GrammarLessonScreen lesson={selectedLesson} onBack={()=>setView("grammar")}/>;
+  }
+
+  // Pattern view
+  if(view==="patterns"){
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setView("hub")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+          <div style={{fontSize:18,color:"white",...DS}}>The Ending Patterns</div>
+        </div>
+        <div style={{padding:"20px 16px",overflowY:"auto"}}>
+          <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:16,lineHeight:1.6}}>
+            Almost all Spanish verbs follow one of three patterns. Learn these endings and you can conjugate thousands of verbs!
+          </div>
+          {Object.entries(CONJ_PATTERNS).map(([type,pat])=>(
+            <div key={type} style={{background:"rgba(255,255,255,.07)",border:`2px solid ${pat.color}40`,borderRadius:18,padding:"18px",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                <div style={{background:pat.color,borderRadius:10,padding:"4px 12px",fontSize:13,fontWeight:900,color:"white"}}>{type.toUpperCase()}</div>
+                <div style={{fontSize:15,color:"white",fontWeight:700}}>{pat.label}</div>
+              </div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:10,fontStyle:"italic"}}>{pat.example}</div>
+              <div style={{background:`${pat.color}10`,borderRadius:12,padding:"10px 12px",marginBottom:10,fontSize:13,color:"rgba(255,255,255,.8)"}}>
+                {pat.hook}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {Object.entries(pat.endings).map(([pron,end])=>(
+                  <div key={pron} style={{background:"rgba(255,255,255,.06)",borderRadius:10,padding:"8px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <span style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:600}}>{pron}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontSize:14,color:pat.color,fontWeight:900}}>-{end}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:6}}>
+                {Object.entries(pat.memory).map(([pron,mem])=>(
+                  <div key={pron} style={{fontSize:12,color:"rgba(255,255,255,.5)",display:"flex",gap:6}}>
+                    <span style={{color:pat.color,fontWeight:700,minWidth:70}}>{pron}:</span>
+                    <span>{mem}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Regular verbs list
+  if(view==="regular"){
+    const pat=CONJ_PATTERNS[selectedType];
+    const verbs=REGULAR_VERBS[selectedType]||[];
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setView("hub")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+          <div style={{flex:1}}><div style={{fontSize:18,color:"white",...DS}}>{pat?.label}</div><div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>Regular {selectedType?.toUpperCase()} verbs</div></div>
+        </div>
+        <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:3}}>
+          <ActionBtn onClick={()=>{setView("practice");}} bg={pat?.color} style={{marginBottom:10,padding:14,fontSize:15}}>Practice All — Type the Conjugation</ActionBtn>
+          {verbs.map((v,i)=>(
+            <button key={i} onClick={()=>{setSelectedVerb({...v,type:selectedType});setIsIrregular(false);setView("chart");}} style={{width:"100%",padding:"14px 16px",borderRadius:16,background:"rgba(255,255,255,.07)",border:`1px solid ${pat?.color}30`,cursor:"pointer",display:"flex",alignItems:"center",gap:12,marginBottom:6,textAlign:"left"}}>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,color:"white",fontWeight:700}}>{v.inf}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>yo: {v.yo} &nbsp;·&nbsp; tu: {v.tu} &nbsp;·&nbsp; el: {v.el}</div>
+              </div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>{v.en} ›</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Irregular verbs list
+  if(view==="irregular"){
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setView("hub")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+          <div style={{flex:1}}><div style={{fontSize:18,color:"white",...DS}}>Irregular Verbs</div><div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>Most important verbs to memorize</div></div>
+        </div>
+        <div style={{padding:"16px",display:"flex",flexDirection:"column",gap:3}}>
+          <ActionBtn onClick={()=>{setSelectedType("irregular");setView("practice");}} bg="#E8445A" style={{marginBottom:10,padding:14,fontSize:15}}>Practice All Irregular Verbs</ActionBtn>
+          {IRREGULAR_VERBS.map((v,i)=>(
+            <button key={i} onClick={()=>{setSelectedVerb(v);setIsIrregular(true);setView("chart");}} style={{width:"100%",padding:"14px 16px",borderRadius:16,background:"rgba(255,255,255,.07)",border:`1px solid ${v.color}40`,cursor:"pointer",display:"flex",alignItems:"center",gap:12,marginBottom:6,textAlign:"left"}}>
+              <div style={{width:10,height:10,borderRadius:"50%",background:v.color,flexShrink:0}}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,color:"white",fontWeight:700}}>{v.inf} — {v.en}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>yo: {v.forms.yo} &nbsp;·&nbsp; tu: {v.forms.tu} &nbsp;·&nbsp; nosotros: {v.forms.nosotros}</div>
+              </div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.4)"}}>›</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Grammar lessons list
+  if(view==="grammar"){
+    return(
+      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setView("hub")} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+          <div style={{fontSize:18,color:"white",...DS}}>Grammar Lessons</div>
+        </div>
+        <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:10}}>
+          <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:4}}>Understand WHY Spanish works the way it does.</div>
+          {GRAMMAR_LESSONS.map((lesson,i)=>(
+            <button key={i} onClick={()=>{setSelectedLesson(lesson);setView("lesson");}} style={{width:"100%",padding:"18px",borderRadius:18,background:"rgba(255,255,255,.07)",border:`2px solid ${lesson.color}40`,cursor:"pointer",display:"flex",alignItems:"center",gap:14,textAlign:"left"}}>
+              <div style={{width:48,height:48,borderRadius:14,background:`${lesson.color}20`,border:`2px solid ${lesson.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,color:lesson.color,flexShrink:0,textAlign:"center",lineHeight:1.2,padding:4}}>
+                {lesson.difficulty}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:15,color:"white",fontWeight:800}}>{lesson.title}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:3,lineHeight:1.4}}>{lesson.hook.substring(0,60)}...</div>
+              </div>
+              <div style={{fontSize:22,color:lesson.color}}>›</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Hub — main landing screen
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:20,color:"white",...DS}}>Verbs and Grammar</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>The engine of the Spanish language</div>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        {/* Patterns — start here */}
+        <button onClick={()=>setView("patterns")} style={{width:"100%",padding:"20px",borderRadius:20,background:"linear-gradient(135deg,#1E3A5F,#1D4ED8)",border:"2px solid #3B82F6",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:40}}>📐</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:16,color:"white",fontWeight:800}}>The 3 Patterns — Start Here</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:3}}>-AR, -ER, -IR endings explained with memory hooks</div>
+          </div>
+          <div style={{fontSize:22,color:"#60A5FA"}}>›</div>
+        </button>
+
+        <div style={{fontSize:12,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.5,marginTop:4}}>REGULAR VERBS</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+          {Object.entries(CONJ_PATTERNS).map(([type,pat])=>(
+            <button key={type} onClick={()=>{setSelectedType(type);setView("regular");}} style={{padding:"16px 10px",borderRadius:16,background:`${pat.color}15`,border:`2px solid ${pat.color}40`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+              <div style={{fontSize:24,fontWeight:900,color:pat.color}}>-{type.toUpperCase()}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.7)",textAlign:"center",lineHeight:1.3}}>{REGULAR_VERBS[type]?.length||0} verbs</div>
+            </button>
+          ))}
+        </div>
+
+        <button onClick={()=>setView("irregular")} style={{width:"100%",padding:"18px",borderRadius:18,background:"rgba(239,68,68,.12)",border:"2px solid rgba(239,68,68,.4)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:34}}>⚡</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,color:"white",fontWeight:800}}>Irregular Verbs — Must Know</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:2}}>ser, estar, tener, ir, hacer, querer, poder, saber</div>
+          </div>
+          <div style={{fontSize:22,color:"#F87171"}}>›</div>
+        </button>
+
+        <div style={{fontSize:12,color:"rgba(255,255,255,.4)",fontWeight:700,letterSpacing:.5,marginTop:4}}>GRAMMAR</div>
+        <button onClick={()=>setView("grammar")} style={{width:"100%",padding:"18px",borderRadius:18,background:"rgba(139,92,246,.12)",border:"2px solid rgba(139,92,246,.4)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:34}}>📖</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:15,color:"white",fontWeight:800}}>Grammar Lessons</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:2}}>Ser vs. Estar, Tu vs. Usted, Gender, Word Order</div>
+          </div>
+          <div style={{fontSize:22,color:"#A78BFA"}}>›</div>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ══ PROFILE SELECT ════════════════════════════════════════════════════════════
 function ProfileSelectScreen({profiles,onSelect,onCreate}){
   return(
@@ -2428,7 +3184,7 @@ function CreateProfileScreen({onDone,onBack}){
 }
 
 // ══ HOME SCREEN ═══════════════════════════════════════════════════════════════
-function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onCore,onExam,onExamPrompt,onShowStarInfo,dailyDone}){
+function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onCore,onConjugation,onExam,onExamPrompt,onShowStarInfo,dailyDone}){
   const lv=profile.level||1;
   const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
   const[showStarInfo,setShowStarInfo]=useState(false);
@@ -2813,6 +3569,7 @@ export default function App(){
   const[activeStory,setActiveStory]=useState(null);
   const[familyReady,setFamilyReady]=useState(!!getFamilyId());
   const[examLevel,setExamLevel]=useState(1);
+  const[conjLevel,setConjLevel]=useState(1);
   const[celebration,setCelebration]=useState(null);
   const[confirmDelete,setConfirmDelete]=useState(false); // {catLabel, color}
   const[familyCode,setFamilyCode]=useState(null);
@@ -3001,7 +3758,7 @@ export default function App(){
       }}/>}
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
-      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} onExamPrompt={(lv)=>{setExamLevel(lv);setScreen("exam");}} onShowStarInfo={()=>{}} dailyDone={dailyDone}/>}
+      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} onConjugation={()=>setScreen("conjugation")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} onExamPrompt={(lv)=>{setExamLevel(lv);setScreen("exam");}} onShowStarInfo={()=>{}} dailyDone={dailyDone}/>}
       {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onWordResult={handleWordResult} onBookmark={handleBookmark} onSayItAttempt={handleSayItAttempt} onCatProgress={handleCatProgress}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
@@ -3010,7 +3767,8 @@ export default function App(){
       {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass}/>}
       {familyReady&&screen==="switchfamily" &&<SwitchFamilyScreen onSwitch={handleFamilySwitch} onBack={()=>setScreen("myprofile")}/>}
       {familyReady&&screen==="managemembers"&&profile&&<ManageFamilyScreen profile={profile} profiles={profiles} onBack={()=>setScreen("myprofile")} onMemberRemoved={handleMemberRemoved}/>}
-      {familyReady&&screen==="core"             &&<CoreWordsScreen onBack={()=>setScreen("home")} profile={profile}/>}
+      {familyReady&&screen==="conjugation" &&profile&&<ConjugationScreen onBack={()=>setScreen("home")} profile={profile} onEarn={handleEarn}/>}
+      {familyReady&&screen==="core"                   &&<CoreWordsScreen onBack={()=>setScreen("home")} profile={profile}/>}
       {familyReady&&screen==="editprofile"&&profile&&<EditProfileScreen profile={profile} familyCode={familyCode} onSave={handleSaveProfile} onBack={()=>setScreen("myprofile")} onDelete={()=>setConfirmDelete(true)}/>}
       {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
