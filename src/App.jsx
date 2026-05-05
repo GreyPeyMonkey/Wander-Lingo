@@ -1048,6 +1048,7 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
     setSelected(opt);setTotal(t=>t+1);
     const correct=opt.en===word.en;
     if(correct){setScore(s=>s+1);onEarn(2);onStat("quiz");}
+    if(onWordResult)onWordResult(word,correct);
     else{setMissed(m=>[...m,word]);}
     setTimeout(()=>setIdx(i=>i+1),1400);
   };
@@ -2139,7 +2140,7 @@ function EditProfileScreen({profile,familyCode,onSave,onBack,onDelete}){
 }
 
 // == DAILY REVIEW SCREEN ==
-function DailyReviewScreen({profile,onComplete}){
+function DailyReviewScreen({profile,onComplete,onBookmark}){
   const missedWords=profile.missedWords||{};
   const bookmarked=profile.bookmarked||[];
   const allVocab=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
@@ -2212,6 +2213,11 @@ function DailyReviewScreen({profile,onComplete}){
             );
           })}
         </div>
+        {selected&&(profile.bookmarked||[]).includes(word.es)&&onBookmark&&(
+          <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,background:"rgba(252,211,77,.1)",border:"1px solid rgba(252,211,77,.3)",color:"#FCD34D",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+            <span>🔖</span><span>I know this now — remove bookmark</span>
+          </button>
+        )}
       </div>
     </div>
   );
@@ -2519,7 +2525,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
             const suggested=nextSuggested&&nextSuggested.key===key&&nextSuggested.lv===lv;
             const starDisplay=["","⭐","⭐⭐","⭐⭐⭐"][stars]||"";
             return(
-              <button key={key} onClick={()=>unlocked?onLearn(key,lv):onShowStarInfo&&onShowStarInfo()}
+              <button key={key} onClick={()=>unlocked?onLearn(key,lv):setShowStarInfo(true)}
                 style={{padding:"14px 8px",borderRadius:18,
                   background:suggested?`${cat.color}35`:stars>=3?`${cat.color}18`:"rgba(255,255,255,.07)",
                   border:suggested?`2.5px solid ${cat.color}`:stars>=3?`2px solid ${cat.color}60`:`2px solid ${unlocked?cat.color+"40":"rgba(255,255,255,.1)"}`,
@@ -2969,7 +2975,7 @@ export default function App(){
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
       {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")} onSwitchFamily={()=>setScreen("switchfamily")} onManageMembers={()=>setScreen("managemembers")}/>}
-      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")}/>}
+      {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")} onBookmark={handleBookmark}/>}
       {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass}/>}
       {familyReady&&screen==="switchfamily" &&<SwitchFamilyScreen onSwitch={handleFamilySwitch} onBack={()=>setScreen("myprofile")}/>}
       {familyReady&&screen==="managemembers"&&profile&&<ManageFamilyScreen profile={profile} profiles={profiles} onBack={()=>setScreen("myprofile")} onMemberRemoved={handleMemberRemoved}/>}
