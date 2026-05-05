@@ -640,6 +640,45 @@ const getLevelProgress = (profile, forLevel) => {
   return { current: qualifying.length, needed: req.catsNeeded };
 };
 
+
+// ══ GUIDED PATH SYSTEM ════════════════════════════════════════════════════════
+// Categories unlock sequentially — finish one to open the next
+// Need at least 1 star (tried the quiz) to unlock the next category
+
+const getCatStars = (profile, catKey, catLevel) => {
+  const key = `progress_${catLevel}_${catKey}`;
+  return (profile.catProgress || {})[key] || 0;
+};
+
+const getNextSuggestedCat = (profile) => {
+  const lv = profile.level || 1;
+  const vocab = lv >= 3 ? VOCAB_L3 : lv >= 2 ? VOCAB_L2 : VOCAB_L1;
+  const keys = Object.keys(vocab);
+  // Find first category with 0 stars — that's the suggested one
+  for (const key of keys) {
+    if (getCatStars(profile, key, lv) === 0) return { key, lv, cat: vocab[key] };
+  }
+  // All have at least 1 star — suggest lowest star count
+  let lowest = null;
+  for (const key of keys) {
+    const stars = getCatStars(profile, key, lv);
+    if (stars < 3 && (!lowest || stars < getCatStars(profile, lowest.key, lv))) {
+      lowest = { key, lv, cat: vocab[key] };
+    }
+  }
+  return lowest; // null means all at 3 stars — level complete!
+};
+
+const isCatUnlocked = (profile, catKey, catLevel) => {
+  const vocab = catLevel >= 3 ? VOCAB_L3 : catLevel >= 2 ? VOCAB_L2 : VOCAB_L1;
+  const keys = Object.keys(vocab);
+  const idx = keys.indexOf(catKey);
+  if (idx <= 0) return true; // First category always unlocked
+  // Previous category needs at least 1 star
+  const prevKey = keys[idx - 1];
+  return getCatStars(profile, prevKey, catLevel) >= 1;
+};
+
 const BADGE_DEF = {
   first_star: {icon:"🌟",name:"First Star",    desc:"Earned your first star!"},
   stars_50:   {icon:"⭐",name:"Star Collector",desc:"50 stars earned!"},
@@ -2118,6 +2157,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
   const lv=profile.level||1;
   const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
   const catKeys=Object.keys(vocab);
+  const nextSuggested=getNextSuggestedCat(profile);
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"16px 18px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
@@ -2133,6 +2173,19 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
       </div>
 
       <div style={{flex:1,overflowY:"auto",padding:"16px 16px 100px"}}>
+        {/* Today's Path — suggested next step */}
+        {nextSuggested&&(
+          <button onClick={()=>onLearn(nextSuggested.key,nextSuggested.lv)} style={{width:"100%",padding:"16px",borderRadius:20,background:`linear-gradient(135deg,${nextSuggested.cat.color}22,${nextSuggested.cat.color}10)`,border:`2px solid ${nextSuggested.cat.color}`,cursor:"pointer",textAlign:"left",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:48,height:48,borderRadius:14,background:nextSuggested.cat.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{nextSuggested.cat.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,fontWeight:800,color:nextSuggested.cat.color,letterSpacing:.5,marginBottom:2}}>SUGGESTED NEXT</div>
+              <div style={{fontSize:15,color:"white",fontWeight:800}}>{nextSuggested.cat.label}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Tap to start learning!</div>
+            </div>
+            <div style={{fontSize:22,color:nextSuggested.cat.color}}>›</div>
+          </button>
+        )}
+
         {/* Daily Challenge */}
         <button onClick={dailyDone?undefined:onDaily} style={{width:"100%",padding:"18px",borderRadius:22,background:dailyDone?"rgba(255,255,255,.06)":profile.color,border:dailyDone?"2px solid rgba(255,255,255,.12)":`2px solid ${profile.color}`,cursor:dailyDone?"default":"pointer",textAlign:"left",marginBottom:12,display:"flex",alignItems:"center",gap:14,opacity:dailyDone?.6:1}}>
           <span style={{fontSize:36}}>📅</span>
@@ -2189,15 +2242,24 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-          {catKeys.map(key=>{
-            const c=vocab[key];
-            const stars=getCatProgress(profile,key,lv);
+          {catKeys.map((key,ki)=>{
+            const cat=vocab[key];
+            const stars=getCatStars(profile,key,lv);
+            const unlocked=isCatUnlocked(profile,key,lv);
+            const suggested=nextSuggested&&nextSuggested.key===key&&nextSuggested.lv===lv;
             const starDisplay=["","⭐","⭐⭐","⭐⭐⭐"][stars]||"";
             return(
-              <button key={key} onClick={()=>onLearn(key,lv)} style={{padding:"14px 8px",borderRadius:18,background:stars>=3?`${c.color}22`:"rgba(255,255,255,.07)",border:`2px solid ${stars>=1?c.color:c.color+"40"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:5,position:"relative"}}>
-                {stars>=3&&<div style={{position:"absolute",top:4,right:4,fontSize:9,background:c.color,color:"white",borderRadius:6,padding:"1px 5px",fontWeight:800}}>✓</div>}
-                <span style={{fontSize:26}}>{c.icon}</span>
-                <span style={{fontSize:10,fontWeight:800,color:"white",textAlign:"center",lineHeight:1.2}}>{c.label}</span>
+              <button key={key} onClick={()=>unlocked?onLearn(key,lv):null}
+                style={{padding:"14px 8px",borderRadius:18,
+                  background:suggested?`${cat.color}35`:stars>=3?`${cat.color}18`:"rgba(255,255,255,.07)",
+                  border:suggested?`2.5px solid ${cat.color}`:stars>=3?`2px solid ${cat.color}60`:`2px solid ${unlocked?cat.color+"40":"rgba(255,255,255,.1)"}`,
+                  cursor:unlocked?"pointer":"default",display:"flex",flexDirection:"column",alignItems:"center",gap:5,position:"relative",
+                  opacity:unlocked?1:0.45,transition:"all .2s"}}>
+                {stars>=3&&<div style={{position:"absolute",top:3,right:3,fontSize:9,background:cat.color,color:"white",borderRadius:6,padding:"1px 5px",fontWeight:800}}>Done!</div>}
+                {suggested&&<div style={{position:"absolute",top:3,left:3,fontSize:9,background:cat.color,color:"white",borderRadius:6,padding:"1px 5px",fontWeight:800}}>Next!</div>}
+                {!unlocked&&<div style={{position:"absolute",top:3,right:3,fontSize:12}}>🔒</div>}
+                <span style={{fontSize:unlocked?26:22}}>{cat.icon}</span>
+                <span style={{fontSize:10,fontWeight:800,color:unlocked?"white":"rgba(255,255,255,.4)",textAlign:"center",lineHeight:1.2}}>{cat.label}</span>
                 <div style={{fontSize:10,minHeight:14,color:"#FCD34D"}}>{starDisplay}</div>
               </button>
             );
@@ -2261,7 +2323,7 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
           {mode==="scramble"&&<ScrambleMode key={`sc${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="write"&&<WriteMode key={`wr${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="sayit"&&<SayItMode key={`si${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
-          {mode==="speak"&&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
+          {mode==="speak"&&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
         </div>
       </div>
     </div>
@@ -2317,8 +2379,7 @@ function DailyScreen({profile,onBack,onComplete}){
           <div style={{height:"100%",borderRadius:99,background:"#FCD34D",width:`${(idx/5)*100}%`,transition:"width .4s"}}/>
         </div>
         <div style={{background:"white",borderRadius:24,padding:"22px 20px",border:"3px solid #FCD34D",boxShadow:"0 8px 28px rgba(0,0,0,.3)",textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:68}}>{word.emoji}</div>
-          <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
+          <div style={{fontSize:28,color:"#1F2937",...DS}}>{word.es}</div>
           <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
             <SpeakEsBtn text={word.es} color="#F59E0B" size={40}/><span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear</span>
           </div>
@@ -2430,6 +2491,7 @@ export default function App(){
   const[activeStory,setActiveStory]=useState(null);
   const[familyReady,setFamilyReady]=useState(!!getFamilyId());
   const[examLevel,setExamLevel]=useState(1);
+  const[celebration,setCelebration]=useState(null); // {catLabel, color}
   const[familyCode,setFamilyCode]=useState(null);
   const[showReview,setShowReview]=useState(false);
   const profile=profiles.find(p=>p.id===activeId)||null;
@@ -2512,6 +2574,12 @@ export default function App(){
     const newProgress=setCatProgress(profile,catKey,catLevel,stars);
     if(JSON.stringify(newProgress)===JSON.stringify(profile.catProgress||{}))return;
     await updateProfile(activeId,{catProgress:newProgress});
+    // Trigger celebration when a category hits 3 stars for first time
+    if(stars>=3){
+      const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
+      const cat=vocab[catKey];
+      if(cat)setCelebration({catLabel:cat.label,icon:cat.icon,color:cat.color});
+    }
   };
 
   const handleDailyComplete=async score=>{
@@ -2575,6 +2643,19 @@ export default function App(){
       {familyReady&&screen==="editprofile"&&profile&&<EditProfileScreen profile={profile} familyCode={familyCode} onSave={handleSaveProfile} onBack={()=>setScreen("myprofile")}/>}
       {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
+      {/* Category complete celebration overlay */}
+      {celebration&&(
+        <div onClick={()=>setCelebration(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} >
+          <div style={{textAlign:"center",background:"rgba(255,255,255,.1)",backdropFilter:"blur(20px)",borderRadius:32,padding:"40px 32px",width:"100%",maxWidth:360,border:`2px solid ${celebration.color}`}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:72,marginBottom:8}}>{celebration.icon}</div>
+            <div style={{fontSize:13,fontWeight:800,color:celebration.color,letterSpacing:1,marginBottom:6}}>CATEGORY COMPLETE!</div>
+            <div style={{fontSize:28,color:"white",fontWeight:900,marginBottom:4}}>{celebration.catLabel}</div>
+            <div style={{display:"flex",justifyContent:"center",gap:6,fontSize:36,marginBottom:16}}>⭐⭐⭐</div>
+            <div style={{fontSize:14,color:"rgba(255,255,255,.7)",marginBottom:24}}>You've mastered this category! The next one is now unlocked.</div>
+            <button onClick={()=>setCelebration(null)} style={{width:"100%",padding:"14px",borderRadius:18,background:celebration.color,border:"none",color:"white",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>Keep Going!</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
