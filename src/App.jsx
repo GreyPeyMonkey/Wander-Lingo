@@ -921,7 +921,7 @@ function FlashcardMode({words,color,onEarn}){
           </button>
           {showHook&&(
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,paddingTop:10,borderTop:`1px solid ${color}20`}}>
-              <button onClick={e=>{e.stopPropagation();speakEnSlow(word.hook.split(" — ")[0].split(" - ")[0]);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
+              <button onClick={e=>{e.stopPropagation();speakEnSlow(word.hook);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
                 <span style={{fontSize:16}}>🔊</span><span>Hear the hook!</span>
               </button>
               <span style={{fontSize:12,color:"#6B7280"}}>Tap to listen!</span>
@@ -2234,7 +2234,8 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
   const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
   // Mix Review: shuffle all level words, pick 20, use Quiz mode by default
   const reviewWords=React.useMemo(()=>shuffle(allWords).slice(0,20),[catKey,catLevel]);
-  const cat=catKey==="__review__"?{icon:"shuffle",label:"Mix Review",color:profile.color,words:reviewWords}:vocab[catKey];
+  const cat=catKey==="__review__"?{icon:"shuffle",label:"Mix Review",color:profile.color,words:reviewWords}:(vocab[catKey]||null);
+  if(!cat)return null;
   const modes=[{id:"flashcard",label:"Cards"},{id:"quiz",label:"Quiz"},{id:"listen",label:"Listen"},{id:"scramble",label:"Scramble"},{id:"write",label:"Write It"},{id:"match",label:"Match"},{id:"sayit",label:"Say It"},{id:"speak",label:"Echo"}];
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
@@ -2381,6 +2382,7 @@ function MyProfileScreen({profile,onBack,familyCode,onEdit}){
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
         <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>←</button>
         <div style={{fontSize:20,color:"white",...DS}}>🎖️ Explorer Card</div>
+        <button onClick={onEdit} style={{background:"rgba(255,255,255,.15)",border:"none",borderRadius:12,padding:"7px 14px",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Edit Profile</button>
       </div>
       <div style={{padding:"24px 16px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",paddingBottom:40}}>
         <div style={{background:`linear-gradient(135deg,${profile.color},${profile.color}99)`,borderRadius:24,padding:24,textAlign:"center"}}>
