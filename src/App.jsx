@@ -646,8 +646,20 @@ const getLevelProgress = (profile, forLevel) => {
 // Need at least 1 star (tried the quiz) to unlock the next category
 
 const getCatStars = (profile, catKey, catLevel) => {
-  const key = `progress_${catLevel}_${catKey}`;
-  return (profile.catProgress || {})[key] || 0;
+  const progressKey = `progress_${catLevel}_${catKey}`;
+  const quizStars = (profile.catProgress || {})[progressKey] || 0;
+  // 3 stars requires at least 3 successful Say It attempts in this category
+  if(quizStars >= 3){
+    const sayItKey = `${catLevel}_${catKey}`;
+    const sayItCount = (profile.catSayIt || {})[sayItKey] || 0;
+    return sayItCount >= 3 ? 3 : 2; // Cap at 2 until Say It requirement met
+  }
+  return quizStars;
+};
+
+const getSayItProgress = (profile, catKey, catLevel) => {
+  const key = `${catLevel}_${catKey}`;
+  return (profile.catSayIt || {})[key] || 0;
 };
 
 const getNextSuggestedCat = (profile) => {
@@ -745,6 +757,9 @@ const loadProfiles = async () => {
     dailyScores: r.daily_scores || {}, storiesRead: r.stories_read || 0,
     level: r.level || 1,
     catProgress: r.cat_progress || {},
+    missedWords: r.missed_words || {},
+    bookmarked: r.bookmarked || [],
+    catSayIt: r.cat_say_it || {},
   }));
 };
 
@@ -760,7 +775,7 @@ const saveProfile = async (profile) => {
     speak_attempts: profile.speakAttempts, cats_played: profile.catsPlayed,
     match_wins: profile.matchWins, daily_done: profile.dailyDone,
     daily_scores: profile.dailyScores, stories_read: profile.storiesRead,
-    level: profile.level, cat_progress: profile.catProgress||{}, updated_at: new Date().toISOString()
+    level: profile.level, cat_progress: profile.catProgress||{}, missed_words: profile.missedWords||{}, bookmarked: profile.bookmarked||[], cat_say_it: profile.catSayIt||{}, updated_at: new Date().toISOString()
   });
 };
 
@@ -781,7 +796,9 @@ const createProfile = (name, avatar, color) => ({
   id: Date.now().toString(), name, avatar, color,
   stars: 0, streak: 0, longestStreak: 0, lastDate: null,
   badges: [], quizCorrect: 0, speakAttempts: 0,
-  catsPlayed: [], matchWins: 0, dailyDone: 0, dailyScores: {},
+  catsPlayed: [], matchWins: 0, dailyDone: 0,
+  bookmarked: [],
+  catSayIt: {}, dailyScores: {},
   storiesRead: 0, level: 1, catProgress: {}, missedWords: {},
 });
 
@@ -928,7 +945,7 @@ function StarCount({count,color}){
 }
 
 // ══ FLASHCARD (with memory hook) ══════════════════════════════════════════════
-function FlashcardMode({words,color,onEarn}){
+function FlashcardMode({words,color,onEarn,bookmarked,onBookmark}){
   const[idx,setIdx]=useState(0);
   const[flipped,setFlipped]=useState(false);
   const[showHook,setShowHook]=useState(false);
@@ -983,6 +1000,11 @@ function FlashcardMode({words,color,onEarn}){
       </div>
 
       {!flipped&&<div style={{fontSize:12,color:"#9CA3AF",textAlign:"center"}}>Tap 🔈 to hear it · Tap 💡 for a memory trick · Tap card to flip</div>}
+      {/* Bookmark button — saves word to struggle list */}
+      <button onClick={()=>onBookmark&&onBookmark(word)} title="Mark for review"
+        style={{alignSelf:"center",background:"none",border:"none",fontSize:22,cursor:"pointer",opacity:.7,padding:"4px 8px"}}>
+        {bookmarked?.includes(word.es)?"🔖":"🏷️"}
+      </button>
 
       <div style={{display:"flex",gap:10,width:"100%"}}>
         <ActionBtn onClick={()=>navigate(-1,false)} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>← Back</ActionBtn>
@@ -1429,7 +1451,7 @@ function WriteMode({words,color,onEarn,onStat}){
 }
 
 // == SAY IT MODE ==
-function SayItMode({words,color,onEarn,onStat}){
+function SayItMode({words,color,onEarn,onStat,onSayItAttempt}){
   const queue=useRef(shuffle(words));
   const[idx,setIdx]=useState(0);
   const[phase,setPhase]=useState("ready");
@@ -1449,7 +1471,7 @@ function SayItMode({words,color,onEarn,onStat}){
       const alts=Array.from(e.results[0]);
       const best=alts.reduce((b,a)=>{const s=scoreMatch(a.transcript,word.es);return s>b.s?{s,t:a.transcript}:b},{s:0,t:alts[0]?.transcript||""});
       setTranscript(alts.slice(0,2).map(a=>a.transcript).join(" / "));setPct(best.s);onStat("speak");
-      if(best.s>=60){setStreak(n=>n+1);onEarn(3);}else setStreak(0);setPhase("result");
+      if(best.s>=60){setStreak(n=>n+1);onEarn(3);if(onSayItAttempt)onSayItAttempt();}else setStreak(0);setPhase("result");
     };
     rec.onerror=()=>{setTranscript("Could not hear - try again!");setPct(0);setPhase("result");};
     rec.start();
@@ -2054,7 +2076,7 @@ function CoreWordsScreen({onBack,profile}){
 }
 
 // == EDIT PROFILE SCREEN ==
-function EditProfileScreen({profile,familyCode,onSave,onBack}){
+function EditProfileScreen({profile,familyCode,onSave,onBack,onDelete}){
   const[name,setName]=useState(profile.name);
   const[avatar,setAvatar]=useState(profile.avatar);
   const[color,setColor]=useState(profile.color);
@@ -2102,6 +2124,12 @@ function EditProfileScreen({profile,familyCode,onSave,onBack}){
         <ActionBtn onClick={()=>valid&&onSave(name.trim(),avatar,color)} bg={valid?color:"#374151"} style={{width:"100%",padding:16,fontSize:18,opacity:valid?1:.5}}>
           Save Changes
         </ActionBtn>
+        <div style={{marginTop:8,borderTop:"1px solid rgba(255,255,255,.1)",paddingTop:20}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.4)",marginBottom:10,textAlign:"center"}}>Danger Zone</div>
+          <button onClick={onDelete} style={{width:"100%",padding:"13px",borderRadius:16,background:"rgba(239,68,68,.12)",border:"1px solid rgba(239,68,68,.4)",color:"#FCA5A5",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:14}}>
+            Delete My Profile
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2110,10 +2138,15 @@ function EditProfileScreen({profile,familyCode,onSave,onBack}){
 // == DAILY REVIEW SCREEN ==
 function DailyReviewScreen({profile,onComplete}){
   const missedWords=profile.missedWords||{};
+  const bookmarked=profile.bookmarked||[];
   const allVocab=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
   const reviewQueue=React.useMemo(()=>{
-    const entries=Object.entries(missedWords).filter(([_,d])=>d.count>=1).sort((a,b)=>b[1].count-a[1].count).slice(0,10);
-    return entries.map(([es])=>allVocab.find(w=>w.es===es)).filter(Boolean);
+    // Missed words first, then bookmarked words not already in missed list
+    const missedEntries=Object.entries(missedWords).filter(([_,d])=>d.count>=1).sort((a,b)=>b[1].count-a[1].count).slice(0,8);
+    const missedList=missedEntries.map(([es])=>allVocab.find(w=>w.es===es)).filter(Boolean);
+    const missedEs=new Set(missedList.map(w=>w.es));
+    const bookmarkedList=bookmarked.map(es=>allVocab.find(w=>w.es===es)).filter(w=>w&&!missedEs.has(w.es)).slice(0,5);
+    return shuffle([...missedList,...bookmarkedList]);
   },[]);
 
   const[idx,setIdx]=useState(0);
@@ -2149,7 +2182,7 @@ function DailyReviewScreen({profile,onComplete}){
         <div style={{fontSize:13,color:"#FCD34D",fontWeight:900}}>{idx+1}/{reviewQueue.length}</div>
       </div>
       <div style={{background:"rgba(252,211,77,.1)",borderBottom:"1px solid rgba(252,211,77,.2)",padding:"10px 16px",fontSize:13,color:"#FCD34D",fontWeight:600,textAlign:"center"}}>
-        You have {reviewQueue.length} tricky words to review. Complete these before exploring new content!
+        {reviewQueue.length} words to review — missed words and bookmarks. Complete these first!
       </div>
       <div style={{flex:1,padding:"20px 14px"}}>
         <div style={{width:"100%",height:8,background:"rgba(255,255,255,.1)",borderRadius:99,marginBottom:20}}>
@@ -2176,6 +2209,119 @@ function DailyReviewScreen({profile,onComplete}){
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ══ PROFILE MANAGEMENT SCREENS ═══════════════════════════════════════════════
+
+function SwitchFamilyScreen({onSwitch, onBack}) {
+  const[mode,setMode]=useState(null); // 'create'|'join'
+  const[input,setInput]=useState("");
+  const[loading,setLoading]=useState(false);
+  const[error,setError]=useState("");
+  const[newCode,setNewCode]=useState(null);
+
+  const handleCreate=async()=>{
+    if(!input.trim())return;
+    setLoading(true);setError("");
+    const code=Math.random().toString(36).substring(2,8).toUpperCase();
+    const{data}=await db.from('families').insert({code,name:input.trim()}).select().single();
+    if(data){localStorage.setItem('wl_family_id',data.id);setNewCode(code);}
+    else setError("Could not create family. Try again.");
+    setLoading(false);
+  };
+
+  const handleJoin=async()=>{
+    if(input.length<6)return;
+    setLoading(true);setError("");
+    const{data}=await db.from('families').select('*').eq('code',input.toUpperCase()).single();
+    if(data){localStorage.setItem('wl_family_id',data.id);onSwitch();}
+    else{setError("Family code not found. Check and try again.");setLoading(false);}
+  };
+
+  if(newCode)return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{textAlign:"center",background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",borderRadius:28,padding:36,width:"100%",maxWidth:380}}>
+        <div style={{fontSize:48,marginBottom:8}}>🎉</div>
+        <div style={{fontSize:22,color:"white",...DS,marginBottom:8}}>New Family Created!</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.7)",marginBottom:16}}>Share this code so others can join your leaderboard:</div>
+        <div style={{background:"#FCD34D",borderRadius:16,padding:"14px 20px",marginBottom:20}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#78350F",marginBottom:4}}>FAMILY CODE</div>
+          <div style={{fontSize:42,fontWeight:900,color:"#1F2937",letterSpacing:8}}>{newCode}</div>
+        </div>
+        <ActionBtn onClick={onSwitch} bg="#10B981" style={{width:"100%",padding:14,fontSize:16}}>Continue</ActionBtn>
+      </div>
+    </div>
+  );
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{width:"100%",maxWidth:400}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:22,cursor:"pointer",marginBottom:20,fontFamily:"inherit"}}>Back</button>
+        <div style={{fontSize:24,color:"white",...DS,marginBottom:6}}>Switch Family</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:24}}>Join a different family group or create a new one. Your profile and progress stays with you.</div>
+        {!mode&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <button onClick={()=>setMode('create')} style={{padding:"18px",borderRadius:18,background:"#2563EB",border:"none",color:"white",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:26}}>✨</span><div style={{textAlign:"left"}}><div>Create a New Family</div><div style={{fontSize:12,fontWeight:500,opacity:.8}}>Start fresh with a new code</div></div>
+          </button>
+          <button onClick={()=>setMode('join')} style={{padding:"18px",borderRadius:18,background:"rgba(255,255,255,.1)",border:"2px solid rgba(255,255,255,.3)",color:"white",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:26}}>🔑</span><div style={{textAlign:"left"}}><div>Join with a Code</div><div style={{fontSize:12,fontWeight:500,opacity:.8}}>Enter a 6-letter family code</div></div>
+          </button>
+        </div>}
+        {mode==='create'&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:13,color:"rgba(255,255,255,.7)"}}>Give your new family a name:</div>
+          <input value={input} onChange={e=>setInput(e.target.value)} placeholder="e.g. The Wanderers" maxLength={30} style={{padding:"14px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"white",fontSize:17,fontFamily:"inherit",fontWeight:700}}/>
+          {error&&<div style={{color:"#FCA5A5",fontSize:13}}>{error}</div>}
+          <ActionBtn onClick={handleCreate} bg={input.trim()?"#10B981":"#374151"} style={{padding:14,fontSize:15,opacity:input.trim()?1:.5}}>{loading?"Creating...":"Create Family"}</ActionBtn>
+          <button onClick={()=>setMode(null)} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>Back</button>
+        </div>}
+        {mode==='join'&&<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          <div style={{fontSize:13,color:"rgba(255,255,255,.7)"}}>Enter the 6-letter family code:</div>
+          <input value={input} onChange={e=>setInput(e.target.value.toUpperCase())} placeholder="ABCDEF" maxLength={6} style={{padding:"14px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"white",fontSize:32,fontFamily:"inherit",fontWeight:900,textAlign:"center",letterSpacing:6}}/>
+          {error&&<div style={{color:"#FCA5A5",fontSize:13}}>{error}</div>}
+          <ActionBtn onClick={handleJoin} bg={input.length>=6?"#10B981":"#374151"} style={{padding:14,fontSize:15,opacity:input.length>=6?1:.5}}>{loading?"Joining...":"Join Family"}</ActionBtn>
+          <button onClick={()=>setMode(null)} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontFamily:"inherit",fontSize:13}}>Back</button>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+function ManageFamilyScreen({profile, profiles, onBack, onMemberRemoved}) {
+  const[removing,setRemoving]=useState(null);
+  const[done,setDone]=useState(false);
+  const others=profiles.filter(p=>p.id!==profile.id);
+
+  const removePlayer=async(player)=>{
+    setRemoving(player.id);
+    await db.from('players').delete().eq('id',player.id);
+    onMemberRemoved(player.id);
+    setRemoving(null);
+  };
+
+  return(
+    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
+      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>Back</button>
+        <div style={{fontSize:18,color:"white",...DS}}>Manage Family Members</div>
+      </div>
+      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:10}}>
+        <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:4}}>You can remove members from your family. Their progress is permanently deleted.</div>
+        {others.length===0&&<div style={{textAlign:"center",color:"rgba(255,255,255,.4)",padding:40}}>No other family members yet.</div>}
+        {others.map(p=>(
+          <div key={p.id} style={{background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:16,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:44,height:44,borderRadius:"50%",background:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.avatar}</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,color:"white",fontWeight:700}}>{p.name}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>Level {p.level||1} · {p.stars||0} stars</div>
+            </div>
+            <button onClick={()=>removePlayer(p)} disabled={removing===p.id} style={{padding:"8px 14px",borderRadius:12,background:"rgba(239,68,68,.2)",border:"1px solid rgba(239,68,68,.5)",color:"#FCA5A5",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+              {removing===p.id?"Removing...":"Remove"}
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -2358,6 +2504,11 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
                 <span style={{fontSize:unlocked?26:22}}>{cat.icon}</span>
                 <span style={{fontSize:10,fontWeight:800,color:unlocked?"white":"rgba(255,255,255,.4)",textAlign:"center",lineHeight:1.2}}>{cat.label}</span>
                 <div style={{fontSize:10,minHeight:14,color:"#FCD34D"}}>{starDisplay}</div>
+                {stars===2&&getSayItProgress(profile,key,lv)<3&&(
+                  <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textAlign:"center",lineHeight:1.2}}>
+                    🎤 {getSayItProgress(profile,key,lv)}/3 to unlock ⭐⭐⭐
+                  </div>
+                )}
               </button>
             );
           })}
@@ -2387,7 +2538,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
 }
 
 // ══ LEARN SCREEN ══════════════════════════════════════════════════════════════
-function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress}){
+function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress,onBookmark,onSayItAttempt}){
   const[mode,setMode]=useState(catKey==="__review__"?"quiz":"flashcard");
   const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
   const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
@@ -2419,7 +2570,7 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
           {mode==="listen"   &&<ListenMode key={`l${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords} onProgress={stars=>onCatProgress&&onCatProgress(catKey,catLevel,stars)}/>}
           {mode==="scramble"&&<ScrambleMode key={`sc${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
           {mode==="write"&&<WriteMode key={`wr${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
-          {mode==="sayit"&&<SayItMode key={`si${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
+          {mode==="sayit"&&<SayItMode key={`si${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} onSayItAttempt={()=>onSayItAttempt&&onSayItAttempt(catKey,catLevel)}/>}
           {mode==="speak"&&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
         </div>
       </div>
@@ -2532,7 +2683,7 @@ function LeaderboardScreen({profiles,onBack}){
 }
 
 // ══ MY PROFILE ════════════════════════════════════════════════════════════════
-function MyProfileScreen({profile,onBack,familyCode,onEdit}){
+function MyProfileScreen({profile,onBack,familyCode,onEdit,onSwitchFamily,onManageMembers}){
   const allBadges=Object.entries(BADGE_DEF);
   const earned=new Set(profile.badges||[]);
   return(
@@ -2560,6 +2711,11 @@ function MyProfileScreen({profile,onBack,familyCode,onEdit}){
             <div style={{fontSize:11,color:"rgba(255,255,255,.4)",marginTop:4}}>Share this code with family members so they can join your leaderboard when they log in!</div>
           </div>
         )}
+        {/* Family management buttons */}
+        <div style={{display:"flex",gap:8,marginBottom:4}}>
+          <button onClick={onSwitchFamily} style={{flex:1,padding:"10px",borderRadius:14,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Switch Family</button>
+          <button onClick={onManageMembers} style={{flex:1,padding:"10px",borderRadius:14,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.2)",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:12}}>Manage Members</button>
+        </div>
         <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>ALL BADGES</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
           {allBadges.map(([key,bd])=>{
@@ -2588,7 +2744,8 @@ export default function App(){
   const[activeStory,setActiveStory]=useState(null);
   const[familyReady,setFamilyReady]=useState(!!getFamilyId());
   const[examLevel,setExamLevel]=useState(1);
-  const[celebration,setCelebration]=useState(null); // {catLabel, color}
+  const[celebration,setCelebration]=useState(null);
+  const[confirmDelete,setConfirmDelete]=useState(false); // {catLabel, color}
   const[familyCode,setFamilyCode]=useState(null);
   const[showReview,setShowReview]=useState(false);
   const profile=profiles.find(p=>p.id===activeId)||null;
@@ -2687,6 +2844,39 @@ export default function App(){
     setScreen("home");
   };
 
+  // Bookmark a word for extra review
+  const handleBookmark=async(word)=>{
+    if(!activeId||!profile)return;
+    const bm=profile.bookmarked||[];
+    const newBm=bm.includes(word.es)?bm.filter(w=>w!==word.es):[...bm,word.es];
+    await updateProfile(activeId,{bookmarked:newBm});
+  };
+
+  // Track Say It successes per category (needed for 3-star requirement)
+  const handleSayItAttempt=async(catKey,catLevel)=>{
+    if(!activeId||!profile)return;
+    const key=`${catLevel}_${catKey}`;
+    const current=(profile.catSayIt||{})[key]||0;
+    await updateProfile(activeId,{catSayIt:{...(profile.catSayIt||{}),[key]:current+1}});
+  };
+
+  const handleDeleteProfile=async()=>{
+    if(!activeId)return;
+    await db.from('players').delete().eq('id',activeId);
+    setProfiles(p=>p.filter(x=>x.id!==activeId));
+    setActiveId(null);setScreen("select");setConfirmDelete(false);
+  };
+
+  const handleMemberRemoved=(removedId)=>{
+    setProfiles(p=>p.filter(x=>x.id!==removedId));
+  };
+
+  const handleFamilySwitch=()=>{
+    setProfiles([]);setActiveId(null);
+    loadProfiles().then(ps=>setProfiles(ps));
+    setScreen("select");
+  };
+
   const handleExamPass=async(level)=>{
     if(!activeId||!profile)return;
     await updateProfile(activeId,{level:Math.min(level+1,3)});
@@ -2730,16 +2920,32 @@ export default function App(){
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
       {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onCore={()=>setScreen("core")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} onExamPrompt={(lv)=>{setExamLevel(lv);setScreen("exam");}} dailyDone={dailyDone}/>}
-      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onWordResult={handleWordResult} onCatProgress={handleCatProgress}/>}
+      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onWordResult={handleWordResult} onBookmark={handleBookmark} onSayItAttempt={handleSayItAttempt} onCatProgress={handleCatProgress}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
-      {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")}/>}
+      {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} familyCode={familyCode} onBack={()=>setScreen("home")} onEdit={()=>setScreen("editprofile")} onSwitchFamily={()=>setScreen("switchfamily")} onManageMembers={()=>setScreen("managemembers")}/>}
       {familyReady&&screen==="review"    &&profile&&<DailyReviewScreen profile={profile} onComplete={()=>setScreen("home")}/>}
       {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass}/>}
-      {familyReady&&screen==="core"       &&<CoreWordsScreen onBack={()=>setScreen("home")} profile={profile}/>}
-      {familyReady&&screen==="editprofile"&&profile&&<EditProfileScreen profile={profile} familyCode={familyCode} onSave={handleSaveProfile} onBack={()=>setScreen("myprofile")}/>}
+      {familyReady&&screen==="switchfamily" &&<SwitchFamilyScreen onSwitch={handleFamilySwitch} onBack={()=>setScreen("myprofile")}/>}
+      {familyReady&&screen==="managemembers"&&profile&&<ManageFamilyScreen profile={profile} profiles={profiles} onBack={()=>setScreen("myprofile")} onMemberRemoved={handleMemberRemoved}/>}
+      {familyReady&&screen==="core"             &&<CoreWordsScreen onBack={()=>setScreen("home")} profile={profile}/>}
+      {familyReady&&screen==="editprofile"&&profile&&<EditProfileScreen profile={profile} familyCode={familyCode} onSave={handleSaveProfile} onBack={()=>setScreen("myprofile")} onDelete={()=>setConfirmDelete(true)}/>}
       {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
+      {/* Delete profile confirmation */}
+      {confirmDelete&&(
+        <div onClick={()=>setConfirmDelete(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.8)",zIndex:1001,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div onClick={e=>e.stopPropagation()} style={{textAlign:"center",background:"#1E293B",borderRadius:24,padding:32,width:"100%",maxWidth:360,border:"2px solid rgba(239,68,68,.4)"}}>
+            <div style={{fontSize:48,marginBottom:12}}>⚠️</div>
+            <div style={{fontSize:20,color:"white",fontWeight:800,marginBottom:8}}>Delete Profile?</div>
+            <div style={{fontSize:14,color:"rgba(255,255,255,.6)",marginBottom:24,lineHeight:1.5}}>This permanently deletes all your stars, badges, and progress. This cannot be undone.</div>
+            <div style={{display:"flex",gap:10}}>
+              <ActionBtn onClick={()=>setConfirmDelete(false)} bg="rgba(255,255,255,.1)" style={{flex:1,padding:13}}>Cancel</ActionBtn>
+              <ActionBtn onClick={handleDeleteProfile} bg="#EF4444" style={{flex:1,padding:13}}>Yes, Delete</ActionBtn>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Category complete celebration overlay */}
       {celebration&&(
         <div onClick={()=>setCelebration(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} >
