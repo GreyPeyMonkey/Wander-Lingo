@@ -806,7 +806,7 @@ const getDailyWords = (level) => {
 };
 
 // â•â• PRONUNCIATION â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-const normText=str=>{const s=str.toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("");return s.replace(/[?,!.]/g,"").trim();};
+const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/gu,"").replace(/[Â¿Â¡.,!?]/g,"").trim();
 const scoreMatch=(heard,target)=>{
   const h=normText(heard),t=normText(target);
   if(!h)return 0;
@@ -921,15 +921,10 @@ function FlashcardMode({words,color,onEarn}){
           </button>
           {showHook&&(
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,paddingTop:10,borderTop:`1px solid ${color}20`}}>
-              <button onClick={e=>{
-                e.stopPropagation();
-                // Strip phonetic spelling â€” read only the memory story (before the " â€” " dash)
-                const storyPart = word.hook.split(" â€” ")[0].split(" - ")[0];
-                speakEnSlow(storyPart);
-              }} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
+              <button onClick={e=>{e.stopPropagation();speakEnSlow(word.hook);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
                 <span style={{fontSize:16}}>ðŸ”Š</span><span>Hear the hook!</span>
               </button>
-              <span style={{fontSize:12,color:"#6B7280"}}>Tap to hear the memory story!</span>
+              <span style={{fontSize:12,color:"#6B7280"}}>Tap to listen!</span>
             </div>
           )}
         </div>
@@ -976,17 +971,7 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
 
   useEffect(()=>{
     if(!word)return;
-    // Same-category distractors first â€” forces real knowledge, not category guessing
-    // allWords is already the current category's words, making same-cat distractors
-    const sameCat = shuffle(allWords.filter(w=>w.en!==word.en));
-    // If category has enough words, use all same-cat. Otherwise pad with global pool.
-    let wrong;
-    if(sameCat.length >= 3){
-      wrong = sameCat.slice(0,3);
-    } else {
-      const globalPool = shuffle([...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3].filter(w=>w.en!==word.en&&!sameCat.find(s=>s.en===w.en)));
-      wrong = [...sameCat,...globalPool].slice(0,3);
-    }
+    const wrong=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
     setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
   },[idx,phase]);
 
@@ -1188,627 +1173,6 @@ function SpeakMode({words,color,onEarn,onStat}){
         {pct<55&&<ActionBtn onClick={()=>setPhase("idle")} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>ðŸ”„ Again</ActionBtn>}
         <ActionBtn onClick={next} bg={color} style={{flex:1}}>Next â†’</ActionBtn>
       </div>}
-    </div>
-  );
-}
-
-
-// â•â• WORD SCRAMBLE GAME â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// See the emoji + English, unscramble the Spanish letters by tapping
-function ScrambleMode({words,color,onEarn,onStat}){
-  const queue = useRef(shuffle(words.filter(w=>w.es.length<=12&&!w.es.includes(" ")).length>=4
-    ? words.filter(w=>w.es.length<=12&&!w.es.includes(" "))
-    : words.filter(w=>!w.es.includes(" "))));
-  const[idx,setIdx]=useState(0);
-  const[phase,setPhase]=useState("playing"); // playing|correct|wrong|done
-  const[scrambled,setScrambled]=useState([]);
-  const[chosen,setChosen]=useState([]);
-  const[score,setScore]=useState(0);
-  const[shake,setShake]=useState(false);
-
-  const word=queue.current[idx%queue.current.length];
-
-  const makeScramble=(w)=>{
-    const letters=w.es.split("").map((ch,i)=>({ch,id:`${i}_${ch}`}));
-    // Ensure scrambled is different from original
-    let s=shuffle(letters);
-    let tries=0;
-    while(s.map(l=>l.ch).join("")===w.es&&tries<10){s=shuffle(letters);tries++;}
-    return s;
-  };
-
-  useEffect(()=>{
-    if(!word)return;
-    setScrambled(makeScramble(word));
-    setChosen([]);setPhase("playing");
-    speakEs(word.es);
-  },[idx]);
-
-  const pickLetter=(letter,fromBank)=>{
-    if(phase!=="playing")return;
-    if(fromBank){
-      setScrambled(p=>p.filter(l=>l.id!==letter.id));
-      setChosen(p=>[...p,letter]);
-    } else {
-      setChosen(p=>p.filter(l=>l.id!==letter.id));
-      setScrambled(p=>[...p,letter]);
-    }
-  };
-
-  // Check answer when all letters placed
-  useEffect(()=>{
-    if(phase!=="playing"||scrambled.length>0)return;
-    const answer=chosen.map(l=>l.ch).join("");
-    if(answer===word.es){
-      setPhase("correct");setScore(s=>s+1);onEarn(3);onStat("quiz");
-      speakEs(word.es);
-      setTimeout(()=>setIdx(i=>i+1),1800);
-    } else {
-      setShake(true);setTimeout(()=>setShake(false),600);
-      setPhase("wrong");
-    }
-  },[scrambled,chosen,phase,word]);
-
-  const clearAnswer=()=>{
-    setScrambled([...scrambled,...chosen]);setChosen([]);setPhase("playing");
-  };
-  const skip=()=>setIdx(i=>i+1);
-
-  const total=queue.current.length;
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
-        ðŸ”¤ Unscramble the Spanish! &nbsp;â€¢&nbsp; âœ… {score} right &nbsp;â€¢&nbsp; {idx}/{total}
-      </div>
-      <div style={{width:"100%",height:6,background:"#F3F4F6",borderRadius:99}}>
-        <div style={{height:"100%",borderRadius:99,background:color,width:`${(idx/total)*100}%`,transition:"width .4s"}}/>
-      </div>
-
-      {/* Clue card */}
-      <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:72}}>{word.emoji}</div>
-        <div style={{fontSize:24,...DS,color:"#1F2937",marginTop:6}}>{word.en}</div>
-        <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
-          <SpeakEsBtn text={word.es} color={color} size={38}/>
-          <span style={{fontSize:12,color:"#9CA3AF"}}>Hear the answer</span>
-        </div>
-      </div>
-
-      {/* Answer slots */}
-      <div style={{
-        display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,
-        minHeight:56,width:"100%",padding:"12px",
-        borderRadius:16,
-        background:phase==="correct"?"#D1FAE5":phase==="wrong"?"#FEE2E2":"#F8FAFC",
-        border:`2px solid ${phase==="correct"?"#10B981":phase==="wrong"?"#EF4444":"#E5E7EB"}`,
-        transition:"all .2s",
-        animation:shake?"shake .3s ease":"none",
-      }}>
-        {chosen.length===0
-          ? <span style={{fontSize:13,color:"#9CA3AF",alignSelf:"center"}}>Tap letters below to build the word</span>
-          : chosen.map(l=>(
-              <button key={l.id} onClick={()=>phase==="playing"&&pickLetter(l,false)} style={{
-                width:40,height:44,borderRadius:10,background:color,border:"none",
-                fontSize:20,fontWeight:900,color:"white",cursor:phase==="playing"?"pointer":"default",
-                fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",
-                boxShadow:`0 2px 8px ${color}40`,
-              }}>{l.ch}</button>
-            ))
-        }
-      </div>
-
-      {/* Result message */}
-      {phase==="correct"&&<div style={{fontSize:16,color:"#10B981",fontWeight:800}}>âœ… Â¡Perfecto! {word.es}</div>}
-      {phase==="wrong"&&<div style={{fontSize:14,color:"#EF4444",fontWeight:700}}>Not quite â€” try a different order!</div>}
-
-      {/* Letter bank */}
-      <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:8,padding:"4px"}}>
-        {scrambled.map(l=>(
-          <button key={l.id} onClick={()=>phase==="playing"&&pickLetter(l,true)} style={{
-            width:44,height:48,borderRadius:10,background:"white",
-            border:`2px solid ${color}60`,fontSize:22,fontWeight:900,
-            color:"#1F2937",cursor:phase==="playing"?"pointer":"default",
-            fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",
-            boxShadow:"0 2px 6px rgba(0,0,0,.08)",transition:"transform .1s",
-          }}>{l.ch}</button>
-        ))}
-      </div>
-
-      {/* Action buttons */}
-      <div style={{display:"flex",gap:10,width:"100%"}}>
-        {chosen.length>0&&phase==="playing"&&(
-          <ActionBtn onClick={clearAnswer} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>
-            Clear â†º
-          </ActionBtn>
-        )}
-        {phase==="wrong"&&(
-          <ActionBtn onClick={clearAnswer} bg="#F59E0B" style={{flex:1}}>Try Again ðŸ”„</ActionBtn>
-        )}
-        <ActionBtn onClick={skip} bg={phase==="wrong"?color:"#F9FAFB"} color={phase==="wrong"?"white":"#6B7280"} style={{flex:1,border:phase==="wrong"?"none":"2px solid #E5E7EB"}}>
-          {phase==="wrong"?"Show Answer & Skip â†’":"Skip â†’"}
-        </ActionBtn>
-      </div>
-    </div>
-  );
-}
-
-
-// â•â• LEVEL FINAL EXAM â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// Two-part exam: comprehension + production
-// Part 1 (Q1-15): Hear/see Spanish â†’ choose English answer
-// Part 2 (Q16-25): See English â†’ type Spanish from memory
-// Need 80% overall to unlock next level
-function LevelExamScreen({level,profile,onBack,onPass,onFail}){
-  const vocab=level>=3?VOCAB_L3:level>=2?VOCAB_L2:VOCAB_L1;
-  const allLevelWords=Object.values(vocab).flatMap(c=>c.words);
-  const globalAll=[...ALL_WORDS_L1,...ALL_WORDS_L2,...ALL_WORDS_L3];
-  const COMP_COUNT=Math.min(15,Math.floor(allLevelWords.length*0.6)); // comprehension questions
-  const PROD_COUNT=Math.min(10,allLevelWords.length-COMP_COUNT);       // production questions
-  const TOTAL=COMP_COUNT+PROD_COUNT;
-  const PASS_SCORE=0.8;
-
-  const shuffled=shuffle(allLevelWords);
-  const[compQueue]=useState(()=>shuffled.slice(0,COMP_COUNT));
-  const[prodQueue]=useState(()=>shuffled.slice(COMP_COUNT,COMP_COUNT+PROD_COUNT));
-
-  const[phase,setPhase]=useState("intro"); // intro|comp|prod|done
-  const[compIdx,setCompIdx]=useState(0);
-  const[prodIdx,setProdIdx]=useState(0);
-  const[opts,setOpts]=useState([]);
-  const[selected,setSelected]=useState(null);
-  const[typed,setTyped]=useState("");
-  const[writeResult,setWriteResult]=useState(null); // null|correct|close|wrong
-  const[score,setScore]=useState(0);
-
-  const compWord=compQueue[compIdx];
-  const prodWord=prodQueue[prodIdx];
-
-  // Set up comprehension options
-  useEffect(()=>{
-    if(phase!=="comp"||!compWord)return;
-    const catWords=allLevelWords.filter(w=>w.en!==compWord.en);
-    const cross=globalAll.filter(w=>w.en!==compWord.en&&!catWords.find(c=>c.en===w.en));
-    const sameCat=shuffle(catWords).slice(0,2);
-    const crossCat=shuffle(cross).slice(0,1);
-    setOpts(shuffle([compWord,...sameCat,...crossCat].slice(0,4)));
-    setSelected(null);
-    speakEs(compWord.es);
-  },[compIdx,phase]);
-
-  // Set up production
-  useEffect(()=>{
-    if(phase!=="prod")return;
-    setTyped("");setWriteResult(null);
-  },[prodIdx,phase]);
-
-  const pickComp=opt=>{
-    if(selected)return;
-    setSelected(opt);
-    if(opt.en===compWord.en)setScore(s=>s+1);
-    setTimeout(()=>{
-      if(compIdx<COMP_COUNT-1)setCompIdx(i=>i+1);
-      else{setPhase("prod");}
-    },1200);
-  };
-
-  const checkProd=()=>{
-    if(!prodWord||writeResult)return;
-    const userAns=typed.trim().toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("").replace(/[Â¿Â¡.,!?]/g,"");
-    const correct=prodWord.es.toLowerCase().split("").filter(c=>{const code=c.charCodeAt(0);return code<768||code>879;}).join("").replace(/[Â¿Â¡.,!?]/g,"");
-    const editDist=(a,b)=>{
-      const m=a.length,n=b.length;
-      const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
-      for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
-        dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-      return dp[m][n];
-    };
-    if(userAns===correct){
-      setWriteResult("correct");setScore(s=>s+1);speakEs(prodWord.es);
-      setTimeout(()=>advance(),1800);
-    } else if(editDist(userAns,correct)<=2){
-      setWriteResult("close");
-    } else {
-      setWriteResult("wrong");
-    }
-  };
-
-  const advance=()=>{
-    if(prodIdx<PROD_COUNT-1){setProdIdx(i=>i+1);}
-    else{setPhase("done");}
-  };
-
-  if(phase==="intro")return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{textAlign:"center",background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",borderRadius:28,padding:36,width:"100%",maxWidth:400}}>
-        <div style={{fontSize:64}}>ðŸ†</div>
-        <div style={{fontSize:26,color:"white",margin:"8px 0",...DS}}>
-          {level===1?"â­ Level 1":level===2?"ðŸš€ Level 2":"ðŸ”¥ Level 3"} Final Exam
-        </div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,.7)",marginBottom:20,lineHeight:1.6}}>
-          This exam has two parts to test both sides of your Spanish:<br/>
-          <span style={{color:"#93C5FD"}}>ðŸ“– Part 1 â€” {COMP_COUNT} questions:</span> Hear the Spanish, choose the English meaning<br/>
-          <span style={{color:"#86EFAC"}}>âœï¸ Part 2 â€” {PROD_COUNT} questions:</span> See the English, write the Spanish from memory<br/><br/>
-          Need <strong style={{color:"#FCD34D"}}>80%</strong> ({Math.ceil(TOTAL*0.8)}/{TOTAL}) to unlock the next level. Good luck!
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          <ActionBtn onClick={()=>setPhase("comp")} bg="#FCD34D" color="#1F2937" style={{width:"100%",padding:16,fontSize:16}}>
-            Start Exam! ðŸš€
-          </ActionBtn>
-          <ActionBtn onClick={onBack} bg="rgba(255,255,255,.12)" style={{width:"100%",padding:14}}>
-            Not ready yet â€” Back
-          </ActionBtn>
-        </div>
-      </div>
-    </div>
-  );
-
-  if(phase==="done"){
-    const pct=score/TOTAL;
-    const passed=pct>=PASS_SCORE;
-    return(
-      <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-        <div style={{textAlign:"center",background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",borderRadius:28,padding:36,width:"100%",maxWidth:400}}>
-          <div style={{fontSize:72}}>{passed?"ðŸ†":"ðŸ’ª"}</div>
-          <div style={{fontSize:28,color:"white",margin:"8px 0",...DS}}>
-            {passed?"Level Complete!":"Not Quite Yet!"}
-          </div>
-          <div style={{fontSize:48,fontWeight:900,color:passed?"#FCD34D":"#F87171",margin:"8px 0"}}>{score}/{TOTAL}</div>
-          <div style={{fontSize:14,color:"rgba(255,255,255,.7)",marginBottom:8}}>
-            {passed
-              ?`${Math.round(pct*100)}% â€” Â¡Excelente! Next level unlocked! ðŸŽ‰`
-              :`You need ${Math.round(PASS_SCORE*100)}% (${Math.ceil(PASS_SCORE*TOTAL)} correct). You got ${Math.round(pct*100)}%. Keep practicing both the quiz AND the write modes!`}
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:16}}>
-            {passed
-              ?<ActionBtn onClick={()=>onPass(level)} bg="#10B981" style={{width:"100%",padding:16,fontSize:16}}>
-                Unlock Level {level+1}! ðŸš€
-              </ActionBtn>
-              :<ActionBtn onClick={()=>setPhase("intro")} bg="#F59E0B" style={{width:"100%",padding:16,fontSize:15}}>
-                Try Again ðŸ”„
-              </ActionBtn>}
-            <ActionBtn onClick={onBack} bg="rgba(255,255,255,.15)" style={{width:"100%",padding:14}}>Back to Home</ActionBtn>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // â”€â”€ PART 1: COMPREHENSION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if(phase==="comp"&&compWord)return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>â†</button>
-        <div style={{flex:1}}>
-          <div style={{fontSize:16,color:"white",...DS}}>ðŸ“– Part 1 â€” Comprehension</div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Hear the Spanish â†’ choose the English</div>
-        </div>
-        <div style={{fontSize:13,color:"#93C5FD",fontWeight:900}}>{compIdx+1}/{COMP_COUNT}</div>
-      </div>
-      <div style={{flex:1,padding:"20px 14px"}}>
-        <div style={{width:"100%",height:6,background:"rgba(255,255,255,.1)",borderRadius:99,marginBottom:16}}>
-          <div style={{height:"100%",borderRadius:99,background:"#93C5FD",width:`${(compIdx/COMP_COUNT)*100}%`,transition:"width .4s"}}/>
-        </div>
-        <div style={{background:"white",borderRadius:24,padding:"22px 20px",border:"3px solid #93C5FD",boxShadow:"0 8px 28px rgba(0,0,0,.3)",textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:8}}>WHAT DOES THIS MEAN?</div>
-          <div style={{fontSize:28,color:"#1F2937",...DS}}>{compWord.es}</div>
-          <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
-            <SpeakEsBtn text={compWord.es} color="#3B82F6" size={40}/>
-            <span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear</span>
-          </div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {opts.map((opt,i)=>{
-            const isC=opt.en===compWord.en,isCh=selected?.en===opt.en;
-            let bg="white",border="#E5E7EB";
-            if(selected){if(isC){bg="#D1FAE5";border="#10B981";}else if(isCh){bg="#FEE2E2";border="#EF4444";}}
-            return(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderRadius:16,background:bg,border:`2px solid ${border}`,transition:"all .2s"}}>
-                <button onClick={()=>pickComp(opt)} style={{flex:1,background:"none",border:"none",textAlign:"left",fontSize:16,fontWeight:700,cursor:selected?"default":"pointer",color:"#1F2937",fontFamily:"inherit",padding:0,lineHeight:1.3}}>{opt.en}</button>
-                <SpeakEnBtn text={opt.en} color={selected&&isC?"#10B981":"#3B82F6"}/>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-
-  // â”€â”€ PART 2: PRODUCTION â€” type OR speak, player's choice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  if(phase==="prod"&&prodWord){
-    const rColors={correct:"#10B981",close:"#F59E0B",wrong:"#EF4444"};
-    const rMsgs={
-      correct:"âœ… Â¡Perfecto!",
-      close:`âœ¨ Almost! It's: ${prodWord.es}`,
-      wrong:`âŒ The answer: ${prodWord.es}`,
-    };
-    return(
-      <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-        <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,color:"white",...DS}}>âœï¸ðŸŽ¤ Part 2 â€” Production</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>See English â†’ type OR say the Spanish from memory</div>
-          </div>
-          <div style={{fontSize:13,color:"#86EFAC",fontWeight:900}}>{prodIdx+1}/{PROD_COUNT}</div>
-        </div>
-        <div style={{flex:1,padding:"20px 14px"}}>
-          <div style={{width:"100%",height:6,background:"rgba(255,255,255,.1)",borderRadius:99,marginBottom:16}}>
-            <div style={{height:"100%",borderRadius:99,background:"#86EFAC",width:`${(prodIdx/PROD_COUNT)*100}%`,transition:"width .4s"}}/>
-          </div>
-
-          {/* Clue card */}
-          <div style={{background:"white",borderRadius:24,padding:"24px 20px",border:"3px solid #86EFAC",boxShadow:"0 8px 28px rgba(0,0,0,.3)",textAlign:"center",marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:10}}>SAY OR TYPE THIS IN SPANISH</div>
-            <div style={{fontSize:60}}>{prodWord.emoji}</div>
-            <div style={{fontSize:26,color:"#1F2937",marginTop:8,...DS}}>{prodWord.en}</div>
-          </div>
-
-          {/* Result display â€” shown after either method */}
-          {writeResult&&(
-            <React.Fragment>
-              <div style={{textAlign:"center",fontSize:16,fontWeight:800,color:rColors[writeResult],marginBottom:12,lineHeight:1.4}}>
-                {rMsgs[writeResult]}
-              </div>
-              <div style={{display:"flex",gap:10,marginBottom:12}}>
-                {writeResult!=="correct"&&(
-                  <ActionBtn onClick={()=>{setTyped("");setWriteResult(null);}} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Try Again</ActionBtn>
-                )}
-                <ActionBtn onClick={advance} bg="#10B981" style={{flex:1,padding:14}}>Next â†’</ActionBtn>
-              </div>
-            </React.Fragment>
-          )}
-
-          {/* â”€â”€ OPTION 1: TYPE IT â”€â”€ */}
-          {!writeResult&&(
-            <div style={{marginBottom:12}}>
-              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",fontWeight:700,textAlign:"center",marginBottom:8,letterSpacing:.5}}>
-                âœï¸ TYPE IT
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <input
-                  value={typed}
-                  onChange={e=>setTyped(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&typed.trim()&&checkProd()}
-                  placeholder="Type the Spanish..."
-                  style={{flex:1,padding:"14px 16px",borderRadius:16,border:"2px solid rgba(134,239,172,.5)",fontSize:18,fontFamily:"inherit",fontWeight:700,color:"#1F2937",outline:"none",background:"white",textAlign:"center"}}
-                />
-                <ActionBtn onClick={checkProd} bg={typed.trim()?"#10B981":"#9CA3AF"} style={{padding:"14px 16px",fontSize:14,opacity:typed.trim()?1:.4,flexShrink:0}}>
-                  âœ“
-                </ActionBtn>
-              </div>
-            </div>
-          )}
-
-          {/* â”€â”€ DIVIDER â”€â”€ */}
-          {!writeResult&&SRClass&&(
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
-              <div style={{flex:1,height:1,background:"rgba(255,255,255,.15)"}}/>
-              <span style={{fontSize:12,color:"rgba(255,255,255,.4)",fontWeight:700}}>OR</span>
-              <div style={{flex:1,height:1,background:"rgba(255,255,255,.15)"}}/>
-            </div>
-          )}
-
-          {/* â”€â”€ OPTION 2: SAY IT (mic) â”€â”€ */}
-          {!writeResult&&SRClass&&(
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:8}}>
-              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>
-                ðŸŽ¤ SAY IT
-              </div>
-              <MicButton
-                onResult={(heard)=>{
-                  // Score the spoken answer same as written
-                  const userAns=normText(heard);
-                  const correct=normText(prodWord.es);
-                  const editDist=(a,b)=>{
-                    const m=a.length,n=b.length;
-                    const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
-                    for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)
-                      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
-                    return dp[m][n];
-                  };
-                  const pctMatch=scoreMatch(heard,prodWord.es);
-                  if(pctMatch>=85||userAns===correct){
-                    setWriteResult("correct");setScore(s=>s+1);speakEs(prodWord.es);
-                    setTimeout(()=>advance(),1800);
-                  } else if(pctMatch>=55||editDist(userAns,correct)<=2){
-                    setWriteResult("close");
-                  } else {
-                    setWriteResult("wrong");
-                  }
-                }}
-                color="#10B981"
-              />
-              <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>Tap mic and say the Spanish word</div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-  return null;
-}
-
-// Helper mic button for use inside exam
-function MicButton({onResult,color}){
-  const[listening,setListening]=useState(false);
-  const recRef=useRef(null);
-  const start=()=>{
-    if(!SRClass||listening)return;
-    setListening(true);
-    const rec=new SRClass();
-    rec.lang="es-MX";rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=5;
-    recRef.current=rec;
-    rec.onresult=e=>{
-      const alts=Array.from(e.results[0]);
-      const best=alts.reduce((b,a)=>{const s=scoreMatch(a.transcript,"");return{s:0,t:a.transcript}},{s:0,t:""});
-      const heard=alts[0]?.transcript||"";
-      setListening(false);
-      onResult(heard);
-    };
-    rec.onerror=()=>{setListening(false);onResult("");};
-    rec.start();
-  };
-  const stop=()=>{recRef.current?.stop();setListening(false);};
-  return(
-    <button onClick={listening?stop:start} style={{width:80,height:80,borderRadius:"50%",background:listening?"linear-gradient(135deg,#EF4444,#DC2626)":`linear-gradient(135deg,${color},${color}cc)`,border:"none",fontSize:34,cursor:"pointer",boxShadow:listening?"0 0 0 8px #EF444420":`0 6px 20px ${color}50`,transition:"all .2s",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      {listening?"â¹":"ðŸŽ¤"}
-    </button>
-  );
-}
-
-
-// â•â• SAY IT MODE â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// See English + emoji â†’ speak the Spanish from memory (no written Spanish shown)
-// The hardest and most valuable production skill
-function SayItMode({words,color,onEarn,onStat}){
-  const queue = useRef(shuffle(words));
-  const[idx,setIdx]=useState(0);
-  const[phase,setPhase]=useState("ready"); // ready|listening|result
-  const[transcript,setTranscript]=useState("");
-  const[pct,setPct]=useState(null);
-  const[streak,setStreak]=useState(0);
-  const[showSpanish,setShowSpanish]=useState(false);
-  const recRef=useRef(null);
-  const word=queue.current[idx%queue.current.length];
-
-  useEffect(()=>{
-    setPhase("ready");setTranscript("");setPct(null);setShowSpanish(false);
-  },[idx]);
-
-  const startListening=useCallback(()=>{
-    if(!SRClass||phase==="listening")return;
-    setPhase("listening");setTranscript("");setPct(null);setShowSpanish(false);
-    const rec=new SRClass();
-    rec.lang="es-MX";rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=5;
-    recRef.current=rec;
-    rec.onresult=e=>{
-      const alts=Array.from(e.results[0]);
-      const best=alts.reduce((b,a)=>{
-        const s=scoreMatch(a.transcript,word.es);
-        return s>b.s?{s,t:a.transcript}:b;
-      },{s:0,t:alts[0]?.transcript||""});
-      setTranscript(alts.slice(0,2).map(a=>a.transcript).join(" / "));
-      setPct(best.s);
-      onStat("speak");
-      if(best.s>=60){setStreak(n=>n+1);onEarn(3);}
-      else setStreak(0);
-      setPhase("result");
-    };
-    rec.onerror=()=>{
-      setTranscript("Couldn't hear you â€” try again!");
-      setPct(0);setPhase("result");
-    };
-    rec.start();
-  },[word,phase,onEarn,onStat]);
-
-  const next=()=>{setIdx(i=>i+1);};
-  const reveal=()=>{speakEs(word.es);setShowSpanish(true);};
-
-  const rb=pct===null?null
-    :pct>=90?{icon:"ðŸ†",msg:"Â¡Perfecto!",clr:"#10B981"}
-    :pct>=70?{icon:"ðŸŒŸ",msg:"Â¡Muy bien!",clr:"#10B981"}
-    :pct>=55?{icon:"ðŸ‘",msg:"Â¡Buen intento!",clr:"#F59E0B"}
-    :{icon:"ðŸ”„",msg:"Keep practicing!",clr:"#EF4444"};
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-      {!SRClass&&(
-        <div style={{background:"#FEF3C7",border:"2px solid #F59E0B",borderRadius:16,padding:"10px 14px",fontSize:13,color:"#92400E",width:"100%",fontWeight:600}}>
-          âš ï¸ This mode needs Chrome or Edge browser for the microphone.
-        </div>
-      )}
-
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
-        ðŸ—£ï¸ Say it in Spanish from memory! &nbsp;â€¢&nbsp; ðŸ”¥ {streak} streak
-      </div>
-
-      {/* Clue card â€” English only, NO written Spanish */}
-      <div style={{width:"100%",background:"white",borderRadius:24,padding:"28px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"#9CA3AF",letterSpacing:.5,marginBottom:12}}>
-          WHAT IS THIS IN SPANISH?
-        </div>
-        <div style={{fontSize:80,lineHeight:1}}>{word.emoji}</div>
-        <div style={{fontSize:28,color:"#1F2937",marginTop:10,...DS}}>{word.en}</div>
-        <div style={{fontSize:13,color:"#9CA3AF",marginTop:6}}>
-          Say the Spanish word â€” no peeking!
-        </div>
-
-        {/* Reveal button â€” shows Spanish after attempting */}
-        {(phase==="result"||showSpanish)&&(
-          <div style={{marginTop:14,padding:"10px 16px",background:`${color}10`,borderRadius:14,border:`1.5px solid ${color}30`}}>
-            {showSpanish
-              ?<><div style={{fontSize:22,color,...DS}}>{word.es}</div>
-                <button onClick={()=>speakEs(word.es)} style={{marginTop:6,padding:"6px 14px",borderRadius:10,background:color,border:"none",color:"white",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>ðŸ”Š Hear it</button></>
-              :<button onClick={reveal} style={{padding:"8px 16px",borderRadius:12,background:`${color}20`,border:`1.5px solid ${color}`,color,fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
-                ðŸ‘ï¸ Reveal Answer
-              </button>
-            }
-          </div>
-        )}
-      </div>
-
-      {/* Mic button */}
-      {SRClass&&(
-        <React.Fragment>
-          <button
-            onClick={phase==="listening"
-              ?()=>{recRef.current?.stop();setPhase("ready");}
-              :startListening}
-            style={{
-              width:110,height:110,borderRadius:"50%",
-              background:phase==="listening"
-                ?"linear-gradient(135deg,#EF4444,#DC2626)"
-                :`linear-gradient(135deg,${color},${color}cc)`,
-              border:"none",fontSize:48,cursor:"pointer",
-              boxShadow:phase==="listening"
-                ?"0 0 0 10px #EF444420,0 8px 28px #EF444450"
-                :`0 8px 28px ${color}50`,
-              transition:"all .22s",
-              display:"flex",alignItems:"center",justifyContent:"center",
-            }}>
-            {phase==="listening"?"â¹":"ðŸŽ¤"}
-          </button>
-          <div style={{fontSize:13,color:"#9CA3AF",textAlign:"center"}}>
-            {phase==="ready"&&"Tap the mic and say it in Spanish!"}
-            {phase==="listening"&&"ðŸŽ™ï¸ Listening â€” speak now!"}
-          </div>
-        </React.Fragment>
-      )}
-
-      {/* Result */}
-      {phase==="result"&&rb&&(
-        <div style={{width:"100%",borderRadius:20,padding:"16px 18px",background:`${rb.clr}12`,border:`2px solid ${rb.clr}`,textAlign:"center"}}>
-          <div style={{fontSize:36}}>{rb.icon}</div>
-          <div style={{fontSize:20,color:rb.clr,...DS}}>{rb.msg}</div>
-          {transcript&&(
-            <div style={{marginTop:6,fontSize:13,color:"#6B7280"}}>
-              You said: <em>"{transcript}"</em>
-            </div>
-          )}
-          <div style={{marginTop:4,fontSize:12,fontWeight:700,color:"#9CA3AF"}}>
-            Match: {pct}%
-          </div>
-        </div>
-      )}
-
-      {/* Navigation */}
-      {(phase==="result"||phase==="ready")&&(
-        <div style={{display:"flex",gap:10,width:"100%"}}>
-          {!showSpanish&&phase==="ready"&&(
-            <ActionBtn onClick={reveal} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>
-              ðŸ‘ï¸ Reveal
-            </ActionBtn>
-          )}
-          {phase==="result"&&pct<60&&(
-            <ActionBtn onClick={()=>{setPhase("ready");setTranscript("");setPct(null);}} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>
-              ðŸ”„ Again
-            </ActionBtn>
-          )}
-          <ActionBtn onClick={next} bg={color} style={{flex:1,padding:"14px 0"}}>
-            Next â†’
-          </ActionBtn>
-        </div>
-      )}
     </div>
   );
 }
@@ -2229,7 +1593,7 @@ function CreateProfileScreen({onDone,onBack}){
 }
 
 // â•â• HOME SCREEN â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,onExam,dailyDone}){
+function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,dailyDone}){
   const lv=profile.level||1;
   const vocab=lv>=3?VOCAB_L3:lv>=2?VOCAB_L2:VOCAB_L1;
   const catKeys=Object.keys(vocab);
@@ -2292,19 +1656,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
           })}
         </div>
 
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10,flexWrap:"wrap",gap:6}}>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>
-            {lv>=3?"ADVANCED":lv>=2?"INTERMEDIATE":"BEGINNER"} CATEGORIES
-          </div>
-          <div style={{display:"flex",gap:6}}>
-            <button onClick={()=>onLearn("__review__",lv)} style={{padding:"5px 10px",borderRadius:12,background:"rgba(255,255,255,.12)",border:"1px solid rgba(255,255,255,.25)",color:"white",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              ðŸ”€ Mix Review
-            </button>
-            <button onClick={()=>onExam(lv)} style={{padding:"5px 10px",borderRadius:12,background:"#FCD34D20",border:"1px solid #FCD34D60",color:"#FCD34D",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              ðŸ† Level Exam
-            </button>
-          </div>
-        </div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,marginBottom:10,letterSpacing:.5}}>{lv>=2?"INTERMEDIATE CATEGORIES":"BEGINNER CATEGORIES"}</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
           {catKeys.map(key=>{
             const c=vocab[key];
@@ -2350,7 +1702,7 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
   const vocab=catLevel>=3?VOCAB_L3:catLevel>=2?VOCAB_L2:VOCAB_L1;
   const cat=vocab[catKey];
   const allWords=catLevel>=3?ALL_WORDS_L3:catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const modes=[{id:"flashcard",label:"ðŸƒ Cards"},{id:"quiz",label:"ðŸŽ¯ Quiz"},{id:"listen",label:"ðŸ‘‚ Listen"},{id:"scramble",label:"ðŸ”¤ Scramble"},{id:"match",label:"ðŸ§© Match"},{id:"sayit",label:"ðŸ—£ï¸ Say It"},{id:"speak",label:"ðŸŽ¤ Echo"}];
+  const modes=[{id:"flashcard",label:"ðŸƒ Cards"},{id:"quiz",label:"ðŸŽ¯ Quiz"},{id:"listen",label:"ðŸ‘‚ Listen"},{id:"match",label:"ðŸ§© Match"},{id:"speak",label:"ðŸŽ¤ Speak"}];
   return(
     <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
       <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
@@ -2358,22 +1710,12 @@ function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat,onCatProgress
         <div style={{fontSize:20,color:"white",...DS}}>{cat.icon} {cat.label}</div>
         <div style={{marginLeft:"auto"}}><StarCount count={profile.stars} color={profile.color}/></div>
       </div>
-      <div style={{display:"flex",gap:6,padding:"12px 14px 4px",flexWrap:"wrap",justifyContent:"center"}}>
+      <div style={{display:"flex",gap:6,padding:"12px 14px",flexWrap:"wrap",justifyContent:"center"}}>
         {modes.map(m=>(
-          <button key={m.id} onClick={()=>setMode(m.id)} style={{flex:"1 1 70px",maxWidth:90,padding:"9px 0",borderRadius:20,background:mode===m.id?"white":"rgba(255,255,255,.12)",border:"none",color:mode===m.id?cat.color:"rgba(255,255,255,.8)",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",boxShadow:mode===m.id?"0 4px 12px rgba(0,0,0,.2)":"none"}}>
+          <button key={m.id} onClick={()=>setMode(m.id)} style={{flex:"1 1 80px",maxWidth:100,padding:"9px 0",borderRadius:20,background:mode===m.id?"white":"rgba(255,255,255,.12)",border:"none",color:mode===m.id?cat.color:"rgba(255,255,255,.8)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",boxShadow:mode===m.id?"0 4px 12px rgba(0,0,0,.2)":"none"}}>
             {m.label}
           </button>
         ))}
-      </div>
-      {/* Mode hint */}
-      <div style={{textAlign:"center",fontSize:11,color:"rgba(255,255,255,.45)",paddingBottom:8,paddingLeft:14,paddingRight:14}}>
-        {mode==="flashcard"&&"Flip cards â€” Spanish on front, English on back"}
-        {mode==="quiz"&&"Hear Spanish â†’ choose the English meaning"}
-        {mode==="listen"&&"Hear Spanish only â†’ identify the English (no peeking!)"}
-        {mode==="scramble"&&"See the English clue â†’ unscramble the Spanish letters"}
-        {mode==="match"&&"Tap to pair Spanish words with English meanings"}
-        {mode==="sayit"&&"See English â†’ say the Spanish out loud from memory"}
-        {mode==="speak"&&"See Spanish â†’ echo it back for pronunciation practice"}
       </div>
       <div style={{padding:"0 14px 40px",flex:1}}>
         <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
@@ -2483,11 +1825,6 @@ function LeaderboardScreen({profiles,onBack}){
                 <span style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>ðŸ”¥ {p.streak}d</span>
                 <span style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>ðŸ… {(p.badges||[]).length}</span>
                 <span style={{fontSize:11,background:"rgba(255,255,255,.12)",borderRadius:8,padding:"1px 6px",color:"white",fontWeight:700}}>Lv {p.level||1}</span>
-                {(p.dailyScores||{})[todayStr()]!==undefined&&(
-                  <span style={{fontSize:11,background:"rgba(252,211,77,.2)",borderRadius:8,padding:"1px 6px",color:"#FCD34D",fontWeight:700}}>
-                    ðŸ“… {(p.dailyScores||{})[todayStr()]}/5 today
-                  </span>
-                )}
               </div>
             </div>
             <div style={{fontSize:22,fontWeight:900,color:"#FCD34D"}}>â­ {p.stars}</div>
@@ -2547,7 +1884,6 @@ export default function App(){
   const[learnCatLv,setLearnCatLv]=useState(1);
   const[activeStory,setActiveStory]=useState(null);
   const[familyReady,setFamilyReady]=useState(!!getFamilyId());
-  const[examLevel,setExamLevel]=useState(1);
   const profile=profiles.find(p=>p.id===activeId)||null;
 
   useEffect(()=>{
@@ -2555,7 +1891,7 @@ export default function App(){
     link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap";
     link.rel="stylesheet";document.head.appendChild(link);
     const style=document.createElement("style");
-    style.textContent="*{box-sizing:border-box}button:active{opacity:.88}::-webkit-scrollbar{display:none}input:focus{outline:none}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}";
+    style.textContent="*{box-sizing:border-box}button:active{opacity:.88}::-webkit-scrollbar{display:none}input:focus{outline:none}";
     document.head.appendChild(style);
     findVoices();
     if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=findVoices;[300,1000,2500].forEach(ms=>setTimeout(findVoices,ms));}
@@ -2634,13 +1970,6 @@ export default function App(){
     setScreen("home");
   };
 
-  const handleExamPass=async(level)=>{
-    if(!activeId||!profile)return;
-    const newLevel=Math.min(level+1,3);
-    await updateProfile(activeId,{level:newLevel});
-    setScreen("home");
-  };
-
   const handleStoryComplete=async()=>{
     if(!profile)return;
     await updateProfile(activeId,{storiesRead:(profile.storiesRead||0)+1,stars:profile.stars+5});
@@ -2665,12 +1994,11 @@ export default function App(){
       }}/>}
       {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
       {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
-      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} onExam={(lv)=>{setExamLevel(lv);setScreen("exam");}} dailyDone={dailyDone}/>}
+      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} dailyDone={dailyDone}/>}
       {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat} onCatProgress={handleCatProgress}/>}
       {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
       {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
       {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} onBack={()=>setScreen("home")}/>}
-      {familyReady&&screen==="exam"       &&profile&&<LevelExamScreen level={examLevel} profile={profile} onBack={()=>setScreen("home")} onPass={handleExamPass} onFail={()=>setScreen("home")}/>}
       {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
       {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
     </div>
