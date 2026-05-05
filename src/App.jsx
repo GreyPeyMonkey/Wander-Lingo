@@ -666,19 +666,30 @@ const getNextSuggestedCat = (profile) => {
   const lv = profile.level || 1;
   const vocab = lv >= 3 ? VOCAB_L3 : lv >= 2 ? VOCAB_L2 : VOCAB_L1;
   const keys = Object.keys(vocab);
-  // Find first category with 0 stars — that's the suggested one
+
+  // Priority 1: find an unlocked category that's in progress (1 star, not yet 2)
+  // This keeps the user working on what they've started
   for (const key of keys) {
-    if (getCatStars(profile, key, lv) === 0) return { key, lv, cat: vocab[key] };
-  }
-  // All have at least 1 star — suggest lowest star count
-  let lowest = null;
-  for (const key of keys) {
+    if (!isCatUnlocked(profile, key, lv)) continue;
     const stars = getCatStars(profile, key, lv);
-    if (stars < 3 && (!lowest || stars < getCatStars(profile, lowest.key, lv))) {
-      lowest = { key, lv, cat: vocab[key] };
-    }
+    if (stars === 1) return { key, lv, cat: vocab[key], hint: "Keep going — aim for 2 stars!" };
   }
-  return lowest; // null means all at 3 stars — level complete!
+
+  // Priority 2: first unlocked category with 0 stars (never tried)
+  for (const key of keys) {
+    if (!isCatUnlocked(profile, key, lv)) continue;
+    const stars = getCatStars(profile, key, lv);
+    if (stars === 0) return { key, lv, cat: vocab[key], hint: "New category — give it a try!" };
+  }
+
+  // Priority 3: unlocked category with 2 stars (needs Say It for 3rd star)
+  for (const key of keys) {
+    if (!isCatUnlocked(profile, key, lv)) continue;
+    const stars = getCatStars(profile, key, lv);
+    if (stars === 2) return { key, lv, cat: vocab[key], hint: "Try Say It mode to earn the 3rd star!" };
+  }
+
+  return null; // All unlocked categories mastered
 };
 
 const isCatUnlocked = (profile, catKey, catLevel) => {
@@ -2213,9 +2224,14 @@ function DailyReviewScreen({profile,onComplete,onBookmark}){
             );
           })}
         </div>
-        {(profile.bookmarked||[]).includes(word.es)&&onBookmark&&(
-          <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,background:"rgba(252,211,77,.1)",border:"1px solid rgba(252,211,77,.3)",color:"#FCD34D",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
-            <span>🔖</span><span>I know this now — remove bookmark</span>
+        {onBookmark&&(
+          <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,
+            background:(profile.bookmarked||[]).includes(word.es)?"rgba(252,211,77,.15)":"rgba(255,255,255,.06)",
+            border:`1px solid ${(profile.bookmarked||[]).includes(word.es)?"rgba(252,211,77,.5)":"rgba(255,255,255,.15)"}`,
+            color:(profile.bookmarked||[]).includes(word.es)?"#FCD34D":"rgba(255,255,255,.5)",
+            fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
+            <span>🔖</span>
+            <span>{(profile.bookmarked||[]).includes(word.es)?"I know this now — remove bookmark":"Save for extra review"}</span>
           </button>
         )}
       </div>
@@ -2433,7 +2449,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
             <div style={{flex:1}}>
               <div style={{fontSize:11,fontWeight:800,color:nextSuggested.cat.color,letterSpacing:.5,marginBottom:2}}>SUGGESTED NEXT</div>
               <div style={{fontSize:15,color:"white",fontWeight:800}}>{nextSuggested.cat.label}</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Tap to start learning!</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>{nextSuggested.hint||"Tap to continue!"}</div>
             </div>
             <div style={{fontSize:22,color:nextSuggested.cat.color}}>›</div>
           </button>
