@@ -1221,47 +1221,87 @@ function SpeakMode({words,color,onEarn,onStat}){
 
 
 // == WORD SCRAMBLE ==
+// Single words: scramble individual letters
+// Multi-word phrases: scramble word order (more useful for language learning!)
 function ScrambleMode({words,color,onEarn,onStat}){
-  const pool=words.filter(w=>!w.es.includes(" ")&&w.es.length<=12);
-  const queue=useRef(shuffle(pool.length>=4?pool:words.filter(w=>!w.es.includes(" "))));
+  // Use ALL words — no filtering. Single words get letter scramble, phrases get word scramble.
+  const queue=useRef(shuffle(words));
   const[idx,setIdx]=useState(0);
   const[phase,setPhase]=useState("playing");
-  const[scrambled,setScrambled]=useState([]);
-  const[chosen,setChosen]=useState([]);
+  const[tiles,setTiles]=useState([]);       // bank of available tiles
+  const[chosen,setChosen]=useState([]);     // tiles placed by user
+  const[allTiles,setAllTiles]=useState([]); // fixed reference for positions
   const[score,setScore]=useState(0);
   const word=queue.current[idx%queue.current.length];
-  const makeScramble=w=>{
-    const letters=w.es.split("").map((ch,i)=>({ch,id:`${i}_${ch}`}));
-    let s=shuffle(letters),t=0;
-    while(s.map(l=>l.ch).join("")===w.es&&t++<10)s=shuffle(letters);
-    return s;
+
+  const isPhrase=word&&word.es.includes(" ");
+
+  const makeTiles=w=>{
+    if(w.es.includes(" ")){
+      // Word-order scramble — tiles are whole words
+      const words=w.es.split(" ").map((ch,i)=>({ch,id:`${i}_${ch}`}));
+      let s=shuffle(words),t=0;
+      while(s.map(l=>l.ch).join(" ")===w.es&&t++<10)s=shuffle(words);
+      return s;
+    } else {
+      // Letter scramble — tiles are individual letters
+      const letters=w.es.split("").map((ch,i)=>({ch,id:`${i}_${ch}`}));
+      let s=shuffle(letters),t=0;
+      while(s.map(l=>l.ch).join("")===w.es&&t++<10)s=shuffle(letters);
+      return s;
+    }
   };
-  useEffect(()=>{if(!word)return;setScrambled(makeScramble(word));setChosen([]);setPhase("playing");speakEs(word.es);},[idx]);
+
   useEffect(()=>{
-    // Guard: don't check until at least one letter has been placed
-    if(phase!=="playing"||scrambled.length>0||chosen.length===0)return;
-    if(chosen.map(l=>l.ch).join("")===word.es){setPhase("correct");setScore(s=>s+1);onEarn(3);onStat("quiz");speakEs(word.es);setTimeout(()=>setIdx(i=>i+1),1800);}
-    else setPhase("wrong");
-  },[scrambled,chosen,phase,word]);
-  const pick=(l,fromBank)=>{
+    if(!word)return;
+    const t=makeTiles(word);
+    setTiles(t);setAllTiles(t);setChosen([]);setPhase("playing");speakEs(word.es);
+  },[idx]);
+
+  // Check answer when all tiles placed
+  useEffect(()=>{
+    if(phase!=="playing"||tiles.length>0||chosen.length===0)return;
+    const answer=isPhrase?chosen.map(l=>l.ch).join(" "):chosen.map(l=>l.ch).join("");
+    if(answer===word.es){
+      setPhase("correct");setScore(s=>s+1);onEarn(3);onStat("quiz");speakEs(word.es);
+      setTimeout(()=>setIdx(i=>i+1),1800);
+    } else {
+      setPhase("wrong");
+    }
+  },[tiles,chosen,phase,word,isPhrase]);
+
+  const pick=(tile,fromBank)=>{
     if(phase!=="playing")return;
-    if(fromBank){setScrambled(p=>p.filter(x=>x.id!==l.id));setChosen(p=>[...p,l]);}
-    else{setChosen(p=>p.filter(x=>x.id!==l.id));setScrambled(p=>[...p,l]);}
+    if(fromBank){
+      setTiles(p=>p.filter(x=>x.id!==tile.id));
+      setChosen(p=>[...p,tile]);
+    } else {
+      setChosen(p=>p.filter(x=>x.id!==tile.id));
+      setTiles(p=>[...p,tile]);
+    }
   };
-  // All letters in original order — shown or hidden based on selection
-  const allLetters=React.useMemo(()=>makeScramble(word),[word]);
-  const chosenIds=new Set(chosen.map(l=>l.id));
+
   const backspace=()=>{
     if(chosen.length===0||phase!=="playing")return;
     const last=chosen[chosen.length-1];
     setChosen(p=>p.slice(0,-1));
-    setScrambled(p=>[...p,last]);
+    setTiles(p=>[...p,last]);
     if(phase==="wrong")setPhase("playing");
   };
-  const clearAll=()=>{setScrambled(p=>[...p,...chosen]);setChosen([]);setPhase("playing");};
+
+  const clearAll=()=>{
+    setTiles(allTiles);setChosen([]);
+    if(phase==="wrong")setPhase("playing");
+  };
+
+  const chosenIds=new Set(chosen.map(l=>l.id));
+
   return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>Unscramble the Spanish! Score: {score}</div>
+      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>
+        {isPhrase?"Put the words in order!":"Unscramble the letters!"} &nbsp;Score: {score}
+      </div>
+      {/* Clue card */}
       <div style={{width:"100%",background:"white",borderRadius:24,padding:"20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
         <div style={{fontSize:64}}>{word.emoji}</div>
         <div style={{fontSize:22,color:"#1F2937",marginTop:6,...DS}}>{word.en}</div>
@@ -1270,49 +1310,66 @@ function ScrambleMode({words,color,onEarn,onStat}){
           <span style={{fontSize:12,color:"#9CA3AF"}}>Tap to hear the answer</span>
         </div>
       </div>
-      {/* Answer area — chosen letters in order */}
-      <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,minHeight:52,width:"100%",padding:"10px",borderRadius:16,background:phase==="correct"?"#D1FAE5":phase==="wrong"?"#FEE2E2":"#F8FAFC",border:`2px solid ${phase==="correct"?"#10B981":phase==="wrong"?"#EF4444":"#E5E7EB"}`,transition:"all .2s"}}>
+
+      {/* Answer area */}
+      <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:6,minHeight:52,width:"100%",padding:"10px",borderRadius:16,
+        background:phase==="correct"?"#D1FAE5":phase==="wrong"?"#FEE2E2":"#F8FAFC",
+        border:`2px solid ${phase==="correct"?"#10B981":phase==="wrong"?"#EF4444":"#E5E7EB"}`,transition:"all .2s"}}>
         {chosen.length===0
-          ?<span style={{fontSize:13,color:"#9CA3AF",alignSelf:"center"}}>Tap letters below to build the word</span>
-          :chosen.map(l=><button key={l.id} onClick={()=>phase==="playing"&&pick(l,false)} style={{width:38,height:42,borderRadius:10,background:color,border:"none",fontSize:18,fontWeight:900,color:"white",cursor:phase==="playing"?"pointer":"default",fontFamily:"inherit"}}>{l.ch}</button>)
+          ?<span style={{fontSize:13,color:"#9CA3AF",alignSelf:"center"}}>
+            {isPhrase?"Tap words below in the right order":"Tap letters below to build the word"}
+          </span>
+          :chosen.map(l=>(
+            <button key={l.id} onClick={()=>phase==="playing"&&pick(l,false)}
+              style={{padding:isPhrase?"8px 12px":"0",width:isPhrase?"auto":38,height:42,borderRadius:10,
+                background:color,border:"none",fontSize:isPhrase?15:18,fontWeight:900,
+                color:"white",cursor:phase==="playing"?"pointer":"default",fontFamily:"inherit"}}>
+              {l.ch}
+            </button>
+          ))
         }
       </div>
+
       {phase==="correct"&&<div style={{fontSize:15,color:"#10B981",fontWeight:800}}>Perfecto! {word.es}</div>}
-      {phase==="wrong"&&<div style={{fontSize:13,color:"#EF4444",fontWeight:700}}>Not quite — try removing the last letter or clear all!</div>}
-      {/* Letter bank — FIXED positions, selected letters hidden in place */}
+      {phase==="wrong"&&<div style={{fontSize:13,color:"#EF4444",fontWeight:700}}>Not quite — use backspace or clear all!</div>}
+
+      {/* Tile bank — fixed positions */}
       <div style={{display:"flex",flexWrap:"wrap",justifyContent:"center",gap:8}}>
-        {allLetters.map(l=>{
-          const isChosen=chosenIds.has(l.id);
+        {allTiles.map(tile=>{
+          const used=chosenIds.has(tile.id);
           return(
-            <button key={l.id} onClick={()=>!isChosen&&phase==="playing"&&pick(l,true)}
-              disabled={isChosen||phase!=="playing"}
-              style={{width:42,height:46,borderRadius:10,
-                background:isChosen?"rgba(255,255,255,.1)":"white",
-                border:`2px solid ${isChosen?"rgba(255,255,255,.15)":color+"60"}`,
-                fontSize:20,fontWeight:900,
-                color:isChosen?"transparent":"#1F2937",
-                cursor:isChosen||phase!=="playing"?"default":"pointer",
-                fontFamily:"inherit",transition:"all .15s"}}>
-              {isChosen?" ":l.ch}
+            <button key={tile.id} onClick={()=>!used&&phase==="playing"&&pick(tile,true)}
+              disabled={used||phase!=="playing"}
+              style={{padding:isPhrase?"8px 12px":"0",width:isPhrase?"auto":42,height:isPhrase?"auto":46,
+                borderRadius:10,background:used?"rgba(255,255,255,.08)":"white",
+                border:`2px solid ${used?"rgba(255,255,255,.15)":color+"60"}`,
+                fontSize:isPhrase?15:20,fontWeight:900,
+                color:used?"transparent":"#1F2937",
+                cursor:used||phase!=="playing"?"default":"pointer",
+                fontFamily:"inherit",transition:"all .15s",minWidth:isPhrase?36:42}}>
+              {used?" ":tile.ch}
             </button>
           );
         })}
       </div>
+
       {/* Action buttons */}
       <div style={{display:"flex",gap:8,width:"100%"}}>
         {chosen.length>0&&phase==="playing"&&(
-          <ActionBtn onClick={backspace} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>⌫ Back</ActionBtn>
+          <ActionBtn onClick={backspace} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Back</ActionBtn>
         )}
         {chosen.length>1&&phase==="playing"&&(
-          <ActionBtn onClick={clearAll} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Clear All</ActionBtn>
+          <ActionBtn onClick={clearAll} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Clear</ActionBtn>
         )}
         {phase==="wrong"&&<ActionBtn onClick={clearAll} bg="#F59E0B" style={{flex:2}}>Try Again</ActionBtn>}
-        <ActionBtn onClick={()=>setIdx(i=>i+1)} bg={phase==="wrong"?color:"#F9FAFB"} color={phase==="wrong"?"white":"#6B7280"} style={{flex:1,border:phase==="wrong"?"none":"2px solid #E5E7EB"}}>Skip</ActionBtn>
+        <ActionBtn onClick={()=>setIdx(i=>i+1)}
+          bg={phase==="wrong"?color:"#F9FAFB"}
+          color={phase==="wrong"?"white":"#6B7280"}
+          style={{flex:1,border:phase==="wrong"?"none":"2px solid #E5E7EB"}}>Skip</ActionBtn>
       </div>
     </div>
   );
 }
-
 // == WRITE MODE ==
 function WriteMode({words,color,onEarn,onStat}){
   const queue=useRef(shuffle(words));
