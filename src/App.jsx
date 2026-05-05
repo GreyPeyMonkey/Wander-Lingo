@@ -1048,8 +1048,8 @@ function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
     setSelected(opt);setTotal(t=>t+1);
     const correct=opt.en===word.en;
     if(correct){setScore(s=>s+1);onEarn(2);onStat("quiz");}
-    if(onWordResult)onWordResult(word,correct);
     else{setMissed(m=>[...m,word]);}
+    if(onWordResult)onWordResult(word,correct);
     setTimeout(()=>setIdx(i=>i+1),1400);
   };
 
@@ -2213,7 +2213,7 @@ function DailyReviewScreen({profile,onComplete,onBookmark}){
             );
           })}
         </div>
-        {selected&&(profile.bookmarked||[]).includes(word.es)&&onBookmark&&(
+        {(profile.bookmarked||[]).includes(word.es)&&onBookmark&&(
           <button onClick={()=>onBookmark(word)} style={{display:"flex",alignItems:"center",gap:8,margin:"8px auto 0",padding:"8px 16px",borderRadius:14,background:"rgba(252,211,77,.1)",border:"1px solid rgba(252,211,77,.3)",color:"#FCD34D",fontWeight:700,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>
             <span>🔖</span><span>I know this now — remove bookmark</span>
           </button>
