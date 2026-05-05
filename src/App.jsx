@@ -1019,7 +1019,7 @@ function FlashcardMode({words,color,onEarn,bookmarked,onBookmark}){
 }
 
 // ══ QUIZ ══════════════════════════════════════════════════════════════════════
-function QuizMode({words,color,onEarn,onStat,allWords,onProgress}){
+function QuizMode({words,color,onEarn,onStat,allWords,onProgress,onWordResult}){
   const [phase,setPhase]=useState("quiz"); // quiz | retry | done
   const [queue,setQueue]=useState(()=>shuffle(words));
   const [missed,setMissed]=useState([]);
