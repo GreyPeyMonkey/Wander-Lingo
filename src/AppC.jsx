@@ -10,6 +10,7 @@ import {
   getSayItProgress, getNextSuggestedCat, isCatUnlocked,
   CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
 } from "./AppData2.jsx";
+import { BG, db, speakEs, speakEn, speakEnSlow, SRClass, normText, scoreMatch, getDailyWords, loadProfiles, saveProfile, createProfile, getFamilyId, createFamily, makeCode } from './AppA.jsx';
 import { SpeakEsBtn, SpeakEnBtn, SpeakEnIconBtn, SpeakEnPill, ActionBtn, StarCount, FlashcardMode, QuizMode, MatchMode, SpeakMode, ScrambleMode, WriteMode, SayItMode, LevelExamScreen } from './AppA.jsx';
 import { StoryListScreen, StoryScreen, FamilySetupScreen, ListenMode, CoreWordsScreen, EditProfileScreen, DailyReviewScreen } from './AppB.jsx';
 

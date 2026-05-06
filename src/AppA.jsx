@@ -56,16 +56,16 @@ const SUPABASE_URL = 'https://jlqrxshoilgmcfaitxta.supabase.co'
 // ⬇️  STEP 2: Paste your Supabase anon/public key between the quotes below
 const SUPABASE_KEY = 'sb_publishable_5ImngTBY4P21KP3bzBu75Q_FYgl4Pn9'
 
-const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+export const db = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 // ══ FAMILY CODE HELPERS ═══════════════════════════════════════════════════════
-const makeCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+export const makeCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 const LS_FAMILY = 'wl_family_id';
-const getFamilyId = () => localStorage.getItem(LS_FAMILY);
+export const getFamilyId = () => localStorage.getItem(LS_FAMILY);
 const setFamilyId = (id) => localStorage.setItem(LS_FAMILY, id);
 
 // ══ LOAD / SAVE ════════════════════════════════════════════════════════════════
-const loadProfiles = async () => {
+export const loadProfiles = async () => {
   const familyId = getFamilyId();
   if (!familyId) return [];
   const { data } = await db.from('players').select('*').eq('family_id', familyId);
@@ -86,7 +86,7 @@ const loadProfiles = async () => {
   }));
 };
 
-const saveProfile = async (profile) => {
+export const saveProfile = async (profile) => {
   const familyId = getFamilyId();
   if (!familyId) return;
   await db.from('players').upsert({
@@ -102,7 +102,7 @@ const saveProfile = async (profile) => {
   });
 };
 
-const createFamily = async (familyName) => {
+export const createFamily = async (familyName) => {
   const code = makeCode();
   const { data } = await db.from('families').insert({ code, name: familyName }).select().single();
   if (data) setFamilyId(data.id);
@@ -115,7 +115,7 @@ const joinFamily = async (code) => {
   return null;
 };
 
-const createProfile = (name, avatar, color) => ({
+export const createProfile = (name, avatar, color) => ({
   id: Date.now().toString(), name, avatar, color,
   stars: 0, streak: 0, longestStreak: 0, lastDate: null,
   badges: [], quizCorrect: 0, speakAttempts: 0,
@@ -133,7 +133,7 @@ const findVoices = () => {
   enVoice=vs.find(v=>v.lang==="en-US")||vs.find(v=>v.lang.startsWith("en"))||null;
   return !!esVoice;
 };
-const speakEs = (text,onEnd) => {
+export const speakEs = (text,onEnd) => {
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
@@ -142,7 +142,7 @@ const speakEs = (text,onEnd) => {
   if(onEnd)u.onend=onEnd;
   window.speechSynthesis.speak(u);
 };
-const speakEn = (text,onEnd) => {
+export const speakEn = (text,onEnd) => {
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
@@ -151,7 +151,7 @@ const speakEn = (text,onEnd) => {
   if(onEnd)u.onend=onEnd;
   window.speechSynthesis.speak(u);
 };
-const speakEnSlow = (text,onEnd) => {
+export const speakEnSlow = (text,onEnd) => {
   if(!window.speechSynthesis)return;
   window.speechSynthesis.cancel();
   const u=new SpeechSynthesisUtterance(text);
@@ -171,7 +171,7 @@ const speakEsFast = (text,onEnd) => {
 };
 
 // ══ DAILY ═════════════════════════════════════════════════════════════════════
-const getDailyWords = (level) => {
+export const getDailyWords = (level) => {
   const pool=level>=2?ALL_WORDS_L2:ALL_WORDS_L1;
   const d=todayStr();
   let s=parseInt(d.replace(/-/g,""));
@@ -185,8 +185,8 @@ const getDailyWords = (level) => {
 };
 
 // ══ PRONUNCIATION ═════════════════════════════════════════════════════════════
-const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/gu,"").replace(/[¿¡.,!?]/g,"").trim();
-const scoreMatch=(heard,target)=>{
+export const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/gu,"").replace(/[¿¡.,!?]/g,"").trim();
+export const scoreMatch=(heard,target)=>{
   const h=normText(heard),t=normText(target);
   if(!h)return 0;
   if(h===t)return 100;
@@ -200,8 +200,8 @@ const scoreMatch=(heard,target)=>{
   // Weight toward strict scoring — harder threshold
   return Math.min(97,Math.round((exactPct*0.72)+(loosePct*0.28)));
 };
-const SRClass=typeof window!=="undefined"?(window.SpeechRecognition||window.webkitSpeechRecognition):null;
-const BG="linear-gradient(160deg,#0f172a 0%,#1e3a5f 50%,#0d4f3c 100%)";
+export const SRClass=typeof window!=="undefined"?(window.SpeechRecognition||window.webkitSpeechRecognition):null;
+export const BG="linear-gradient(160deg,#0f172a 0%,#1e3a5f 50%,#0d4f3c 100%)";
 
 // ══ SHARED COMPONENTS ════════════════════════════════════════════════════════
 
