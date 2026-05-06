@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 import {
-  // Vocabulary & content
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS, ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS, STORIES,
-  // Conjugation & grammar
+  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
+  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
+} from "./AppData1.jsx";
+
+import {
+  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
+  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
+  canUnlockLevel, getLevelProgress, getCatStars,
+  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
   CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-  // Utilities
-  shuffle, todayStr, AVATARS, PCOLORS, DS,
-  // Level & progress logic
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress, canUnlockLevel, getLevelProgress, getCatStars, getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-} from "./AppData.jsx";
+} from "./AppData2.jsx";
 
 const BADGE_DEF = {
   first_star: {icon:"🌟",name:"First Star",    desc:"Earned your first star!"},
