@@ -415,9 +415,9 @@ export const CORE_SETS = [
 
 const CORE_ALL_WORDS = CORE_SETS.flatMap(s => s.words);
 
-export export const ALL_WORDS_L1 = Object.values(VOCAB_L1).flatMap(c => c.words);
-export export const ALL_WORDS_L2 = Object.values(VOCAB_L2).flatMap(c => c.words);
-export export const ALL_WORDS_L3 = Object.values(VOCAB_L3).flatMap(c => c.words);
+export const ALL_WORDS_L1 = Object.values(VOCAB_L1).flatMap(c => c.words);
+export const ALL_WORDS_L2 = Object.values(VOCAB_L2).flatMap(c => c.words);
+export const ALL_WORDS_L3 = Object.values(VOCAB_L3).flatMap(c => c.words);
 export const ALL_WORDS    = [...ALL_WORDS_L1, ...ALL_WORDS_L2, ...ALL_WORDS_L3, ...CORE_ALL_WORDS];
 
 // ══ STORY MODE DATA — set in Cuenca, full audio on every line ════════════════
