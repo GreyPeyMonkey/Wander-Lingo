@@ -1076,18 +1076,7 @@ const GRAMMAR_LESSONS = [
 ];
 
 // ══ UTILITIES & COMPONENTS ══════════════════════════════════════════
-import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
-} from "./AppData1.jsx";
 
-import {
-  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
-  canUnlockLevel, getLevelProgress, getCatStars,
-  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-} from "./AppData2.jsx";
 
 const BADGE_DEF = {
   first_star: {icon:"🌟",name:"First Star",    desc:"Earned your first star!"},
@@ -2071,17 +2060,6 @@ function LevelExamScreen({level,profile,onBack,onPass}){
   return null;
 }
 
-import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
-} from "./AppData1.jsx";
-import {
-  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
-  canUnlockLevel, getLevelProgress, getCatStars,
-  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-} from "./AppData2.jsx";
 
 // ══ STORY LIST SCREEN ═════════════════════════════════════════════════════════
 function StoryListScreen({onBack,onStory,profile}){
@@ -2646,17 +2624,6 @@ function DailyReviewScreen({profile,onComplete,onBookmark,onWordResult}){
   );
 }
 
-import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
-} from "./AppData1.jsx";
-import {
-  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
-  canUnlockLevel, getLevelProgress, getCatStars,
-  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-} from "./AppData2.jsx";
 
 // ══ PROFILE MANAGEMENT SCREENS ═══════════════════════════════════════════════
 
@@ -3160,17 +3127,6 @@ function ConjugationScreen({onBack, profile, onEarn}) {
   );
 }
 
-import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
-} from "./AppData1.jsx";
-import {
-  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
-  canUnlockLevel, getLevelProgress, getCatStars,
-  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-} from "./AppData2.jsx";
 
 // ══ PROFILE SELECT ════════════════════════════════════════════════════════════
 function ProfileSelectScreen({profiles,onSelect,onCreate}){
@@ -3619,17 +3575,6 @@ function MyProfileScreen({profile,onBack,familyCode,onEdit,onSwitchFamily,onMana
 // ══ MAIN APP ══════════════════════════════════════════════════════════════════
 
 // ══ MAIN APP ═════════════════════════════════════════════════════════
-import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
-} from "./AppData1.jsx";
-import {
-  STORIES, shuffle, todayStr, AVATARS, PCOLORS, DS,
-  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress,
-  canUnlockLevel, getLevelProgress, getCatStars,
-  getSayItProgress, getNextSuggestedCat, isCatUnlocked,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
-} from "./AppData2.jsx";
 
 
 export default function App(){
