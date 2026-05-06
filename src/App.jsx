@@ -3221,7 +3221,7 @@ function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLeve
 
       <div style={{flex:1,overflowY:"auto",padding:"16px 16px 100px"}}>
          style={{width:"100%",padding:"14px 16px",borderRadius:18,background:"rgba(139,92,246,.1)",border:"2px solid rgba(139,92,246,.4)",cursor:"pointer",textAlign:"left",marginBottom:10,display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:28}}>&#9889;</span><div style={{flex:1}}><div style={{fontSize:14,color:"white",fontWeight:800}}>Verbs and Grammar</div><div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Conjugation, patterns, grammar lessons</div></div></button>
-        <button onClick={onConjugation} style={{width:"100%",padding:"14px 16px",borderRadius:18,background:"rgba(139,92,246,.1)",border:"2px solid rgba(139,92,246,.4)",cursor:"pointer",textAlign:"left",marginBottom:10,display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:28}}>&#9889;</span><div style={{flex:1}}><div style={{fontSize:14,color:"white",fontWeight:800}}>Verbs and Grammar</div><div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Conjugation, patterns, grammar lessons</div></div></button>`n        {/* Today's Path — suggested next step */}
+        <button onClick={onConjugation} style={{width:"100%",padding:"14px 16px",borderRadius:18,background:"rgba(139,92,246,.1)",border:"2px solid rgba(139,92,246,.4)",cursor:"pointer",textAlign:"left",marginBottom:10,display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:28}}>&#9889;</span><div style={{flex:1}}><div style={{fontSize:14,color:"white",fontWeight:800}}>Verbs and Grammar</div><div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Conjugation, patterns, grammar lessons</div></div></button>{/* Today's Path — suggested next step */}
         {nextSuggested&&(
           <button onClick={()=>onLearn(nextSuggested.key,nextSuggested.lv)} style={{width:"100%",padding:"16px",borderRadius:20,background:`linear-gradient(135deg,${nextSuggested.cat.color}22,${nextSuggested.cat.color}10)`,border:`2px solid ${nextSuggested.cat.color}`,cursor:"pointer",textAlign:"left",marginBottom:10,display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:48,height:48,borderRadius:14,background:nextSuggested.cat.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{nextSuggested.cat.icon}</div>
@@ -3822,6 +3822,7 @@ export default function App(){
     </div>
   );
 }
+
 
 
 
