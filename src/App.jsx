@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 import {
-  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS,
-  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS,
-  GRAMMAR_LESSONS, STORIES,
-  ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS,
+  // Vocabulary & content
+  VOCAB_L1, VOCAB_L2, VOCAB_L3, CORE_SETS, ALL_WORDS_L1, ALL_WORDS_L2, ALL_WORDS_L3, ALL_WORDS, STORIES,
+  // Conjugation & grammar
+  CONJ_PATTERNS, PRONOUNS, REGULAR_VERBS, IRREGULAR_VERBS, GRAMMAR_LESSONS,
+  // Utilities
   shuffle, todayStr, AVATARS, PCOLORS, DS,
+  // Level & progress logic
+  LEVEL_REQUIREMENTS, getCatProgress, setCatProgress, canUnlockLevel, getLevelProgress, getCatStars, getSayItProgress, getNextSuggestedCat, isCatUnlocked,
 } from "./AppData.jsx";
 
 const BADGE_DEF = {

@@ -598,25 +598,25 @@ export const DS = { fontFamily:"'Nunito', sans-serif", fontWeight:900 };
 // ══ LEVEL PROGRESSION SYSTEM ═════════════════════════════════════════════════
 // Stars earned per category (0-3) based on quiz performance
 // 0 = untouched, 1 = tried, 2 = good (70%+), 3 = mastered (90%+)
-const LEVEL_REQUIREMENTS = {
+export const LEVEL_REQUIREMENTS = {
   2: { catsNeeded: 5, minStars: 2, label: "Complete 5 Beginner categories at 2+ stars" },
   3: { catsNeeded: 4, minStars: 2, label: "Complete 4 Intermediate categories at 2+ stars" },
   core: { catsNeeded: 3, minStars: 2, label: "Complete 3 categories at any level" },
 };
 
-const getCatProgress = (profile, catKey, catLevel) => {
+export const getCatProgress = (profile, catKey, catLevel) => {
   const key = `progress_${catLevel}_${catKey}`;
   return (profile.catProgress || {})[key] || 0; // 0-3 stars
 };
 
-const setCatProgress = (profile, catKey, catLevel, stars) => {
+export const setCatProgress = (profile, catKey, catLevel, stars) => {
   const key = `progress_${catLevel}_${catKey}`;
   const existing = (profile.catProgress || {})[key] || 0;
   if (stars <= existing) return profile.catProgress || {}; // never downgrade
   return { ...(profile.catProgress || {}), [key]: stars };
 };
 
-const canUnlockLevel = (profile, targetLevel) => {
+export const canUnlockLevel = (profile, targetLevel) => {
   if (targetLevel <= 1) return true;
   if ((profile.level || 1) >= targetLevel) return true;
   const req = LEVEL_REQUIREMENTS[targetLevel];
@@ -630,7 +630,7 @@ const canUnlockLevel = (profile, targetLevel) => {
   return qualifyingCats.length >= req.catsNeeded;
 };
 
-const getLevelProgress = (profile, forLevel) => {
+export const getLevelProgress = (profile, forLevel) => {
   const req = LEVEL_REQUIREMENTS[forLevel];
   if (!req) return { current: 0, needed: 0 };
   const sourceLevel = forLevel - 1;
@@ -645,7 +645,7 @@ const getLevelProgress = (profile, forLevel) => {
 // Categories unlock sequentially — finish one to open the next
 // Need at least 1 star (tried the quiz) to unlock the next category
 
-const getCatStars = (profile, catKey, catLevel) => {
+export const getCatStars = (profile, catKey, catLevel) => {
   const progressKey = `progress_${catLevel}_${catKey}`;
   const quizStars = (profile.catProgress || {})[progressKey] || 0;
   // 3 stars requires at least 3 successful Say It attempts in this category
@@ -657,12 +657,12 @@ const getCatStars = (profile, catKey, catLevel) => {
   return quizStars;
 };
 
-const getSayItProgress = (profile, catKey, catLevel) => {
+export const getSayItProgress = (profile, catKey, catLevel) => {
   const key = `${catLevel}_${catKey}`;
   return (profile.catSayIt || {})[key] || 0;
 };
 
-const getNextSuggestedCat = (profile) => {
+export const getNextSuggestedCat = (profile) => {
   const lv = profile.level || 1;
   const vocab = lv >= 3 ? VOCAB_L3 : lv >= 2 ? VOCAB_L2 : VOCAB_L1;
   const keys = Object.keys(vocab);
@@ -692,7 +692,7 @@ const getNextSuggestedCat = (profile) => {
   return null; // All unlocked categories mastered
 };
 
-const isCatUnlocked = (profile, catKey, catLevel) => {
+export const isCatUnlocked = (profile, catKey, catLevel) => {
   const vocab = catLevel >= 3 ? VOCAB_L3 : catLevel >= 2 ? VOCAB_L2 : VOCAB_L1;
   const keys = Object.keys(vocab);
   const idx = keys.indexOf(catKey);
