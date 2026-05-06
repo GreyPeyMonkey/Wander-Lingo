@@ -586,13 +586,13 @@ export const STORIES = [
   },
 ];
 
-const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
-const todayStr = () => new Date().toISOString().slice(0, 10);
+export const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+export const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // ══ CONFIG ════════════════════════════════════════════════════════════════════
-const AVATARS = ["🦁","🦜","🐬","🦋","🌺","🐢","🦅","🐆","⭐","🌊","🗺️","🧭","🦊","🐧","🌴","🎭"];
-const PCOLORS = ["#E8445A","#10B981","#8B5CF6","#F59E0B","#3B82F6","#EC4899","#DC6B19","#06B6D4"];
-const DS = { fontFamily:"'Nunito', sans-serif", fontWeight:900 };
+export const AVATARS = ["🦁","🦜","🐬","🦋","🌺","🐢","🦅","🐆","⭐","🌊","🗺️","🧭","🦊","🐧","🌴","🎭"];
+export const PCOLORS = ["#E8445A","#10B981","#8B5CF6","#F59E0B","#3B82F6","#EC4899","#DC6B19","#06B6D4"];
+export const DS = { fontFamily:"'Nunito', sans-serif", fontWeight:900 };
 
 
 // ══ LEVEL PROGRESSION SYSTEM ═════════════════════════════════════════════════
