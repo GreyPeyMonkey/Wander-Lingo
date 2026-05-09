@@ -625,7 +625,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
 // ══ MAIN APP ══════════════════════════════════════════════════════
 export default function App() {
   const [screen, setScreen]         = useState("opening");
-  const [family_id:familyId, setFamilyId]     = useState(null);
+  const [familyId, setFamilyId]     = useState(null);
   const [familyCode, setFamilyCode] = useState(null);
   const [familyName, setFamilyName] = useState(null);
   const [profiles, setProfiles]     = useState([]);
@@ -682,6 +682,7 @@ export default function App() {
 
   return null;
 }
+
 
 
 
