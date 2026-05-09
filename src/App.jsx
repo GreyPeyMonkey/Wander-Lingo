@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const sb = createClient(
   "https://jlqrxshoilgmcfaitxta.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXp4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTI1MTYsImV4cCI6MjA2MTg4ODUxNn0.lNaBCOCtCKBBcSlVfJnFMBGfTdADkAsgKFV9gUPaEOM"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXp4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTI1MTYsImV4cCI6MjA2MTg4ODUxNn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
 );
 
 // ══ THEME ════════════════════════════════════════════════════════
@@ -681,4 +681,5 @@ export default function App() {
 
   return null;
 }
+
 
