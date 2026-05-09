@@ -1,11 +1,9 @@
-// Wander Lingo v2 - 20260509-1930
-// Wander Lingo v2.1
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const sb = createClient(
   "https://jlqrxshoilgmcfaitxta.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXJ4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NTI5MjIsImV4cCI6MjA5MzQyODkyMn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXp4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTI1MTYsImV4cCI6MjA2MTg4ODUxNn0.lNaBCOCtCKBBcSlVfJnFMBGfTdADkAsgKFV9gUPaEOM"
 );
 
 // ══ THEME ════════════════════════════════════════════════════════
@@ -646,7 +644,7 @@ export default function App() {
   }, []);
 
   const loadProfiles = async (fid) => {
-    const { data } = await sb.from("players").select("*").eq("family_id", fid).order("updated_at");
+    const { data } = await sb.from("profiles").select("*").eq("familyId", fid).order("created_at");
     setProfiles(data || []);
   };
 
@@ -663,7 +661,7 @@ export default function App() {
   };
 
   const handleCreateProfile = async (name, avatar, color) => {
-    const { data } = await sb.from("players").insert({ family_id:familyId, name, avatar, color, stars:0, level:1, streak:0 }).select().single();
+    const { data } = await sb.from("profiles").insert({ familyId, name, avatar, color, stars:0, currentLand:1, streak:0 }).select().single();
     if (data) { await loadProfiles(familyId); setScreen("profiles"); }
   };
 
@@ -683,10 +681,4 @@ export default function App() {
 
   return null;
 }
-
-
-
-
-
-
 
