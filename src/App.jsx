@@ -1,3 +1,4 @@
+// Wander Lingo v2.1
 import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -681,6 +682,7 @@ export default function App() {
 
   return null;
 }
+
 
 
 
