@@ -625,7 +625,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
 // ══ MAIN APP ══════════════════════════════════════════════════════
 export default function App() {
   const [screen, setScreen]         = useState("opening");
-  const [familyId, setFamilyId]     = useState(null);
+  const [family_id:familyId, setFamilyId]     = useState(null);
   const [familyCode, setFamilyCode] = useState(null);
   const [familyName, setFamilyName] = useState(null);
   const [profiles, setProfiles]     = useState([]);
@@ -645,7 +645,7 @@ export default function App() {
   }, []);
 
   const loadProfiles = async (fid) => {
-    const { data } = await sb.from("profiles").select("*").eq("familyId", fid).order("created_at");
+    const { data } = await sb.from("players").select("*").eq("family_id", fid).order("updated_at");
     setProfiles(data || []);
   };
 
@@ -662,7 +662,7 @@ export default function App() {
   };
 
   const handleCreateProfile = async (name, avatar, color) => {
-    const { data } = await sb.from("profiles").insert({ familyId, name, avatar, color, stars:0, currentLand:1, streak:0 }).select().single();
+    const { data } = await sb.from("players").insert({ family_id:familyId, name, avatar, color, stars:0, level:1, streak:0 }).select().single();
     if (data) { await loadProfiles(familyId); setScreen("profiles"); }
   };
 
@@ -682,6 +682,7 @@ export default function App() {
 
   return null;
 }
+
 
 
 
