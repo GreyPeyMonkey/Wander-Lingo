@@ -1014,7 +1014,7 @@ useEffect(()=>{
             {isJoke&&<div style={{fontSize:12,color:"#10B981",fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>?? THE JOKE</div>}
             {!isLimerick&&!isJoke&&<div style={{fontSize:12,color,fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>THE STORY</div>}
             <div style={{fontSize:15,color:"#1C1917",lineHeight:1.7,fontFamily:"Nunito,sans-serif",whiteSpace:"pre-line"}}>{slide.text}</div>
-            <button onClick={()=>speakEn(slide.text.replace(/
+            <button onClick={()=>speakEn(slide.text)} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 Hear this</button>
 /g," "))} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? Hear this</button>
           </div>
           <div style={{display:"flex",gap:6,marginBottom:16}}>
