@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const sb = createClient(
@@ -6,7 +6,7 @@ const sb = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXJ4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NTI5MjIsImV4cCI6MjA5MzQyODkyMn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
 );
 
-// ══ THEME ════════════════════════════════════════════════════════
+// -- THEME --------------------------------------------------------
 const T = {
   bg:       "#FDF6EC",
   bgDark:   "#2D1B69",
@@ -29,39 +29,39 @@ const T = {
 
 const DS = { fontFamily: "'Nunito', 'Quicksand', system-ui, sans-serif", fontWeight: 800 };
 
-// ══ LAND DATA ═════════════════════════════════════════════════════
+// -- LAND DATA -----------------------------------------------------
 const LANDS = [
   // Beginner
-  { id:1,  name:"Greetings",       emoji:"👋", color:"#E8445A", level:"Beginner",      region:"Cuenca Plaza"      },
-  { id:2,  name:"Around Town",     emoji:"🏘️", color:"#F97316", level:"Beginner",      region:"Cuenca Streets"    },
-  { id:3,  name:"Family",          emoji:"🏠", color:"#F59E0B", level:"Beginner",      region:"Casa Familiar"     },
-  { id:4,  name:"Food",            emoji:"🍽️", color:"#10B981", level:"Beginner",      region:"Mercado Central"   },
-  { id:5,  name:"Feelings",        emoji:"🎭", color:"#3B82F6", level:"Beginner",      region:"Parque Calderon"   },
-  { id:6,  name:"Core Words 1",    emoji:"⭐", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
-  { id:7,  name:"School",          emoji:"🏫", color:"#E8445A", level:"Beginner",      region:"La Escuela"        },
-  { id:8,  name:"Numbers",         emoji:"🔢", color:"#F97316", level:"Beginner",      region:"El Mercado"        },
-  { id:9,  name:"Colors",          emoji:"🎨", color:"#8B5CF6", level:"Beginner",      region:"Arte de Cuenca"    },
-  { id:10, name:"Animals",         emoji:"🐾", color:"#10B981", level:"Beginner",      region:"El Campo"          },
-  { id:11, name:"Core Words 2",    emoji:"⭐", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
+  { id:1,  name:"Greetings",       emoji:"??", color:"#E8445A", level:"Beginner",      region:"Cuenca Plaza"      },
+  { id:2,  name:"Around Town",     emoji:"???", color:"#F97316", level:"Beginner",      region:"Cuenca Streets"    },
+  { id:3,  name:"Family",          emoji:"??", color:"#F59E0B", level:"Beginner",      region:"Casa Familiar"     },
+  { id:4,  name:"Food",            emoji:"???", color:"#10B981", level:"Beginner",      region:"Mercado Central"   },
+  { id:5,  name:"Feelings",        emoji:"??", color:"#3B82F6", level:"Beginner",      region:"Parque Calderon"   },
+  { id:6,  name:"Core Words 1",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta M�gica"    },
+  { id:7,  name:"School",          emoji:"??", color:"#E8445A", level:"Beginner",      region:"La Escuela"        },
+  { id:8,  name:"Numbers",         emoji:"??", color:"#F97316", level:"Beginner",      region:"El Mercado"        },
+  { id:9,  name:"Colors",          emoji:"??", color:"#8B5CF6", level:"Beginner",      region:"Arte de Cuenca"    },
+  { id:10, name:"Animals",         emoji:"??", color:"#10B981", level:"Beginner",      region:"El Campo"          },
+  { id:11, name:"Core Words 2",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta M�gica"    },
   // Intermediate
-  { id:12, name:"Verbs",           emoji:"⚡", color:"#F59E0B", level:"Intermediate",  region:"Centro Histórico"  },
-  { id:13, name:"Time",            emoji:"⏰", color:"#3B82F6", level:"Intermediate",  region:"El Reloj"          },
-  { id:14, name:"Body",            emoji:"🧍", color:"#E8445A", level:"Intermediate",  region:"La Clínica"        },
-  { id:15, name:"Descriptions",    emoji:"✨", color:"#8B5CF6", level:"Intermediate",  region:"Las Galerías"      },
-  { id:16, name:"Shopping",        emoji:"🛍️", color:"#10B981", level:"Intermediate",  region:"Artesanías"        },
-  { id:17, name:"Weather",         emoji:"🌦️", color:"#F97316", level:"Intermediate",  region:"Los Andes"         },
-  { id:18, name:"Core Words 3",    emoji:"⭐", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
-  { id:19, name:"Core Words 4",    emoji:"⭐", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
+  { id:12, name:"Verbs",           emoji:"?", color:"#F59E0B", level:"Intermediate",  region:"Centro Hist�rico"  },
+  { id:13, name:"Time",            emoji:"?", color:"#3B82F6", level:"Intermediate",  region:"El Reloj"          },
+  { id:14, name:"Body",            emoji:"??", color:"#E8445A", level:"Intermediate",  region:"La Cl�nica"        },
+  { id:15, name:"Descriptions",    emoji:"?", color:"#8B5CF6", level:"Intermediate",  region:"Las Galer�as"      },
+  { id:16, name:"Shopping",        emoji:"???", color:"#10B981", level:"Intermediate",  region:"Artesan�as"        },
+  { id:17, name:"Weather",         emoji:"???", color:"#F97316", level:"Intermediate",  region:"Los Andes"         },
+  { id:18, name:"Core Words 3",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta M�gica"    },
+  { id:19, name:"Core Words 4",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta M�gica"    },
   // Advanced
-  { id:20, name:"Opinions",        emoji:"🗣️", color:"#E8445A", level:"Advanced",      region:"El Debate"         },
-  { id:21, name:"Travel",          emoji:"✈️", color:"#3B82F6", level:"Advanced",      region:"El Aeropuerto"     },
-  { id:22, name:"Health",          emoji:"🏥", color:"#10B981", level:"Advanced",      region:"La Farmacia"       },
-  { id:23, name:"Social Life",     emoji:"👥", color:"#F59E0B", level:"Advanced",      region:"La Fiesta"         },
-  { id:24, name:"Technology",      emoji:"📱", color:"#8B5CF6", level:"Advanced",      region:"El Café WiFi"      },
-  { id:25, name:"Core Words 4",    emoji:"🏆", color:"#7C3AED", level:"Final Boss",    region:"La Gran Final"     },
+  { id:20, name:"Opinions",        emoji:"???", color:"#E8445A", level:"Advanced",      region:"El Debate"         },
+  { id:21, name:"Travel",          emoji:"??", color:"#3B82F6", level:"Advanced",      region:"El Aeropuerto"     },
+  { id:22, name:"Health",          emoji:"??", color:"#10B981", level:"Advanced",      region:"La Farmacia"       },
+  { id:23, name:"Social Life",     emoji:"??", color:"#F59E0B", level:"Advanced",      region:"La Fiesta"         },
+  { id:24, name:"Technology",      emoji:"??", color:"#8B5CF6", level:"Advanced",      region:"El Caf� WiFi"      },
+  { id:25, name:"Core Words 4",    emoji:"??", color:"#7C3AED", level:"Final Boss",    region:"La Gran Final"     },
 ];
 
-// ══ HELPERS ══════════════════════════════════════════════════════
+// -- HELPERS ------------------------------------------------------
 const speakEs = (text) => {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = "es-ES"; u.rate = 0.85;
@@ -77,7 +77,7 @@ const speakEn = (text) => {
 };
 
 
-// ══ USERNAME LOGIN ════════════════════════════════════════════════
+// -- USERNAME LOGIN ------------------------------------------------
 function UsernameLoginScreen({ onFound, onBack }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,23 +94,23 @@ function UsernameLoginScreen({ onFound, onBack }) {
   return (
     <div style={{ minHeight:"100vh", background:"linear-gradient(160deg, #1C0A4A, #2D1B69)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
-      <button onClick={onBack} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>← Back</button>
-      <div style={{ fontSize:36, marginBottom:12 }}>🔑</div>
+      <button onClick={onBack} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>? Back</button>
+      <div style={{ fontSize:36, marginBottom:12 }}>??</div>
       <div style={{ fontSize:24, color:"white", fontFamily:"Nunito, sans-serif", fontWeight:800, marginBottom:4 }}>Welcome Back!</div>
-      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off — on any device!</div>
+      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off � on any device!</div>
       <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="your username..."
         style={{ width:"100%", maxWidth:300, padding:"16px", borderRadius:16, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:18, fontFamily:"inherit", fontWeight:700, textAlign:"center", outline:"none", marginBottom:8 }}
       />
       {error && <div style={{ color:"#FCA5A5", fontSize:13, marginBottom:8, textAlign:"center" }}>{error}</div>}
       <button onClick={findPlayer} disabled={!username.trim()||loading}
         style={{ width:"100%", maxWidth:300, padding:16, borderRadius:18, background:username.trim()?"linear-gradient(135deg,#F59E0B,#F97316)":"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>
-        {loading ? "Finding you..." : "Find My Account 🗺️"}
+        {loading ? "Finding you..." : "Find My Account ???"}
       </button>
     </div>
   );
 }
 
-// ══ OPENING SCREEN ════════════════════════════════════════════════
+// -- OPENING SCREEN ------------------------------------------------
 function OpeningScreen({ onEnter, onReturning }) {
   const [show, setShow] = useState(false);
   useEffect(() => { setTimeout(() => setShow(true), 300); }, []);
@@ -212,7 +212,7 @@ function OpeningScreen({ onEnter, onReturning }) {
         opacity: show?1:0, transition:"opacity 1s ease 0.8s",
         marginTop:8
       }}>
-        ¡Vámonos! 🗺️
+        �V�monos! ???
       </button>
 
       <button onClick={onReturning} style={{
@@ -224,13 +224,13 @@ function OpeningScreen({ onEnter, onReturning }) {
       </button>
 
       <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:8 }}>
-        25 lands • 15 games • 1 incredible adventure
+        25 lands � 15 games � 1 incredible adventure
       </div>
     </div>
   );
 }
 
-// ══ FAMILY SETUP ══════════════════════════════════════════════════
+// -- FAMILY SETUP --------------------------------------------------
 function FamilySetupScreen({ onDone }) {
   const [mode, setMode] = useState("choose"); // choose|create|join
   const [input, setInput] = useState("");
@@ -257,17 +257,17 @@ function FamilySetupScreen({ onDone }) {
   if (mode === "choose") return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
-      <div style={{ fontSize:48, marginBottom:8 }}>🌍</div>
+      <div style={{ fontSize:48, marginBottom:8 }}>??</div>
       <div style={{ fontSize:28, color:"white", ...DS, marginBottom:4 }}>Start Your Adventure</div>
       <div style={{ fontSize:14, color:"rgba(255,255,255,0.5)", marginBottom:32, textAlign:"center" }}>
         Create a family group or join one that already exists
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:12, width:"100%", maxWidth:320 }}>
         <button onClick={()=>setMode("create")} style={{ padding:"18px", borderRadius:20, background:`linear-gradient(135deg, ${T.purple}, ${T.blue})`, border:"none", color:"white", fontSize:17, cursor:"pointer", ...DS }}>
-          🏡 Create My Family
+          ?? Create My Family
         </button>
         <button onClick={()=>setMode("join")} style={{ padding:"18px", borderRadius:20, background:"rgba(255,255,255,0.1)", border:"2px solid rgba(255,255,255,0.2)", color:"white", fontSize:17, cursor:"pointer", ...DS }}>
-          🔑 Join a Family
+          ?? Join a Family
         </button>
       </div>
     </div>
@@ -276,8 +276,8 @@ function FamilySetupScreen({ onDone }) {
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
-      <button onClick={()=>{setMode("choose");setInput("");setError("");}} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>← Back</button>
-      <div style={{ fontSize:36, marginBottom:12 }}>{mode==="create"?"🏡":"🔑"}</div>
+      <button onClick={()=>{setMode("choose");setInput("");setError("");}} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>? Back</button>
+      <div style={{ fontSize:36, marginBottom:12 }}>{mode==="create"?"??":"??"}</div>
       <div style={{ fontSize:24, color:"white", ...DS, marginBottom:4 }}>
         {mode==="create" ? "Name Your Family" : "Enter Family Code"}
       </div>
@@ -296,14 +296,14 @@ function FamilySetupScreen({ onDone }) {
         disabled={loading || (mode==="create"?!input.trim():input.length<6)}
         style={{ width:"100%", maxWidth:300, padding:16, borderRadius:18, background: (mode==="create"?input.trim():input.length>=6) ? `linear-gradient(135deg, ${T.gold}, ${T.orange})` : "rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", ...DS, opacity: loading?0.7:1 }}
       >
-        {loading ? "..." : mode==="create" ? "Create Family 🎉" : "Join Family 🚀"}
+        {loading ? "..." : mode==="create" ? "Create Family ??" : "Join Family ??"}
       </button>
     </div>
   );
 }
 
-// ══ PROFILE SELECT ════════════════════════════════════════════════
-const AVATARS = ["🦁","🐯","🦊","🐺","🦅","🐬","🦋","🌟","🔥","⚡","🌈","🎯"];
+// -- PROFILE SELECT ------------------------------------------------
+const AVATARS = ["??","??","??","??","??","??","??","??","??","?","??","??"];
 const COLORS  = ["#E8445A","#F97316","#F59E0B","#10B981","#3B82F6","#7C3AED","#EC4899","#14B8A6"];
 
 function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCreate }) {
@@ -323,15 +323,15 @@ function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCre
             display:"flex", alignItems:"center", gap:14, textAlign:"left"
           }}>
             <div style={{ width:52, height:52, borderRadius:"50%", background:p.color||T.purple, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, flexShrink:0 }}>
-              {p.avatar||"🌟"}
+              {p.avatar||"??"}
             </div>
             <div>
               <div style={{ fontSize:18, color:"white", ...DS }}>{p.name}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>
-                ⭐ {p.stars||0} stars · Land {p.level||1}
+                ? {p.stars||0} stars � Land {p.level||1}
               </div>
             </div>
-            <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>›</div>
+            <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>�</div>
           </button>
         ))}
         <button onClick={onCreate} style={{
@@ -346,7 +346,7 @@ function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCre
   );
 }
 
-// ══ CREATE PROFILE ════════════════════════════════════════════════
+// -- CREATE PROFILE ------------------------------------------------
 function CreateProfileScreen({ onDone, onBack }) {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
@@ -357,7 +357,7 @@ function CreateProfileScreen({ onDone, onBack }) {
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", padding:20 }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
-      <button onClick={onBack} style={{ alignSelf:"flex-start", background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14, marginBottom:20 }}>← Back</button>
+      <button onClick={onBack} style={{ alignSelf:"flex-start", background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14, marginBottom:20 }}>? Back</button>
       <div style={{ textAlign:"center", marginBottom:24 }}>
         <div style={{ width:80, height:80, borderRadius:"50%", background:color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:36, margin:"0 auto 12px" }}>{avatar}</div>
         <div style={{ fontSize:22, color:"white", ...DS }}>Create Your Explorer</div>
@@ -387,14 +387,14 @@ function CreateProfileScreen({ onDone, onBack }) {
         </div>
         <button onClick={()=>{ if(name.trim()) onDone(name.trim(), avatar, color); }} disabled={!name.trim()||loading}
           style={{ padding:16, borderRadius:18, background: name.trim()?`linear-gradient(135deg,${T.gold},${T.orange})`:"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", ...DS, opacity: loading?0.7:1 }}>
-          {loading ? "..." : "Start Adventuring! 🗺️"}
+          {loading ? "..." : "Start Adventuring! ???"}
         </button>
       </div>
     </div>
   );
 }
 
-// ══ ADVENTURE MAP ═════════════════════════════════════════════════
+// -- ADVENTURE MAP -------------------------------------------------
 function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
   const unlockedLand = profile.currentLand || 1;
 
@@ -413,24 +413,24 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
       {/* Header */}
       <div style={{ background:`linear-gradient(135deg, #1C0A4A, #2D1B69)`, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:40, height:40, borderRadius:"50%", background:profile.color||T.purple, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>
-          {profile.avatar||"🌟"}
+          {profile.avatar||"??"}
         </div>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:16, color:"white", ...DS }}>{profile.name}</div>
-          <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>⭐ {profile.stars||0} stars</div>
+          <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)" }}>? {profile.stars||0} stars</div>
         </div>
         <button onClick={onStudyHall} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:13, ...DS }}>
-          📚 Study Hall
+          ?? Study Hall
         </button>
         <button onClick={onMyProfile} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:13 }}>
-          👤
+          ??
         </button>
       </div>
 
       {/* Map title */}
       <div style={{ padding:"16px 16px 8px", textAlign:"center" }}>
         <div style={{ fontSize:11, color:T.textSoft, letterSpacing:3, fontWeight:700, marginBottom:4 }}>YOUR ADVENTURE PATH</div>
-        <div style={{ fontSize:22, color:T.text, ...DS }}>The Spanish Speaking World 🌍</div>
+        <div style={{ fontSize:22, color:T.text, ...DS }}>The Spanish Speaking World ??</div>
       </div>
 
       {/* Lands grid */}
@@ -448,7 +448,7 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
           return (
             <div key={gi} style={{ marginBottom:16 }}>
               <div style={{ fontSize:11, color:lc.text, fontWeight:800, letterSpacing:2, marginBottom:8, paddingLeft:4 }}>
-                {levelGroup === "Checkpoint" ? "⭐ CHECKPOINT" : levelGroup.toUpperCase()}
+                {levelGroup === "Checkpoint" ? "? CHECKPOINT" : levelGroup.toUpperCase()}
               </div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {groupLands.map(land => {
@@ -474,7 +474,7 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
                         display:"flex", alignItems:"center", justifyContent:"center",
                         fontSize:22, flexShrink:0
                       }}>
-                        {done ? "✅" : unlocked ? land.emoji : "🔒"}
+                        {done ? "?" : unlocked ? land.emoji : "??"}
                       </div>
                       <div style={{ flex:1 }}>
                         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
@@ -482,10 +482,10 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
                           {current && <span style={{ fontSize:10, background:land.color, color:"white", borderRadius:8, padding:"2px 8px", fontWeight:800 }}>CURRENT</span>}
                         </div>
                         <div style={{ fontSize:11, color:T.textSoft, marginTop:2 }}>
-                          Land {land.id} · {land.region}
+                          Land {land.id} � {land.region}
                         </div>
                       </div>
-                      {unlocked && <div style={{ fontSize:20, color:land.color }}>›</div>}
+                      {unlocked && <div style={{ fontSize:20, color:land.color }}>�</div>}
                     </button>
                   );
                 })}
@@ -498,9 +498,9 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
       {/* Bottom nav */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"white", borderTop:"1px solid rgba(0,0,0,0.08)", display:"flex", padding:"10px 0 16px" }}>
         {[
-          { icon:"🗺️", label:"Map",         action:null },
-          { icon:"📚", label:"Study Hall",   action:onStudyHall },
-          { icon:"👤", label:"My Profile",   action:onMyProfile },
+          { icon:"???", label:"Map",         action:null },
+          { icon:"??", label:"Study Hall",   action:onStudyHall },
+          { icon:"??", label:"My Profile",   action:onMyProfile },
         ].map(({icon,label,action}) => (
           <button key={label} onClick={action||undefined} style={{ flex:1, background:"none", border:"none", display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:action?"pointer":"default", opacity:action?1:0.5 }}>
             <span style={{ fontSize:22 }}>{icon}</span>
@@ -512,13 +512,13 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
   );
 }
 
-// ══ LAND INTRO SCREEN ═════════════════════════════════════════════
+// -- LAND INTRO SCREEN ---------------------------------------------
 function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${land.color}20, white)`, display:"flex", flexDirection:"column" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{ background:land.color, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>←</button>
+        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>?</button>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)", letterSpacing:2, fontWeight:700 }}>LAND {land.id}</div>
           <div style={{ fontSize:20, color:"white", ...DS }}>{land.emoji} {land.name}</div>
@@ -532,7 +532,7 @@ function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
         </div>
 
         <div style={{ fontSize:28, color:T.text, ...DS, marginBottom:4, textAlign:"center" }}>{land.name}</div>
-        <div style={{ fontSize:14, color:T.textSoft, marginBottom:24, textAlign:"center" }}>{land.region} · {land.level}</div>
+        <div style={{ fontSize:14, color:T.textSoft, marginBottom:24, textAlign:"center" }}>{land.region} � {land.level}</div>
 
         {/* Characters appear */}
         <div style={{ display:"flex", gap:16, marginBottom:24, alignItems:"flex-end" }}>
@@ -543,10 +543,10 @@ function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
         <div style={{ background:"white", borderRadius:20, padding:"16px 20px", marginBottom:24, width:"100%", maxWidth:380, boxShadow:`0 4px 20px ${land.color}20`, border:`2px solid ${land.color}20` }}>
           <div style={{ fontSize:13, fontWeight:800, color:land.color, marginBottom:6 }}>GRAYSON SAYS:</div>
           <div style={{ fontSize:14, color:T.text, lineHeight:1.6 }}>
-            Ready to explore {land.name}? Let's learn some Spanish together! This land has fun games, silly stories, and a boss challenge at the end. ¡Vámonos!
+            Ready to explore {land.name}? Let's learn some Spanish together! This land has fun games, silly stories, and a boss challenge at the end. �V�monos!
           </div>
           <button onClick={()=>speakEn(`Ready to explore ${land.name}? Let's learn some Spanish together!`)} style={{ display:"flex", alignItems:"center", gap:6, marginTop:10, background:`${land.color}15`, border:`1px solid ${land.color}30`, borderRadius:10, padding:"6px 12px", cursor:"pointer", fontSize:12, color:land.color, fontWeight:700, fontFamily:"inherit" }}>
-            🔊 Hear this
+            ?? Hear this
           </button>
         </div>
 
@@ -563,24 +563,24 @@ function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
   );
 }
 
-// ══ STUDY HALL SCREEN ═════════════════════════════════════════════
+// -- STUDY HALL SCREEN ---------------------------------------------
 function StudyHallScreen({ profile, onBack }) {
   const sections = [
-    { icon:"🃏", label:"Flashcard Sets",      desc:"Practice by land or category",     color:"#E8445A", available:true  },
-    { icon:"🔖", label:"Bookmarks",           desc:"Words you saved for review",       color:"#F97316", available:true  },
-    { icon:"🎯", label:"Randomized Quiz",     desc:"Mixed review from all your lands", color:"#10B981", available:true  },
-    { icon:"⚡", label:"Verbs and Grammar",   desc:"Conjugation, patterns, lessons",   color:"#7C3AED", available:true  },
-    { icon:"🤖", label:"AI Tutor",            desc:"Wander Lingo Plus — coming soon!", color:"#F59E0B", available:false },
+    { icon:"??", label:"Flashcard Sets",      desc:"Practice by land or category",     color:"#E8445A", available:true  },
+    { icon:"??", label:"Bookmarks",           desc:"Words you saved for review",       color:"#F97316", available:true  },
+    { icon:"??", label:"Randomized Quiz",     desc:"Mixed review from all your lands", color:"#10B981", available:true  },
+    { icon:"?", label:"Verbs and Grammar",   desc:"Conjugation, patterns, lessons",   color:"#7C3AED", available:true  },
+    { icon:"??", label:"AI Tutor",            desc:"Wander Lingo Plus � coming soon!", color:"#F59E0B", available:false },
   ];
 
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{ background:"rgba(255,255,255,0.05)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>←</button>
+        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>?</button>
         <div style={{ flex:1 }}>
           <div style={{ fontSize:11, color:"rgba(255,255,255,0.5)", letterSpacing:2, fontWeight:700 }}>THE SERIOUS SECTION</div>
-          <div style={{ fontSize:20, color:"white", ...DS }}>📚 Study Hall</div>
+          <div style={{ fontSize:20, color:"white", ...DS }}>?? Study Hall</div>
         </div>
       </div>
 
@@ -589,7 +589,7 @@ function StudyHallScreen({ profile, onBack }) {
           <img src="/characters/grayson.png" style={{ height:70, filter:"drop-shadow(0 4px 12px rgba(124,58,237,0.4))" }} alt="Grayson" onError={e=>e.target.style.display='none'}/>
           <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:16, padding:"12px 14px", flex:1 }}>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5 }}>
-              This is where the serious learning lives. Flashcards, grammar, conjugation — all the good stuff. En mi opinión it's worth it.
+              This is where the serious learning lives. Flashcards, grammar, conjugation � all the good stuff. En mi opini�n it's worth it.
             </div>
           </div>
         </div>
@@ -610,7 +610,7 @@ function StudyHallScreen({ profile, onBack }) {
               <div style={{ fontSize:16, color:"white", ...DS }}>{s.label}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{s.desc}</div>
             </div>
-            {s.available && <div style={{ fontSize:20, color:s.color }}>›</div>}
+            {s.available && <div style={{ fontSize:20, color:s.color }}>�</div>}
           </button>
         ))}
       </div>
@@ -618,28 +618,28 @@ function StudyHallScreen({ profile, onBack }) {
   );
 }
 
-// ══ MY PROFILE SCREEN ═════════════════════════════════════════════
+// -- MY PROFILE SCREEN ---------------------------------------------
 function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfile }) {
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{ background:"rgba(255,255,255,0.05)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
-        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>←</button>
+        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:20 }}>?</button>
         <div style={{ fontSize:20, color:"white", ...DS }}>My Profile</div>
       </div>
       <div style={{ flex:1, padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center" }}>
         <div style={{ width:90, height:90, borderRadius:"50%", background:profile.color||T.purple, display:"flex", alignItems:"center", justifyContent:"center", fontSize:40, marginBottom:12, boxShadow:`0 8px 24px ${profile.color||T.purple}50` }}>
-          {profile.avatar||"🌟"}
+          {profile.avatar||"??"}
         </div>
         <div style={{ fontSize:26, color:"white", ...DS, marginBottom:4 }}>{profile.name}</div>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24 }}>Explorer · {profile.level||"Beginner"}</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24 }}>Explorer � {profile.level||"Beginner"}</div>
 
         {/* Stats */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", maxWidth:360, marginBottom:24 }}>
           {[
-            { label:"Stars",    value:profile.stars||0,       icon:"⭐" },
-            { label:"Land",     value:profile.level||1, icon:"🗺️" },
-            { label:"Streak",   value:profile.streak||0,      icon:"🔥" },
+            { label:"Stars",    value:profile.stars||0,       icon:"?" },
+            { label:"Land",     value:profile.level||1, icon:"???" },
+            { label:"Streak",   value:profile.streak||0,      icon:"??" },
           ].map(s => (
             <div key={s.label} style={{ background:"rgba(255,255,255,0.08)", borderRadius:16, padding:"14px 10px", textAlign:"center" }}>
               <div style={{ fontSize:24 }}>{s.icon}</div>
@@ -660,7 +660,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
         </div>
 
         <button onClick={onEditProfile} style={{ width:"100%", maxWidth:360, padding:14, borderRadius:16, background:"rgba(255,255,255,0.1)", border:"2px solid rgba(255,255,255,0.2)", color:"white", fontSize:15, cursor:"pointer", ...DS }}>
-          ✏️ Edit Profile
+          ?? Edit Profile
         </button>
       </div>
     </div>
@@ -668,23 +668,23 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
 }
 
 
-// ══ LAND 1 DATA ═══════════════════════════════════════════════════
+// -- LAND 1 DATA ---------------------------------------------------
 const LAND1_WORDS = [
-  { es:"Hola",          en:"Hello",           emoji:"👋", hook:"HOH-la — everyone knows this one! The friendliest word in any language." },
-  { es:"Adiós",         en:"Goodbye",         emoji:"👋", hook:"ah-dee-OHS — say goodbye to not knowing this word!" },
-  { es:"Buenos días",   en:"Good morning",    emoji:"🌅", hook:"BWEH-nos DEE-as — buenos = good, días = days. Good days to you!" },
-  { es:"Buenas tardes", en:"Good afternoon",  emoji:"☀️", hook:"BWEH-nas TAR-des — tardes sounds like tardies — afternoon is when you're late!" },
-  { es:"Buenas noches", en:"Good night",      emoji:"🌙", hook:"BWEH-nas NO-ches — noches sounds like no-chess — no chess at night, time for bed!" },
-  { es:"Por favor",     en:"Please",          emoji:"🙏", hook:"por fah-VOR — sounds like pour the flavor — please pour the flavor!" },
-  { es:"Gracias",       en:"Thank you",       emoji:"💛", hook:"GRAH-see-as — sounds like grassy-us — thank you for the grassy field!" },
-  { es:"De nada",       en:"You're welcome",  emoji:"😊", hook:"day NAH-da — means of nothing — it was nothing, you're welcome!" },
-  { es:"Mucho gusto",   en:"Nice to meet you",emoji:"🤝", hook:"MOO-cho GOO-sto — much pleasure meeting you!" },
-  { es:"¿Cómo estás?",  en:"How are you?",    emoji:"❓", hook:"KOH-mo es-TAS — how are you doing today?" },
-  { es:"Bien",          en:"Good / Fine",      emoji:"✅", hook:"bee-EN — short and sweet. Been good!" },
-  { es:"Hasta luego",   en:"See you later",   emoji:"👋", hook:"AHS-ta loo-EH-go — hasta la vista's friendlier cousin!" },
+  { es:"Hola",          en:"Hello",           emoji:"??", hook:"HOH-la � everyone knows this one! The friendliest word in any language." },
+  { es:"Adi�s",         en:"Goodbye",         emoji:"??", hook:"ah-dee-OHS � say goodbye to not knowing this word!" },
+  { es:"Buenos d�as",   en:"Good morning",    emoji:"??", hook:"BWEH-nos DEE-as � buenos = good, d�as = days. Good days to you!" },
+  { es:"Buenas tardes", en:"Good afternoon",  emoji:"??", hook:"BWEH-nas TAR-des � tardes sounds like tardies � afternoon is when you're late!" },
+  { es:"Buenas noches", en:"Good night",      emoji:"??", hook:"BWEH-nas NO-ches � noches sounds like no-chess � no chess at night, time for bed!" },
+  { es:"Por favor",     en:"Please",          emoji:"??", hook:"por fah-VOR � sounds like pour the flavor � please pour the flavor!" },
+  { es:"Gracias",       en:"Thank you",       emoji:"??", hook:"GRAH-see-as � sounds like grassy-us � thank you for the grassy field!" },
+  { es:"De nada",       en:"You're welcome",  emoji:"??", hook:"day NAH-da � means of nothing � it was nothing, you're welcome!" },
+  { es:"Mucho gusto",   en:"Nice to meet you",emoji:"??", hook:"MOO-cho GOO-sto � much pleasure meeting you!" },
+  { es:"�C�mo est�s?",  en:"How are you?",    emoji:"?", hook:"KOH-mo es-TAS � how are you doing today?" },
+  { es:"Bien",          en:"Good / Fine",      emoji:"?", hook:"bee-EN � short and sweet. Been good!" },
+  { es:"Hasta luego",   en:"See you later",   emoji:"??", hook:"AHS-ta loo-EH-go � hasta la vista's friendlier cousin!" },
 ];
 
-// ══ FALLING WORDS GAME ════════════════════════════════════════════
+// -- FALLING WORDS GAME --------------------------------------------
 function FallingWordsGame({ words, color, title, onComplete, emoji }) {
   const [idx, setIdx] = useState(0);
   const [pos, setPos] = useState(0);
@@ -756,7 +756,7 @@ function FallingWordsGame({ words, color, title, onComplete, emoji }) {
   );
 }
 
-// ══ MATCHING GAME ═════════════════════════════════════════════════
+// -- MATCHING GAME -------------------------------------------------
 function MatchingGame({ words, color, title, onComplete, emoji }) {
   const [selected, setSelected] = useState(null);
   const [matched, setMatched] = useState([]);
@@ -788,25 +788,25 @@ function MatchingGame({ words, color, title, onComplete, emoji }) {
       </div>
       <div style={{flex:1,padding:"16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <div style={{fontSize:11,color:color,fontWeight:800,textAlign:"center",fontFamily:"Nunito,sans-serif"}}>SPANISH 🇪🇸</div>
+          <div style={{fontSize:11,color:color,fontWeight:800,textAlign:"center",fontFamily:"Nunito,sans-serif"}}>SPANISH ????</div>
           {esWords.map(item=>(
             <button key={item.id} onClick={()=>handleSelect(item)} style={{
               padding:"14px 10px",borderRadius:14,
               border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="es"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,
               background:matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="es"?`${color}15`:wrong===item.id?"#FEE2E2":"white",
               cursor:"pointer",fontSize:14,fontFamily:"Nunito,sans-serif",fontWeight:800,color:matched.includes(item.id)?"#10B981":"#1C1917",textAlign:"center"
-            }}>{matched.includes(item.id)?"✅":item.text}</button>
+            }}>{matched.includes(item.id)?"?":item.text}</button>
           ))}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
-          <div style={{fontSize:11,color:"#6B7280",fontWeight:800,textAlign:"center",fontFamily:"Nunito,sans-serif"}}>ENGLISH 🇺🇸</div>
+          <div style={{fontSize:11,color:"#6B7280",fontWeight:800,textAlign:"center",fontFamily:"Nunito,sans-serif"}}>ENGLISH ????</div>
           {enShuffled.map(item=>(
             <button key={item.id+"-en"} onClick={()=>handleSelect(item)} style={{
               padding:"14px 10px",borderRadius:14,
               border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="en"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,
               background:matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="en"?`${color}15`:wrong===item.id?"#FEE2E2":"white",
               cursor:"pointer",fontSize:12,fontFamily:"Nunito,sans-serif",fontWeight:700,color:matched.includes(item.id)?"#10B981":"#1C1917",textAlign:"center"
-            }}>{matched.includes(item.id)?"✅":item.text}</button>
+            }}>{matched.includes(item.id)?"?":item.text}</button>
           ))}
         </div>
       </div>
@@ -814,7 +814,7 @@ function MatchingGame({ words, color, title, onComplete, emoji }) {
   );
 }
 
-// ══ SHOOTING GAME (Multiple Choice) ═══════════════════════════════
+// -- SHOOTING GAME (Multiple Choice) -------------------------------
 function ShootingGame({ words, color, title, onComplete, emoji }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -846,13 +846,13 @@ function ShootingGame({ words, color, title, onComplete, emoji }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{background:color,padding:"14px 16px"}}>
         <div style={{fontSize:16,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>{emoji} {title}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} — Shoot the right answer!</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} � Shoot the right answer!</div>
       </div>
       <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
         <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
           <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
           <div style={{fontSize:34,color,fontFamily:"Nunito,sans-serif",fontWeight:900,marginBottom:4}}>{word.es}</div>
-          <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 Hear it</button>
+          <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? Hear it</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
           {options.map(opt=>(
@@ -862,7 +862,7 @@ function ShootingGame({ words, color, title, onComplete, emoji }) {
               background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",
               cursor:"pointer",fontSize:16,fontFamily:"Nunito,sans-serif",fontWeight:700,color:"#1C1917"
             }}>
-              {!selected?"🎯 ":opt===word.en?"✅ ":opt===selected?"❌ ":""}{opt}
+              {!selected?"?? ":opt===word.en?"? ":opt===selected?"? ":""}{opt}
             </button>
           ))}
         </div>
@@ -871,7 +871,7 @@ function ShootingGame({ words, color, title, onComplete, emoji }) {
   );
 }
 
-// ══ BOSS CHALLENGE - LAVA FLOOR ═══════════════════════════════════
+// -- BOSS CHALLENGE - LAVA FLOOR -----------------------------------
 function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -908,16 +908,16 @@ function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) 
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
         @keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}`}</style>
-      <div style={{fontSize:80,animation:"bounce 0.8s ease infinite",marginBottom:16}}>🎉</div>
-      <div style={{fontSize:32,color:"#FCD34D",fontFamily:"Nunito,sans-serif",fontWeight:900,marginBottom:8}}>¡Felicidades!</div>
+      <div style={{fontSize:80,animation:"bounce 0.8s ease infinite",marginBottom:16}}>??</div>
+      <div style={{fontSize:32,color:"#FCD34D",fontFamily:"Nunito,sans-serif",fontWeight:900,marginBottom:8}}>�Felicidades!</div>
       <div style={{fontSize:18,color:"white",marginBottom:4,fontFamily:"Nunito,sans-serif"}}>You completed {landName}!</div>
-      <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:24,fontFamily:"Nunito,sans-serif"}}>{nextLand} is now unlocked! 🗺️</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:24,fontFamily:"Nunito,sans-serif"}}>{nextLand} is now unlocked! ???</div>
       <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end"}}>
         <img src="/characters/grayson.png" style={{height:110,filter:"drop-shadow(0 4px 16px rgba(124,58,237,0.5))"}} alt="Grayson" onError={e=>e.target.style.display="none"}/>
         <img src="/characters/peyton.png" style={{height:94,filter:"drop-shadow(0 4px 16px rgba(37,99,235,0.5))"}} alt="Peyton" onError={e=>e.target.style.display="none"}/>
       </div>
       <button onClick={onComplete} style={{padding:"16px 48px",borderRadius:24,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:18,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)"}}>
-        Continue to {nextLand} →
+        Continue to {nextLand} ?
       </button>
     </div>
   );
@@ -926,18 +926,18 @@ function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) 
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",transform:shake?"translateX(-6px)":"none",transition:"transform 0.1s"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{flex:1,fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>🌋 BOSS CHALLENGE — {landName}</div>
+        <div style={{flex:1,fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? BOSS CHALLENGE � {landName}</div>
         <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>{idx+1}/{words.length}</div>
       </div>
       <div style={{height:10,background:"rgba(255,255,255,0.1)"}}>
         <div style={{height:"100%",width:`${lava}%`,background:"linear-gradient(90deg,#F97316,#EF4444)",transition:"width 0.6s",borderRadius:"0 5px 5px 0"}}/>
       </div>
-      <div style={{fontSize:12,color:lava>50?"#EF4444":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🌋 Lava Level: {lava}%</div>
+      <div style={{fontSize:12,color:lava>50?"#EF4444":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? Lava Level: {lava}%</div>
       <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
         <div style={{background:"rgba(255,255,255,0.08)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:400,textAlign:"center",border:`2px solid ${color}`,marginBottom:16,boxShadow:`0 4px 24px ${color}30`}}>
           <div style={{fontSize:40,marginBottom:8}}>{word.emoji}</div>
           <div style={{fontSize:30,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:900}}>{word.es}</div>
-          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}20`,border:`1px solid ${color}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:"white",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊</button>
+          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}20`,border:`1px solid ${color}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:"white",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>??</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
           {options.map(opt=>(
@@ -955,7 +955,7 @@ function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) 
   );
 }
 
-// ══ LAND 1 SCREEN ═════════════════════════════════════════════════
+// -- LAND 1 SCREEN -------------------------------------------------
 function Land1Screen({ profile, onBack, onComplete }) {
   const [phase, setPhase] = useState("story");
   const [storyIdx, setStoryIdx] = useState(0);
@@ -967,14 +967,14 @@ function Land1Screen({ profile, onBack, onComplete }) {
     { type:"story", text:"A friendly man named Carlos waves at you from across the street. You wave back." },
     { type:"story", text:"He walks over, smiles, and says something in Spanish. You have absolutely no idea what he said." },
     { type:"story", text:"You smile and nod anyway. He keeps talking. You keep nodding. Twenty minutes later..." },
-    { type:"story", text:"...you realize you just agreed to help him move furniture on Saturday. 🛋️" },
-    { type:"story", text:"This is why we learn to say hello first. ¡Vámonos!" },
+    { type:"story", text:"...you realize you just agreed to help him move furniture on Saturday. ???" },
+    { type:"story", text:"This is why we learn to say hello first. �V�monos!" },
     { type:"limerick", text:"A traveler arrived in Cuenca one day,
 And tried to say Hola the very wrong way,
 He said 'Holla' like money,
 Which the locals found funny,
-Now they call him DJ Dollar to this day. 🎵" },
-    { type:"joke", text:"A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' 😄" },
+Now they call him DJ Dollar to this day. ??" },
+    { type:"joke", text:"A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' ??" },
   ];
 
   useEffect(()=>{
@@ -1007,8 +1007,8 @@ Now they call him DJ Dollar to this day. 🎵" },
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
           @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
         <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>←</button>
-          <div style={{fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>👋 Land 1 — Greetings</div>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>?</button>
+          <div style={{fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? Land 1 � Greetings</div>
         </div>
         <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
           <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>
@@ -1016,19 +1016,19 @@ Now they call him DJ Dollar to this day. 🎵" },
             <img src="/characters/peyton.png" style={{height:90,filter:"drop-shadow(0 4px 12px rgba(37,99,235,0.4))"}} alt="Peyton" onError={e=>e.target.style.display="none"}/>
           </div>
           <div style={{background:"white",borderRadius:20,padding:"20px",width:"100%",maxWidth:400,boxShadow:`0 4px 20px ${color}20`,marginBottom:16,animation:"fadeIn 0.4s ease",border:`2px solid ${isLimerick?"#F59E0B":isJoke?"#10B981":color}20`}}>
-            {isLimerick&&<div style={{fontSize:12,color:"#F59E0B",fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>🎵 THE LIMERICK</div>}
-            {isJoke&&<div style={{fontSize:12,color:"#10B981",fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>😄 THE JOKE</div>}
+            {isLimerick&&<div style={{fontSize:12,color:"#F59E0B",fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>?? THE LIMERICK</div>}
+            {isJoke&&<div style={{fontSize:12,color:"#10B981",fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>?? THE JOKE</div>}
             {!isLimerick&&!isJoke&&<div style={{fontSize:12,color,fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>THE STORY</div>}
             <div style={{fontSize:15,color:"#1C1917",lineHeight:1.7,fontFamily:"Nunito,sans-serif",whiteSpace:"pre-line"}}>{slide.text}</div>
             <button onClick={()=>speakEn(slide.text.replace(/
-/g," "))} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 Hear this</button>
+/g," "))} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? Hear this</button>
           </div>
           <div style={{display:"flex",gap:6,marginBottom:16}}>
             {storySlides.map((_,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=storyIdx?color:"#E5E7EB"}}/>)}
           </div>
           {storyIdx<storySlides.length-1
-            ?<button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next ›</button>
-            :<button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Start Learning! 👋</button>
+            ?<button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next �</button>
+            :<button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Start Learning! ??</button>
           }
         </div>
       </div>
@@ -1047,7 +1047,7 @@ Now they call him DJ Dollar to this day. 🎵" },
       <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
         <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>←</button>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>?</button>
           <div style={{flex:1,fontSize:16,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Lesson {lessonNum} of 3</div>
           <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>{wordIdx+1} / 4</div>
         </div>
@@ -1060,31 +1060,31 @@ Now they call him DJ Dollar to this day. 🎵" },
               <span style={{color,fontWeight:800}}>Memory Hook: </span>{word.hook}
             </div>
             <div style={{display:"flex",gap:8,justifyContent:"center"}}>
-              <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1.5px solid ${color}40`,borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 {word.es}</button>
-              <button onClick={()=>speakEn(word.en)} style={{background:"#F3F4F6",border:"1.5px solid #E5E7EB",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color:"#6B7280",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 {word.en}</button>
+              <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1.5px solid ${color}40`,borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? {word.es}</button>
+              <button onClick={()=>speakEn(word.en)} style={{background:"#F3F4F6",border:"1.5px solid #E5E7EB",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color:"#6B7280",fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? {word.en}</button>
             </div>
           </div>
           <div style={{display:"flex",gap:6,marginBottom:16}}>
             {lessonWords.map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<=wordIdx?color:"#E5E7EB"}}/>)}
           </div>
           {wordIdx<3
-            ?<button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next Word ›</button>
-            :<button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Let's Play! 🎮</button>
+            ?<button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next Word �</button>
+            :<button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Let's Play! ??</button>
           }
         </div>
       </div>
     );
   }
 
-  if(phase==="game1") return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street — Match the Greetings!" onComplete={()=>{setPhase("lesson2");setWordIdx(0);}} emoji="🗺️"/>;
-  if(phase==="game2") return <ShootingGame words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>{setPhase("lesson3");setWordIdx(0);}} emoji="🎯"/>;
-  if(phase==="game3") return <FallingWordsGame words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="⬇️"/>;
-  if(phase==="boss") return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} emoji="🌋"/>;
+  if(phase==="game1") return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street � Match the Greetings!" onComplete={()=>{setPhase("lesson2");setWordIdx(0);}} emoji="???"/>;
+  if(phase==="game2") return <ShootingGame words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>{setPhase("lesson3");setWordIdx(0);}} emoji="??"/>;
+  if(phase==="game3") return <FallingWordsGame words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="??"/>;
+  if(phase==="boss") return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} emoji="??"/>;
 
   return null;
 }
 
-// ══ MAIN APP ══════════════════════════════════════════════════════
+// -- MAIN APP ------------------------------------------------------
 export default function App() {
   const [screen, setScreen]         = useState("opening");
   const [familyId, setFamilyId]     = useState(null);
@@ -1146,3 +1146,4 @@ export default function App() {
 
   return null;
 }
+
