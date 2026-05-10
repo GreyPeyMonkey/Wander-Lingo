@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const sb = createClient(
   "https://jlqrxshoilgmcfaitxta.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXJ4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NTI5MjIsImV4cCI6MjA5MzQyODkyMn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXp4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTI1MTYsImV4cCI6MjA2MTg4ODUxNn0.lNaBCOCtCKBBcSlVfJnFMBGfTdADkAsgKFV9gUPaEOM"
 );
 
 // ══ THEME ════════════════════════════════════════════════════════
@@ -76,42 +76,8 @@ const speakEn = (text) => {
   window.speechSynthesis.speak(u);
 };
 
-
-// ══ USERNAME LOGIN ════════════════════════════════════════════════
-function UsernameLoginScreen({ onFound, onBack }) {
-  const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const findPlayer = async () => {
-    if (!username.trim()) return;
-    setLoading(true);
-    const { data } = await sb.from("players").select("*, families(*)").eq("username", username.toLowerCase().trim()).single();
-    if (!data) { setError("Username not found. Check spelling and try again!"); setLoading(false); return; }
-    onFound(data);
-  };
-
-  return (
-    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg, #1C0A4A, #2D1B69)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
-      <button onClick={onBack} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>← Back</button>
-      <div style={{ fontSize:36, marginBottom:12 }}>🔑</div>
-      <div style={{ fontSize:24, color:"white", fontFamily:"Nunito, sans-serif", fontWeight:800, marginBottom:4 }}>Welcome Back!</div>
-      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off — on any device!</div>
-      <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="your username..."
-        style={{ width:"100%", maxWidth:300, padding:"16px", borderRadius:16, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:18, fontFamily:"inherit", fontWeight:700, textAlign:"center", outline:"none", marginBottom:8 }}
-      />
-      {error && <div style={{ color:"#FCA5A5", fontSize:13, marginBottom:8, textAlign:"center" }}>{error}</div>}
-      <button onClick={findPlayer} disabled={!username.trim()||loading}
-        style={{ width:"100%", maxWidth:300, padding:16, borderRadius:18, background:username.trim()?"linear-gradient(135deg,#F59E0B,#F97316)":"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>
-        {loading ? "Finding you..." : "Find My Account 🗺️"}
-      </button>
-    </div>
-  );
-}
-
 // ══ OPENING SCREEN ════════════════════════════════════════════════
-function OpeningScreen({ onEnter, onReturning }) {
+function OpeningScreen({ onEnter }) {
   const [show, setShow] = useState(false);
   useEffect(() => { setTimeout(() => setShow(true), 300); }, []);
 
@@ -215,15 +181,7 @@ function OpeningScreen({ onEnter, onReturning }) {
         ¡Vámonos! 🗺️
       </button>
 
-      <button onClick={onReturning} style={{
-        background:"transparent", border:"none", color:"rgba(255,255,255,0.4)",
-        fontSize:13, cursor:"pointer", marginTop:8, textDecoration:"underline",
-        opacity: show?1:0, transition:"opacity 1s ease 1s",
-      }}>
-        Returning explorer? Log in with username
-      </button>
-
-      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:8 }}>
+      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:12 }}>
         25 lands • 15 games • 1 incredible adventure
       </div>
     </div>
@@ -242,7 +200,7 @@ function FamilySetupScreen({ onDone }) {
     setLoading(true);
     const code = Math.random().toString(36).substring(2,8).toUpperCase();
     const { data, error: err } = await sb.from("families").insert({ name: input.trim(), code }).select().single();
-    if (err) { setError("Error: " + err.message); setLoading(false); return; }
+    if (err) { setError("Could not create family. Try again!"); setLoading(false); return; }
     onDone(data.id, data.code, data.name);
   };
 
@@ -328,7 +286,7 @@ function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCre
             <div>
               <div style={{ fontSize:18, color:"white", ...DS }}>{p.name}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>
-                ⭐ {p.stars||0} stars · Land {p.level||1}
+                ⭐ {p.stars||0} stars · Land {p.currentLand||1}
               </div>
             </div>
             <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>›</div>
@@ -352,7 +310,6 @@ function CreateProfileScreen({ onDone, onBack }) {
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [color, setColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
 
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", padding:20 }}>
@@ -365,9 +322,6 @@ function CreateProfileScreen({ onDone, onBack }) {
       <div style={{ maxWidth:340, margin:"0 auto", width:"100%", display:"flex", flexDirection:"column", gap:16 }}>
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name..." maxLength={20}
           style={{ padding:"14px 16px", borderRadius:14, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:17, fontFamily:"inherit", fontWeight:700, outline:"none" }}
-        />
-        <input value={username||""} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g,""))} placeholder="Choose a username (for login on any device)" maxLength={20}
-          style={{ padding:"14px 16px", borderRadius:14, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:15, fontFamily:"inherit", fontWeight:700, outline:"none" }}
         />
         <div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", marginBottom:8, fontWeight:700 }}>CHOOSE YOUR AVATAR</div>
@@ -385,7 +339,7 @@ function CreateProfileScreen({ onDone, onBack }) {
             ))}
           </div>
         </div>
-        <button onClick={()=>{ if(name.trim()) onDone(name.trim(), avatar, color, username); }} disabled={!name.trim()||loading}
+        <button onClick={()=>{ if(name.trim()) onDone(name.trim(), avatar, color); }} disabled={!name.trim()||loading}
           style={{ padding:16, borderRadius:18, background: name.trim()?`linear-gradient(135deg,${T.gold},${T.orange})`:"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", ...DS, opacity: loading?0.7:1 }}>
           {loading ? "..." : "Start Adventuring! 🗺️"}
         </button>
@@ -638,7 +592,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", maxWidth:360, marginBottom:24 }}>
           {[
             { label:"Stars",    value:profile.stars||0,       icon:"⭐" },
-            { label:"Land",     value:profile.level||1, icon:"🗺️" },
+            { label:"Land",     value:profile.currentLand||1, icon:"🗺️" },
             { label:"Streak",   value:profile.streak||0,      icon:"🔥" },
           ].map(s => (
             <div key={s.label} style={{ background:"rgba(255,255,255,0.08)", borderRadius:16, padding:"14px 10px", textAlign:"center" }}>
@@ -690,7 +644,7 @@ export default function App() {
   }, []);
 
   const loadProfiles = async (fid) => {
-    const { data } = await sb.from("players").select("*").eq("family_id", fid).order("updated_at");
+    const { data } = await sb.from("profiles").select("*").eq("familyId", fid).order("created_at");
     setProfiles(data || []);
   };
 
@@ -706,8 +660,8 @@ export default function App() {
     setScreen("map");
   };
 
-  const handleCreateProfile = async (name, avatar, color, username) => {
-    const { data } = await sb.from("players").insert({ id: Date.now().toString(36) + Math.random().toString(36).substring(2,6), family_id:familyId, name, avatar, color, stars:0, streak:0, level:1, username:username.trim()||null, avatar:avatar, last_date: new Date().toISOString().split('T')[0] }).select().single();
+  const handleCreateProfile = async (name, avatar, color) => {
+    const { data } = await sb.from("profiles").insert({ familyId, name, avatar, color, stars:0, currentLand:1, streak:0 }).select().single();
     if (data) { await loadProfiles(familyId); setScreen("profiles"); }
   };
 
@@ -716,11 +670,10 @@ export default function App() {
     setScreen("landIntro");
   };
 
-  if (screen === "opening")   return <OpeningScreen onEnter={()=>setScreen(familyId?"profiles":"family")} onReturning={()=>setScreen("usernameLogin")}/>;
-  if (screen === "usernameLogin") return <UsernameLoginScreen onFound={(p)=>{setProfile(p);setFamilyId(p.family_id);setFamilyCode(p.families?.code);setFamilyName(p.families?.name);setScreen("map");}} onBack={()=>setScreen("opening")}/>;  
+  if (screen === "opening")   return <OpeningScreen onEnter={()=>setScreen(familyId?"profiles":"family")}/>;
   if (screen === "family")    return <FamilySetupScreen onDone={handleFamilyDone}/>;
   if (screen === "profiles")  return <ProfileSelectScreen profiles={profiles} familyName={familyName} familyCode={familyCode} onSelect={handleSelectProfile} onCreate={()=>setScreen("createProfile")}/>;
-  if (screen === "createProfile") return <CreateProfileScreen onDone={(name,avatar,color,username)=>handleCreateProfile(name,avatar,color,username)} onBack={()=>setScreen("profiles")}/>;
+  if (screen === "createProfile") return <CreateProfileScreen onDone={handleCreateProfile} onBack={()=>setScreen("profiles")}/>;
   if (screen === "map")       return <AdventureMap profile={profile} onSelectLand={handleSelectLand} onStudyHall={()=>setScreen("studyHall")} onMyProfile={()=>setScreen("myProfile")}/>;
   if (screen === "landIntro") return <LandIntroScreen land={selectedLand} profile={profile} onBack={()=>setScreen("map")} onStartLesson={()=>setScreen("map")}/>;
   if (screen === "studyHall") return <StudyHallScreen profile={profile} onBack={()=>setScreen("map")}/>;
