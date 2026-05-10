@@ -385,7 +385,7 @@ function CreateProfileScreen({ onDone, onBack }) {
             ))}
           </div>
         </div>
-        <button onClick={()=>{ if(name.trim()) onDone(name.trim(), avatar, color); }} disabled={!name.trim()||loading}
+        <button onClick={()=>{ if(name.trim()) onDone(name.trim(), avatar, color, username); }} disabled={!name.trim()||loading}
           style={{ padding:16, borderRadius:18, background: name.trim()?`linear-gradient(135deg,${T.gold},${T.orange})`:"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", ...DS, opacity: loading?0.7:1 }}>
           {loading ? "..." : "Start Adventuring! 🗺️"}
         </button>
@@ -706,7 +706,7 @@ export default function App() {
     setScreen("map");
   };
 
-  const handleCreateProfile = async (name, avatar, color) => {
+  const handleCreateProfile = async (name, avatar, color, username) => {
     const { data } = await sb.from("players").insert({ id: Date.now().toString(36) + Math.random().toString(36).substring(2,6), family_id:familyId, name, avatar, color, stars:0, streak:0, level:1, username:username.trim()||null, avatar:avatar, last_date: new Date().toISOString().split('T')[0] }).select().single();
     if (data) { await loadProfiles(familyId); setScreen("profiles"); }
   };
@@ -720,7 +720,7 @@ export default function App() {
   if (screen === "usernameLogin") return <UsernameLoginScreen onFound={(p)=>{setProfile(p);setFamilyId(p.family_id);setFamilyCode(p.families?.code);setFamilyName(p.families?.name);setScreen("map");}} onBack={()=>setScreen("opening")}/>;  
   if (screen === "family")    return <FamilySetupScreen onDone={handleFamilyDone}/>;
   if (screen === "profiles")  return <ProfileSelectScreen profiles={profiles} familyName={familyName} familyCode={familyCode} onSelect={handleSelectProfile} onCreate={()=>setScreen("createProfile")}/>;
-  if (screen === "createProfile") return <CreateProfileScreen onDone={handleCreateProfile} onBack={()=>setScreen("profiles")}/>;
+  if (screen === "createProfile") return <CreateProfileScreen onDone={(name,avatar,color,username)=>handleCreateProfile(name,avatar,color,username)} onBack={()=>setScreen("profiles")}/>;
   if (screen === "map")       return <AdventureMap profile={profile} onSelectLand={handleSelectLand} onStudyHall={()=>setScreen("studyHall")} onMyProfile={()=>setScreen("myProfile")}/>;
   if (screen === "landIntro") return <LandIntroScreen land={selectedLand} profile={profile} onBack={()=>setScreen("map")} onStartLesson={()=>setScreen("map")}/>;
   if (screen === "studyHall") return <StudyHallScreen profile={profile} onBack={()=>setScreen("map")}/>;
