@@ -972,11 +972,11 @@ function Land1Screen({ profile, onBack, onComplete }) {
     { type:"limerick", text:"A traveler arrived in Cuenca one day, tried to say Hola the very wrong way. He said Holla like money, which the locals found funny - now they call him DJ Dollar to this day!" },
     { type:"joke", text:"A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' ??" },
   ];
-
-  useEffect(()=>{
+useEffect(()=>{
     if(phase==="story"){
       const slide = storySlides[storyIdx];
-  if(slide) setTimeout(()=>speakEn(slide.text),300);
+      if(slide) setTimeout(()=>speakEn(slide.text),300);
+    }
   },[storyIdx,phase]);
 
   useEffect(()=>{
