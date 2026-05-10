@@ -1,9 +1,9 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const sb = createClient(
   "https://jlqrxshoilgmcfaitxta.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXp4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTI1MTYsImV4cCI6MjA2MTg4ODUxNn0.lNaBCOCtCKBBcSlVfJnFMBGfTdADkAsgKFV9gUPaEOM"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXJ4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NTI5MjIsImV4cCI6MjA5MzQyODkyMn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
 );
 
 // ══ THEME ════════════════════════════════════════════════════════
@@ -76,8 +76,42 @@ const speakEn = (text) => {
   window.speechSynthesis.speak(u);
 };
 
+
+// ══ USERNAME LOGIN ════════════════════════════════════════════════
+function UsernameLoginScreen({ onFound, onBack }) {
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const findPlayer = async () => {
+    if (!username.trim()) return;
+    setLoading(true);
+    const { data } = await sb.from("players").select("*, families(*)").eq("username", username.toLowerCase().trim()).single();
+    if (!data) { setError("Username not found. Check spelling and try again!"); setLoading(false); return; }
+    onFound(data);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"linear-gradient(160deg, #1C0A4A, #2D1B69)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
+      <button onClick={onBack} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>← Back</button>
+      <div style={{ fontSize:36, marginBottom:12 }}>🔑</div>
+      <div style={{ fontSize:24, color:"white", fontFamily:"Nunito, sans-serif", fontWeight:800, marginBottom:4 }}>Welcome Back!</div>
+      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off — on any device!</div>
+      <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="your username..."
+        style={{ width:"100%", maxWidth:300, padding:"16px", borderRadius:16, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:18, fontFamily:"inherit", fontWeight:700, textAlign:"center", outline:"none", marginBottom:8 }}
+      />
+      {error && <div style={{ color:"#FCA5A5", fontSize:13, marginBottom:8, textAlign:"center" }}>{error}</div>}
+      <button onClick={findPlayer} disabled={!username.trim()||loading}
+        style={{ width:"100%", maxWidth:300, padding:16, borderRadius:18, background:username.trim()?"linear-gradient(135deg,#F59E0B,#F97316)":"rgba(255,255,255,0.2)", border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>
+        {loading ? "Finding you..." : "Find My Account 🗺️"}
+      </button>
+    </div>
+  );
+}
+
 // ══ OPENING SCREEN ════════════════════════════════════════════════
-function OpeningScreen({ onEnter }) {
+function OpeningScreen({ onEnter, onReturning }) {
   const [show, setShow] = useState(false);
   useEffect(() => { setTimeout(() => setShow(true), 300); }, []);
 
@@ -181,7 +215,15 @@ function OpeningScreen({ onEnter }) {
         ¡Vámonos! 🗺️
       </button>
 
-      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:12 }}>
+      <button onClick={onReturning} style={{
+        background:"transparent", border:"none", color:"rgba(255,255,255,0.4)",
+        fontSize:13, cursor:"pointer", marginTop:8, textDecoration:"underline",
+        opacity: show?1:0, transition:"opacity 1s ease 1s",
+      }}>
+        Returning explorer? Log in with username
+      </button>
+
+      <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:8 }}>
         25 lands • 15 games • 1 incredible adventure
       </div>
     </div>
@@ -200,7 +242,7 @@ function FamilySetupScreen({ onDone }) {
     setLoading(true);
     const code = Math.random().toString(36).substring(2,8).toUpperCase();
     const { data, error: err } = await sb.from("families").insert({ name: input.trim(), code }).select().single();
-    if (err) { setError("Could not create family. Try again!"); setLoading(false); return; }
+    if (err) { setError("Error: " + err.message); setLoading(false); return; }
     onDone(data.id, data.code, data.name);
   };
 
@@ -286,7 +328,7 @@ function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCre
             <div>
               <div style={{ fontSize:18, color:"white", ...DS }}>{p.name}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>
-                ⭐ {p.stars||0} stars · Land {p.currentLand||1}
+                ⭐ {p.stars||0} stars · Land {p.level||1}
               </div>
             </div>
             <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>›</div>
@@ -310,6 +352,7 @@ function CreateProfileScreen({ onDone, onBack }) {
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [color, setColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
 
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", padding:20 }}>
@@ -322,6 +365,9 @@ function CreateProfileScreen({ onDone, onBack }) {
       <div style={{ maxWidth:340, margin:"0 auto", width:"100%", display:"flex", flexDirection:"column", gap:16 }}>
         <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name..." maxLength={20}
           style={{ padding:"14px 16px", borderRadius:14, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:17, fontFamily:"inherit", fontWeight:700, outline:"none" }}
+        />
+        <input value={username||""} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g,""))} placeholder="Choose a username (for login on any device)" maxLength={20}
+          style={{ padding:"14px 16px", borderRadius:14, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:15, fontFamily:"inherit", fontWeight:700, outline:"none" }}
         />
         <div>
           <div style={{ fontSize:12, color:"rgba(255,255,255,0.5)", marginBottom:8, fontWeight:700 }}>CHOOSE YOUR AVATAR</div>
@@ -592,7 +638,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", maxWidth:360, marginBottom:24 }}>
           {[
             { label:"Stars",    value:profile.stars||0,       icon:"⭐" },
-            { label:"Land",     value:profile.currentLand||1, icon:"🗺️" },
+            { label:"Land",     value:profile.level||1, icon:"🗺️" },
             { label:"Streak",   value:profile.streak||0,      icon:"🔥" },
           ].map(s => (
             <div key={s.label} style={{ background:"rgba(255,255,255,0.08)", borderRadius:16, padding:"14px 10px", textAlign:"center" }}>
@@ -621,6 +667,420 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
   );
 }
 
+
+// ══ LAND 1 DATA ═══════════════════════════════════════════════════
+const LAND1_WORDS = [
+  // Lesson 1
+  { es:"Hola",          en:"Hello",           emoji:"👋", hook:"HOH-la — everyone knows this one! It's the friendliest word in Spanish." },
+  { es:"Adiós",         en:"Goodbye",         emoji:"👋", hook:"ah-dee-OHS — sounds like 'odd-ee-ose'. Say goodbye to not knowing this!" },
+  { es:"Buenos días",   en:"Good morning",    emoji:"🌅", hook:"BWEH-nos DEE-as — Buenos = good, días = days. Good days to you!" },
+  { es:"Buenas tardes", en:"Good afternoon",  emoji:"☀️", hook:"BWEH-nas TAR-des — tardes sounds like 'tardies' — afternoon is when you're late for things!" },
+  // Lesson 2
+  { es:"Buenas noches", en:"Good night",      emoji:"🌙", hook:"BWEH-nas NO-ches — noches sounds like 'no-chess' — no chess at night, time for bed!" },
+  { es:"Por favor",     en:"Please",          emoji:"🙏", hook:"por fah-VOR — por favor sounds like 'pour the flavor' — please pour the flavor!" },
+  { es:"Gracias",       en:"Thank you",       emoji:"💛", hook:"GRAH-see-as — sounds like 'grassy-us' — thank you for the grassy field!" },
+  { es:"De nada",       en:"You're welcome",  emoji:"😊", hook:"day NAH-da — means 'of nothing' — it was nothing, you're welcome!" },
+  // Lesson 3
+  { es:"Mucho gusto",   en:"Nice to meet you",emoji:"🤝", hook:"MOO-cho GOO-sto — mucho = much, gusto = pleasure. Much pleasure meeting you!" },
+  { es:"¿Cómo estás?",  en:"How are you?",    emoji:"❓", hook:"KOH-mo es-TAS — como sounds like 'como' — how are you doing, como?" },
+  { es:"Bien",          en:"Good / Fine",      emoji:"✅", hook:"bee-EN — short and sweet, like saying 'been good'!" },
+  { es:"Hasta luego",   en:"See you later",   emoji:"👋", hook:"AHS-ta loo-EH-go — hasta la vista's cousin! See you later!" },
+];
+
+// ══ LAND 1 SCREEN ═════════════════════════════════════════════════
+function Land1Screen({ profile, onBack, onComplete }) {
+  const [phase, setPhase] = useState("story"); 
+  // story → lesson1 → game1 → lesson2 → game2 → lesson3 → game3 → boss → done
+  const [wordIdx, setWordIdx] = useState(0);
+  const [score, setScore] = useState(0);
+  const [storyIdx, setStoryIdx] = useState(0);
+
+  const color = "#E8445A";
+
+  const story = [
+    "You just stepped off a plane in Cuenca, Ecuador.",
+    "The sun is shining, the mountains are gorgeous, and a friendly man named Carlos waves at you from across the street.",
+    "You wave back. He walks over, smiles, and says something in Spanish.",
+    "You have absolutely no idea what he said.",
+    "You smile and nod anyway. He keeps talking. You keep nodding.",
+    "Twenty minutes later you realize you just agreed to help him move furniture on Saturday.",
+    "This is why we learn to say hello first. ¡Vámonos!",
+  ];
+
+  // Auto-speak when phase changes
+  useEffect(() => {
+    if (phase === "story") speakEn(story[storyIdx]);
+  }, [storyIdx, phase]);
+
+  useEffect(() => {
+    if (phase === "lesson1" || phase === "lesson2" || phase === "lesson3") {
+      const lesson = phase === "lesson1" ? 0 : phase === "lesson2" ? 4 : 8;
+      const word = LAND1_WORDS[lesson + wordIdx];
+      if (word) {
+        setTimeout(() => speakEs(word.es), 300);
+        setTimeout(() => speakEn(word.en), 1200);
+      }
+    }
+  }, [phase, wordIdx]);
+
+  // Story phase
+  if (phase === "story") return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${color}15, #FDF6EC)`, display:"flex", flexDirection:"column" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+        @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
+      <div style={{ background:color, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <button onClick={onBack} style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:18 }}>←</button>
+        <div style={{ fontSize:18, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>👋 Land 1 — Greetings</div>
+      </div>
+
+      <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ display:"flex", gap:12, marginBottom:16, alignItems:"flex-end" }}>
+          <img src="/characters/grayson.png" style={{ height:120, filter:`drop-shadow(0 4px 12px ${color}40)` }} alt="Grayson" onError={e=>e.target.style.display='none'}/>
+          <img src="/characters/peyton.png" style={{ height:100, filter:`drop-shadow(0 4px 12px #2563EB40)` }} alt="Peyton" onError={e=>e.target.style.display='none'}/>
+        </div>
+
+        <div style={{ background:"white", borderRadius:20, padding:"20px", width:"100%", maxWidth:400, boxShadow:`0 4px 20px ${color}20`, marginBottom:16, minHeight:100, animation:"fadeIn 0.4s ease" }}>
+          <div style={{ fontSize:11, color:color, fontWeight:800, marginBottom:8, fontFamily:"Nunito,sans-serif" }}>THE STORY</div>
+          <div style={{ fontSize:16, color:"#1C1917", lineHeight:1.6, fontFamily:"Nunito,sans-serif" }}>{story[storyIdx]}</div>
+          <button onClick={()=>speakEn(story[storyIdx])} style={{ marginTop:10, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:10, padding:"6px 12px", cursor:"pointer", fontSize:12, color, fontWeight:700, fontFamily:"Nunito,sans-serif" }}>🔊 Hear this</button>
+        </div>
+
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          {story.map((_,i) => (
+            <div key={i} style={{ width:8, height:8, borderRadius:"50%", background: i<=storyIdx?color:"#E5E7EB" }}/>
+          ))}
+        </div>
+
+        {storyIdx < story.length - 1
+          ? <button onClick={()=>setStoryIdx(i=>i+1)} style={{ width:"100%", maxWidth:400, padding:16, borderRadius:18, background:color, border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Next ›</button>
+          : <button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{ width:"100%", maxWidth:400, padding:16, borderRadius:18, background:color, border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Start Learning! 👋</button>
+        }
+      </div>
+    </div>
+  );
+
+  // Lesson phase
+  const lessonNum = phase === "lesson1" ? 1 : phase === "lesson2" ? 2 : 3;
+  const lessonStart = lessonNum === 1 ? 0 : lessonNum === 2 ? 4 : 8;
+  const lessonWords = LAND1_WORDS.slice(lessonStart, lessonStart + 4);
+  const nextPhase = phase === "lesson1" ? "game1" : phase === "lesson2" ? "game2" : "game3";
+
+  if (["lesson1","lesson2","lesson3"].includes(phase)) {
+    const word = lessonWords[wordIdx];
+    return (
+      <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${color}15, #FDF6EC)`, display:"flex", flexDirection:"column" }}>
+        <div style={{ background:color, padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+          <button onClick={onBack} style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:12, padding:"8px 12px", color:"white", cursor:"pointer", fontSize:18 }}>←</button>
+          <div style={{ flex:1, fontSize:16, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Lesson {lessonNum} of 3</div>
+          <div style={{ fontSize:13, color:"rgba(255,255,255,0.7)" }}>{wordIdx+1} / 4</div>
+        </div>
+
+        <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+          <div style={{ background:"white", borderRadius:24, padding:"28px 20px", width:"100%", maxWidth:400, textAlign:"center", boxShadow:`0 8px 32px ${color}25`, border:`3px solid ${color}`, marginBottom:16 }}>
+            <div style={{ fontSize:48, marginBottom:8 }}>{word.emoji}</div>
+            <div style={{ fontSize:36, color, fontFamily:"Nunito,sans-serif", fontWeight:900, marginBottom:4 }}>{word.es}</div>
+            <div style={{ fontSize:20, color:"#6B7280", marginBottom:16 }}>{word.en}</div>
+            <div style={{ background:`${color}10`, borderRadius:14, padding:"12px 16px", fontSize:14, color:"#1C1917", lineHeight:1.5, textAlign:"left", marginBottom:12 }}>
+              <span style={{ color, fontWeight:800 }}>Memory Hook: </span>{word.hook}
+            </div>
+            <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+              <button onClick={()=>speakEs(word.es)} style={{ background:`${color}15`, border:`1.5px solid ${color}40`, borderRadius:12, padding:"8px 16px", cursor:"pointer", fontSize:14, color, fontWeight:700, fontFamily:"Nunito,sans-serif" }}>🔊 {word.es}</button>
+              <button onClick={()=>speakEn(word.en)} style={{ background:"#F3F4F6", border:"1.5px solid #E5E7EB", borderRadius:12, padding:"8px 16px", cursor:"pointer", fontSize:14, color:"#6B7280", fontWeight:700, fontFamily:"Nunito,sans-serif" }}>🔊 {word.en}</button>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", gap:6, marginBottom:16 }}>
+            {lessonWords.map((_,i) => <div key={i} style={{ width:10, height:10, borderRadius:"50%", background:i<=wordIdx?color:"#E5E7EB" }}/>)}
+          </div>
+
+          {wordIdx < 3
+            ? <button onClick={()=>setWordIdx(i=>i+1)} style={{ width:"100%", maxWidth:400, padding:16, borderRadius:18, background:color, border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Next Word ›</button>
+            : <button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{ width:"100%", maxWidth:400, padding:16, borderRadius:18, background:`linear-gradient(135deg,${color},#F97316)`, border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Let's Play! 🎮</button>
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // Game 1 - Scavenger Hunt (matching game)
+  if (phase === "game1") return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street — Match the Greetings!" onComplete={()=>{setPhase("lesson2");setWordIdx(0);}} emoji="🗺️"/>;
+
+  // Game 2 - Shooting Game (multiple choice)
+  if (phase === "game2") return <ShootingGame words={LAND1_WORDS.slice(4,8)} allWords={LAND1_WORDS} color={color} title="Greetings Shooting Game!" onComplete={()=>{setPhase("lesson3");setWordIdx(0);}} emoji="🎯"/>;
+
+  // Game 3 - Word Scramble
+  if (phase === "game3") return <ScrambleGame words={LAND1_WORDS.slice(8,12)} color={color} title="Unscramble the Greetings!" onComplete={()=>setPhase("boss")} emoji="🔤"/>;
+
+  // Boss Challenge - Lava Floor
+  if (phase === "boss") return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={()=>onComplete()} emoji="🌋"/>;
+
+  return null;
+}
+
+// ══ MATCHING GAME ═════════════════════════════════════════════════
+function MatchingGame({ words, color, title, onComplete, emoji }) {
+  const [selected, setSelected] = useState(null);
+  const [matched, setMatched] = useState([]);
+  const [wrong, setWrong] = useState(null);
+
+  const esWords = words.map(w => ({ id:w.es, text:w.es, type:"es" }));
+  const enWords = words.map(w => ({ id:w.es, text:w.en, type:"en" }));
+  const [enShuffled] = useState(() => [...enWords].sort(()=>Math.random()-0.5));
+
+  const handleSelect = (item) => {
+    if (matched.includes(item.id)) return;
+    if (!selected) { setSelected(item); speakEs(item.id); return; }
+    if (selected.id === item.id && selected.type !== item.type) {
+      setMatched(m => [...m, item.id]);
+      setSelected(null);
+      speakEn(words.find(w=>w.es===item.id)?.en||"");
+      if (matched.length + 1 >= words.length) setTimeout(onComplete, 1000);
+    } else {
+      setWrong(item.id);
+      setTimeout(() => { setWrong(null); setSelected(null); }, 800);
+    }
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${color}15, #FDF6EC)`, display:"flex", flexDirection:"column" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
+      <div style={{ background:color, padding:"14px 16px" }}>
+        <div style={{ fontSize:16, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>{emoji} {title}</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)" }}>Match the Spanish to the English!</div>
+      </div>
+      <div style={{ flex:1, padding:"16px", display:"flex", flexDirection:"column", gap:8 }}>
+        <div style={{ fontSize:12, color:"#6B7280", fontWeight:700, textAlign:"center", marginBottom:4 }}>Matched: {matched.length} / {words.length}</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ fontSize:11, color:color, fontWeight:800, textAlign:"center" }}>SPANISH</div>
+            {esWords.map(item => (
+              <button key={item.id} onClick={()=>handleSelect(item)} style={{
+                padding:"14px 10px", borderRadius:14, border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="es"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,
+                background: matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="es"?`${color}15`:wrong===item.id?"#FEE2E2":"white",
+                cursor:"pointer", fontSize:15, fontFamily:"Nunito,sans-serif", fontWeight:800, color: matched.includes(item.id)?"#10B981":"#1C1917", textAlign:"center"
+              }}>{item.text}</button>
+            ))}
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            <div style={{ fontSize:11, color:"#6B7280", fontWeight:800, textAlign:"center" }}>ENGLISH</div>
+            {enShuffled.map(item => (
+              <button key={item.id+"-en"} onClick={()=>handleSelect(item)} style={{
+                padding:"14px 10px", borderRadius:14, border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="en"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,
+                background: matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="en"?`${color}15`:wrong===item.id?"#FEE2E2":"white",
+                cursor:"pointer", fontSize:13, fontFamily:"Nunito,sans-serif", fontWeight:700, color:"#1C1917", textAlign:"center"
+              }}>{item.text}</button>
+            ))}
+          </div>
+        </div>
+        {matched.length === words.length && (
+          <button onClick={onComplete} style={{ marginTop:16, padding:16, borderRadius:18, background:`linear-gradient(135deg,${color},#F97316)`, border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>
+            ¡Perfecto! Continue →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══ SHOOTING GAME (Multiple Choice) ═══════════════════════════════
+function ShootingGame({ words, allWords, color, title, onComplete, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx];
+
+  useEffect(() => { if(word) speakEs(word.es); }, [idx]);
+
+  const getOptions = () => {
+    const correct = word.en;
+    const others = allWords.filter(w=>w.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.en);
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+  const [options] = useState(getOptions);
+
+  const pick = (opt) => {
+    if (selected) return;
+    setSelected(opt);
+    if (opt === word.en) { setScore(s=>s+1); speakEn("Correcto!"); }
+    else speakEn("Try again next time!");
+    setTimeout(() => {
+      if (idx < words.length - 1) { setIdx(i=>i+1); setSelected(null); }
+      else onComplete();
+    }, 1500);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${color}15, #FDF6EC)`, display:"flex", flexDirection:"column" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
+      <div style={{ background:color, padding:"14px 16px" }}>
+        <div style={{ fontSize:16, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>{emoji} {title}</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)" }}>Score: {score} / {words.length}</div>
+      </div>
+      <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ background:"white", borderRadius:24, padding:"28px 20px", width:"100%", maxWidth:400, textAlign:"center", boxShadow:`0 8px 32px ${color}25`, border:`3px solid ${color}`, marginBottom:20 }}>
+          <div style={{ fontSize:48, marginBottom:8 }}>{word.emoji}</div>
+          <div style={{ fontSize:34, color, fontFamily:"Nunito,sans-serif", fontWeight:900 }}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{ marginTop:8, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:10, padding:"6px 14px", cursor:"pointer", fontSize:13, color, fontWeight:700, fontFamily:"Nunito,sans-serif" }}>🔊 Hear it</button>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10, width:"100%", maxWidth:400 }}>
+          {options.map(opt => (
+            <button key={opt} onClick={()=>pick(opt)} style={{
+              padding:"16px", borderRadius:16, border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,
+              background: !selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",
+              cursor:"pointer", fontSize:16, fontFamily:"Nunito,sans-serif", fontWeight:700, color:"#1C1917"
+            }}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══ SCRAMBLE GAME ═════════════════════════════════════════════════
+function ScrambleGame({ words, color, title, onComplete, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const [typed, setTyped] = useState("");
+  const [result, setResult] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx];
+  const scrambled = word.es.split("").sort(()=>Math.random()-0.5).join("");
+
+  const check = () => {
+    const correct = typed.trim().toLowerCase() === word.es.toLowerCase();
+    setResult(correct ? "correct" : "wrong");
+    if (correct) { setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(() => {
+      setResult(null); setTyped("");
+      if (idx < words.length - 1) setIdx(i=>i+1);
+      else onComplete();
+    }, 1500);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, ${color}15, #FDF6EC)`, display:"flex", flexDirection:"column" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
+      <div style={{ background:color, padding:"14px 16px" }}>
+        <div style={{ fontSize:16, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>{emoji} {title}</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.7)" }}>Score: {score} / {words.length}</div>
+      </div>
+      <div style={{ flex:1, padding:"20px 16px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ background:"white", borderRadius:24, padding:"24px 20px", width:"100%", maxWidth:400, textAlign:"center", boxShadow:`0 8px 32px ${color}25`, border:`3px solid ${color}`, marginBottom:16 }}>
+          <div style={{ fontSize:48, marginBottom:8 }}>{word.emoji}</div>
+          <div style={{ fontSize:18, color:"#6B7280", marginBottom:8 }}>{word.en}</div>
+          <div style={{ fontSize:28, color, fontFamily:"Nunito,sans-serif", fontWeight:900, letterSpacing:4, marginBottom:4 }}>{scrambled}</div>
+          <div style={{ fontSize:12, color:"#9CA3AF" }}>Unscramble the Spanish word!</div>
+        </div>
+        <input value={typed} onChange={e=>setTyped(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!result&&check()}
+          placeholder="Type the Spanish word..."
+          style={{ width:"100%", maxWidth:400, padding:"16px", borderRadius:16, border:`2px solid ${result==="correct"?"#10B981":result==="wrong"?"#EF4444":color+"60"}`, fontSize:18, fontFamily:"Nunito,sans-serif", fontWeight:700, color:"#1C1917", outline:"none", background:result==="correct"?"#D1FAE5":result==="wrong"?"#FEE2E2":"white", textAlign:"center", marginBottom:10 }}
+        />
+        {result && <div style={{ fontSize:16, fontWeight:800, color:result==="correct"?"#10B981":"#EF4444", marginBottom:10 }}>{result==="correct"?"¡Correcto! 🎉":"Answer: "+word.es}</div>}
+        {!result && <button onClick={check} style={{ width:"100%", maxWidth:400, padding:16, borderRadius:18, background:typed.trim()?color:"#9CA3AF", border:"none", color:"white", fontSize:17, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>Check ✓</button>}
+      </div>
+    </div>
+  );
+}
+
+// ══ BOSS CHALLENGE - LAVA FLOOR ═══════════════════════════════════
+function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const [lava, setLava] = useState(0);
+  const [result, setResult] = useState(null);
+  const [done, setDone] = useState(false);
+  const [wrong, setWrong] = useState(false);
+  const shuffled = useState(() => [...words].sort(()=>Math.random()-0.5))[0];
+  const word = shuffled[idx % shuffled.length];
+
+  const getOptions = () => {
+    const correct = word.en;
+    const others = words.filter(w=>w.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.en);
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+
+  const [options, setOptions] = useState(getOptions);
+
+  useEffect(() => { if(word) speakEs(word.es); }, [idx]);
+
+  const pick = (opt) => {
+    if (result) return;
+    const correct = opt === word.en;
+    setResult(correct ? "correct" : "wrong");
+    if (!correct) {
+      setLava(l => Math.min(l + 20, 100));
+      setWrong(true);
+      setTimeout(()=>setWrong(false), 600);
+    } else {
+      speakEs(word.es);
+    }
+    setTimeout(() => {
+      setResult(null);
+      if (idx >= words.length * 2 - 1) { setDone(true); return; }
+      setIdx(i=>i+1);
+      setOptions(getOptions());
+    }, 1200);
+  };
+
+  if (done) return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:24, textAlign:"center" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+        @keyframes celebrate { 0%{transform:scale(1)} 50%{transform:scale(1.1)} 100%{transform:scale(1)} }
+      `}</style>
+      <div style={{ fontSize:80, animation:"celebrate 0.6s ease infinite", marginBottom:16 }}>🎉</div>
+      <div style={{ fontSize:32, color:"#FCD34D", fontFamily:"Nunito,sans-serif", fontWeight:900, marginBottom:8 }}>¡Felicidades!</div>
+      <div style={{ fontSize:18, color:"white", marginBottom:4 }}>You completed {landName}!</div>
+      <div style={{ fontSize:14, color:"rgba(255,255,255,0.6)", marginBottom:24 }}>{nextLand} is now unlocked! 🗺️</div>
+      <div style={{ display:"flex", gap:12, marginBottom:24 }}>
+        <img src="/characters/grayson.png" style={{ height:100 }} alt="Grayson" onError={e=>e.target.style.display='none'}/>
+        <img src="/characters/peyton.png" style={{ height:86 }} alt="Peyton" onError={e=>e.target.style.display='none'}/>
+      </div>
+      <button onClick={onComplete} style={{ padding:"16px 48px", borderRadius:24, background:`linear-gradient(135deg,#F59E0B,#F97316)`, border:"none", color:"white", fontSize:18, cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:800, boxShadow:"0 8px 24px rgba(245,158,11,0.5)" }}>
+        Continue to {nextLand} →
+      </button>
+    </div>
+  );
+
+  const lavaHeight = `${lava}%`;
+
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg, #1C0A4A, #2D1B69)`, display:"flex", flexDirection:"column", transform:wrong?"translateX(-4px) rotate(-0.5deg)":"none", transition:"transform 0.1s" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+        @keyframes lavaRise { from{transform:scaleY(1.02)} to{transform:scaleY(0.98)} }
+      `}</style>
+      <div style={{ background:"rgba(255,255,255,0.05)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ flex:1, fontSize:18, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:800 }}>🌋 BOSS CHALLENGE</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)" }}>{idx+1} / {words.length * 2}</div>
+      </div>
+
+      {/* Lava meter */}
+      <div style={{ height:8, background:"rgba(255,255,255,0.1)", position:"relative" }}>
+        <div style={{ position:"absolute", left:0, top:0, bottom:0, width:`${lava}%`, background:`linear-gradient(90deg, #F97316, #EF4444)`, transition:"width 0.5s", borderRadius:"0 4px 4px 0" }}/>
+      </div>
+      <div style={{ fontSize:11, color:"#EF4444", textAlign:"center", padding:"4px", fontWeight:700 }}>🌋 LAVA LEVEL: {lava}%</div>
+
+      <div style={{ flex:1, padding:"16px", display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:24, padding:"24px 20px", width:"100%", maxWidth:400, textAlign:"center", border:`2px solid ${color}`, marginBottom:16 }}>
+          <div style={{ fontSize:40, marginBottom:8 }}>{word.emoji}</div>
+          <div style={{ fontSize:30, color:"white", fontFamily:"Nunito,sans-serif", fontWeight:900 }}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{ marginTop:8, background:`${color}20`, border:`1px solid ${color}40`, borderRadius:10, padding:"6px 14px", cursor:"pointer", fontSize:13, color:"white", fontWeight:700, fontFamily:"Nunito,sans-serif" }}>🔊</button>
+        </div>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:10, width:"100%", maxWidth:400 }}>
+          {options.map(opt => (
+            <button key={opt} onClick={()=>pick(opt)} style={{
+              padding:"16px", borderRadius:16,
+              background: !result?"rgba(255,255,255,0.1)":opt===word.en?"#D1FAE5":opt===result?"#FEE2E2":"rgba(255,255,255,0.05)",
+              border:`2px solid ${!result?"rgba(255,255,255,0.2)":opt===word.en?"#10B981":opt===result?"#EF4444":"rgba(255,255,255,0.1)"}`,
+              cursor:"pointer", fontSize:16, fontFamily:"Nunito,sans-serif", fontWeight:700,
+              color: !result?"white":opt===word.en?"#10B981":opt===result?"#EF4444":"rgba(255,255,255,0.4)"
+            }}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ══ MAIN APP ══════════════════════════════════════════════════════
 export default function App() {
   const [screen, setScreen]         = useState("opening");
@@ -644,7 +1104,7 @@ export default function App() {
   }, []);
 
   const loadProfiles = async (fid) => {
-    const { data } = await sb.from("profiles").select("*").eq("familyId", fid).order("created_at");
+    const { data } = await sb.from("players").select("*").eq("family_id", fid).order("updated_at");
     setProfiles(data || []);
   };
 
@@ -661,7 +1121,7 @@ export default function App() {
   };
 
   const handleCreateProfile = async (name, avatar, color) => {
-    const { data } = await sb.from("profiles").insert({ familyId, name, avatar, color, stars:0, currentLand:1, streak:0 }).select().single();
+    const { data } = await sb.from("players").insert({ id: Date.now().toString(36) + Math.random().toString(36).substring(2,6), family_id:familyId, name, avatar, color, stars:0, streak:0, level:1, username:username.trim()||null, avatar:avatar, last_date: new Date().toISOString().split('T')[0] }).select().single();
     if (data) { await loadProfiles(familyId); setScreen("profiles"); }
   };
 
@@ -670,12 +1130,14 @@ export default function App() {
     setScreen("landIntro");
   };
 
-  if (screen === "opening")   return <OpeningScreen onEnter={()=>setScreen(familyId?"profiles":"family")}/>;
+  if (screen === "opening")   return <OpeningScreen onEnter={()=>setScreen(familyId?"profiles":"family")} onReturning={()=>setScreen("usernameLogin")}/>;
+  if (screen === "usernameLogin") return <UsernameLoginScreen onFound={(p)=>{setProfile(p);setFamilyId(p.family_id);setFamilyCode(p.families?.code);setFamilyName(p.families?.name);setScreen("map");}} onBack={()=>setScreen("opening")}/>;  
   if (screen === "family")    return <FamilySetupScreen onDone={handleFamilyDone}/>;
   if (screen === "profiles")  return <ProfileSelectScreen profiles={profiles} familyName={familyName} familyCode={familyCode} onSelect={handleSelectProfile} onCreate={()=>setScreen("createProfile")}/>;
   if (screen === "createProfile") return <CreateProfileScreen onDone={handleCreateProfile} onBack={()=>setScreen("profiles")}/>;
   if (screen === "map")       return <AdventureMap profile={profile} onSelectLand={handleSelectLand} onStudyHall={()=>setScreen("studyHall")} onMyProfile={()=>setScreen("myProfile")}/>;
-  if (screen === "landIntro") return <LandIntroScreen land={selectedLand} profile={profile} onBack={()=>setScreen("map")} onStartLesson={()=>setScreen("map")}/>;
+  if (screen === "landIntro") return <LandIntroScreen land={selectedLand} profile={profile} onBack={()=>setScreen("map")} onStartLesson={()=>setScreen("land1")}/>;
+  if (screen === "land1") return <Land1Screen profile={profile} onBack={()=>setScreen("map")} onComplete={async()=>{ await sb.from("players").update({level:2}).eq("id",profile.id); setScreen("map"); }}/>;
   if (screen === "studyHall") return <StudyHallScreen profile={profile} onBack={()=>setScreen("map")}/>;
   if (screen === "myProfile") return <MyProfileScreen profile={profile} familyCode={familyCode} familyName={familyName} onBack={()=>setScreen("map")} onEditProfile={()=>setScreen("map")}/>;
 
