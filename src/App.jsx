@@ -37,27 +37,27 @@ const LANDS = [
   { id:3,  name:"Family",          emoji:"??", color:"#F59E0B", level:"Beginner",      region:"Casa Familiar"     },
   { id:4,  name:"Food",            emoji:"???", color:"#10B981", level:"Beginner",      region:"Mercado Central"   },
   { id:5,  name:"Feelings",        emoji:"??", color:"#3B82F6", level:"Beginner",      region:"Parque Calderon"   },
-  { id:6,  name:"Core Words 1",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
+  { id:6,  name:"Core Words 1",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mï¿½gica"    },
   { id:7,  name:"School",          emoji:"??", color:"#E8445A", level:"Beginner",      region:"La Escuela"        },
   { id:8,  name:"Numbers",         emoji:"??", color:"#F97316", level:"Beginner",      region:"El Mercado"        },
   { id:9,  name:"Colors",          emoji:"??", color:"#8B5CF6", level:"Beginner",      region:"Arte de Cuenca"    },
   { id:10, name:"Animals",         emoji:"??", color:"#10B981", level:"Beginner",      region:"El Campo"          },
-  { id:11, name:"Core Words 2",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
+  { id:11, name:"Core Words 2",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mï¿½gica"    },
   // Intermediate
-  { id:12, name:"Verbs",           emoji:"?", color:"#F59E0B", level:"Intermediate",  region:"Centro Histórico"  },
+  { id:12, name:"Verbs",           emoji:"?", color:"#F59E0B", level:"Intermediate",  region:"Centro Histï¿½rico"  },
   { id:13, name:"Time",            emoji:"?", color:"#3B82F6", level:"Intermediate",  region:"El Reloj"          },
-  { id:14, name:"Body",            emoji:"??", color:"#E8445A", level:"Intermediate",  region:"La Clínica"        },
-  { id:15, name:"Descriptions",    emoji:"?", color:"#8B5CF6", level:"Intermediate",  region:"Las Galerías"      },
-  { id:16, name:"Shopping",        emoji:"???", color:"#10B981", level:"Intermediate",  region:"Artesanías"        },
+  { id:14, name:"Body",            emoji:"??", color:"#E8445A", level:"Intermediate",  region:"La Clï¿½nica"        },
+  { id:15, name:"Descriptions",    emoji:"?", color:"#8B5CF6", level:"Intermediate",  region:"Las Galerï¿½as"      },
+  { id:16, name:"Shopping",        emoji:"???", color:"#10B981", level:"Intermediate",  region:"Artesanï¿½as"        },
   { id:17, name:"Weather",         emoji:"???", color:"#F97316", level:"Intermediate",  region:"Los Andes"         },
-  { id:18, name:"Core Words 3",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
-  { id:19, name:"Core Words 4",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mágica"    },
+  { id:18, name:"Core Words 3",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mï¿½gica"    },
+  { id:19, name:"Core Words 4",    emoji:"?", color:"#7C3AED", level:"Checkpoint",    region:"La Ruta Mï¿½gica"    },
   // Advanced
   { id:20, name:"Opinions",        emoji:"???", color:"#E8445A", level:"Advanced",      region:"El Debate"         },
   { id:21, name:"Travel",          emoji:"??", color:"#3B82F6", level:"Advanced",      region:"El Aeropuerto"     },
   { id:22, name:"Health",          emoji:"??", color:"#10B981", level:"Advanced",      region:"La Farmacia"       },
   { id:23, name:"Social Life",     emoji:"??", color:"#F59E0B", level:"Advanced",      region:"La Fiesta"         },
-  { id:24, name:"Technology",      emoji:"??", color:"#8B5CF6", level:"Advanced",      region:"El Café WiFi"      },
+  { id:24, name:"Technology",      emoji:"??", color:"#8B5CF6", level:"Advanced",      region:"El Cafï¿½ WiFi"      },
   { id:25, name:"Core Words 4",    emoji:"??", color:"#7C3AED", level:"Final Boss",    region:"La Gran Final"     },
 ];
 
@@ -97,7 +97,7 @@ function UsernameLoginScreen({ onFound, onBack }) {
       <button onClick={onBack} style={{ position:"absolute", top:20, left:20, background:"rgba(255,255,255,0.1)", border:"none", borderRadius:12, padding:"8px 14px", color:"white", cursor:"pointer", fontSize:14 }}>? Back</button>
       <div style={{ fontSize:36, marginBottom:12 }}>??</div>
       <div style={{ fontSize:24, color:"white", fontFamily:"Nunito, sans-serif", fontWeight:800, marginBottom:4 }}>Welcome Back!</div>
-      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off — on any device!</div>
+      <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24, textAlign:"center" }}>Enter your username to pick up where you left off ï¿½ on any device!</div>
       <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="your username..."
         style={{ width:"100%", maxWidth:300, padding:"16px", borderRadius:16, border:"2px solid rgba(255,255,255,0.2)", background:"rgba(255,255,255,0.1)", color:"white", fontSize:18, fontFamily:"inherit", fontWeight:700, textAlign:"center", outline:"none", marginBottom:8 }}
       />
@@ -212,7 +212,7 @@ function OpeningScreen({ onEnter, onReturning }) {
         opacity: show?1:0, transition:"opacity 1s ease 0.8s",
         marginTop:8
       }}>
-        ¡Vámonos! ???
+        ï¿½Vï¿½monos! ???
       </button>
 
       <button onClick={onReturning} style={{
@@ -224,7 +224,7 @@ function OpeningScreen({ onEnter, onReturning }) {
       </button>
 
       <div style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:8 }}>
-        25 lands • 15 games • 1 incredible adventure
+        25 lands ï¿½ 15 games ï¿½ 1 incredible adventure
       </div>
     </div>
   );
@@ -328,10 +328,10 @@ function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCre
             <div>
               <div style={{ fontSize:18, color:"white", ...DS }}>{p.name}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>
-                ? {p.stars||0} stars · Land {p.level||1}
+                ? {p.stars||0} stars ï¿½ Land {p.level||1}
               </div>
             </div>
-            <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>›</div>
+            <div style={{ marginLeft:"auto", fontSize:22, color:"rgba(255,255,255,0.3)" }}>ï¿½</div>
           </button>
         ))}
         <button onClick={onCreate} style={{
@@ -482,10 +482,10 @@ function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
                           {current && <span style={{ fontSize:10, background:land.color, color:"white", borderRadius:8, padding:"2px 8px", fontWeight:800 }}>CURRENT</span>}
                         </div>
                         <div style={{ fontSize:11, color:T.textSoft, marginTop:2 }}>
-                          Land {land.id} · {land.region}
+                          Land {land.id} ï¿½ {land.region}
                         </div>
                       </div>
-                      {unlocked && <div style={{ fontSize:20, color:land.color }}>›</div>}
+                      {unlocked && <div style={{ fontSize:20, color:land.color }}>ï¿½</div>}
                     </button>
                   );
                 })}
@@ -532,7 +532,7 @@ function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
         </div>
 
         <div style={{ fontSize:28, color:T.text, ...DS, marginBottom:4, textAlign:"center" }}>{land.name}</div>
-        <div style={{ fontSize:14, color:T.textSoft, marginBottom:24, textAlign:"center" }}>{land.region} · {land.level}</div>
+        <div style={{ fontSize:14, color:T.textSoft, marginBottom:24, textAlign:"center" }}>{land.region} ï¿½ {land.level}</div>
 
         {/* Characters appear */}
         <div style={{ display:"flex", gap:16, marginBottom:24, alignItems:"flex-end" }}>
@@ -543,7 +543,7 @@ function LandIntroScreen({ land, profile, onBack, onStartLesson }) {
         <div style={{ background:"white", borderRadius:20, padding:"16px 20px", marginBottom:24, width:"100%", maxWidth:380, boxShadow:`0 4px 20px ${land.color}20`, border:`2px solid ${land.color}20` }}>
           <div style={{ fontSize:13, fontWeight:800, color:land.color, marginBottom:6 }}>GRAYSON SAYS:</div>
           <div style={{ fontSize:14, color:T.text, lineHeight:1.6 }}>
-            Ready to explore {land.name}? Let's learn some Spanish together! This land has fun games, silly stories, and a boss challenge at the end. ¡Vámonos!
+            Ready to explore {land.name}? Let's learn some Spanish together! This land has fun games, silly stories, and a boss challenge at the end. ï¿½Vï¿½monos!
           </div>
           <button onClick={()=>speakEn(`Ready to explore ${land.name}? Let's learn some Spanish together!`)} style={{ display:"flex", alignItems:"center", gap:6, marginTop:10, background:`${land.color}15`, border:`1px solid ${land.color}30`, borderRadius:10, padding:"6px 12px", cursor:"pointer", fontSize:12, color:land.color, fontWeight:700, fontFamily:"inherit" }}>
             ?? Hear this
@@ -570,7 +570,7 @@ function StudyHallScreen({ profile, onBack }) {
     { icon:"??", label:"Bookmarks",           desc:"Words you saved for review",       color:"#F97316", available:true  },
     { icon:"??", label:"Randomized Quiz",     desc:"Mixed review from all your lands", color:"#10B981", available:true  },
     { icon:"?", label:"Verbs and Grammar",   desc:"Conjugation, patterns, lessons",   color:"#7C3AED", available:true  },
-    { icon:"??", label:"AI Tutor",            desc:"Wander Lingo Plus — coming soon!", color:"#F59E0B", available:false },
+    { icon:"??", label:"AI Tutor",            desc:"Wander Lingo Plus ï¿½ coming soon!", color:"#F59E0B", available:false },
   ];
 
   return (
@@ -589,7 +589,7 @@ function StudyHallScreen({ profile, onBack }) {
           <img src="/characters/grayson.png" style={{ height:70, filter:"drop-shadow(0 4px 12px rgba(124,58,237,0.4))" }} alt="Grayson" onError={e=>e.target.style.display='none'}/>
           <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:16, padding:"12px 14px", flex:1 }}>
             <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)", lineHeight:1.5 }}>
-              This is where the serious learning lives. Flashcards, grammar, conjugation — all the good stuff. En mi opinión it's worth it.
+              This is where the serious learning lives. Flashcards, grammar, conjugation ï¿½ all the good stuff. En mi opiniï¿½n it's worth it.
             </div>
           </div>
         </div>
@@ -610,7 +610,7 @@ function StudyHallScreen({ profile, onBack }) {
               <div style={{ fontSize:16, color:"white", ...DS }}>{s.label}</div>
               <div style={{ fontSize:12, color:"rgba(255,255,255,0.4)", marginTop:2 }}>{s.desc}</div>
             </div>
-            {s.available && <div style={{ fontSize:20, color:s.color }}>›</div>}
+            {s.available && <div style={{ fontSize:20, color:s.color }}>ï¿½</div>}
           </button>
         ))}
       </div>
@@ -632,7 +632,7 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
           {profile.avatar||"??"}
         </div>
         <div style={{ fontSize:26, color:"white", ...DS, marginBottom:4 }}>{profile.name}</div>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24 }}>Explorer · {profile.level||"Beginner"}</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.5)", marginBottom:24 }}>Explorer ï¿½ {profile.level||"Beginner"}</div>
 
         {/* Stats */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, width:"100%", maxWidth:360, marginBottom:24 }}>
@@ -670,18 +670,18 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack, onEditProfil
 
 // -- LAND 1 DATA ---------------------------------------------------
 const LAND1_WORDS = [
-  { es:"Hola",          en:"Hello",           emoji:"??", hook:"HOH-la — everyone knows this one! The friendliest word in any language." },
-  { es:"Adiós",         en:"Goodbye",         emoji:"??", hook:"ah-dee-OHS — say goodbye to not knowing this word!" },
-  { es:"Buenos días",   en:"Good morning",    emoji:"??", hook:"BWEH-nos DEE-as — buenos = good, días = days. Good days to you!" },
-  { es:"Buenas tardes", en:"Good afternoon",  emoji:"??", hook:"BWEH-nas TAR-des — tardes sounds like tardies — afternoon is when you're late!" },
-  { es:"Buenas noches", en:"Good night",      emoji:"??", hook:"BWEH-nas NO-ches — noches sounds like no-chess — no chess at night, time for bed!" },
-  { es:"Por favor",     en:"Please",          emoji:"??", hook:"por fah-VOR — sounds like pour the flavor — please pour the flavor!" },
-  { es:"Gracias",       en:"Thank you",       emoji:"??", hook:"GRAH-see-as — sounds like grassy-us — thank you for the grassy field!" },
-  { es:"De nada",       en:"You're welcome",  emoji:"??", hook:"day NAH-da — means of nothing — it was nothing, you're welcome!" },
-  { es:"Mucho gusto",   en:"Nice to meet you",emoji:"??", hook:"MOO-cho GOO-sto — much pleasure meeting you!" },
-  { es:"¿Cómo estás?",  en:"How are you?",    emoji:"?", hook:"KOH-mo es-TAS — how are you doing today?" },
-  { es:"Bien",          en:"Good / Fine",      emoji:"?", hook:"bee-EN — short and sweet. Been good!" },
-  { es:"Hasta luego",   en:"See you later",   emoji:"??", hook:"AHS-ta loo-EH-go — hasta la vista's friendlier cousin!" },
+  { es:"Hola",          en:"Hello",           emoji:"??", hook:"HOH-la ï¿½ everyone knows this one! The friendliest word in any language." },
+  { es:"Adiï¿½s",         en:"Goodbye",         emoji:"??", hook:"ah-dee-OHS ï¿½ say goodbye to not knowing this word!" },
+  { es:"Buenos dï¿½as",   en:"Good morning",    emoji:"??", hook:"BWEH-nos DEE-as ï¿½ buenos = good, dï¿½as = days. Good days to you!" },
+  { es:"Buenas tardes", en:"Good afternoon",  emoji:"??", hook:"BWEH-nas TAR-des ï¿½ tardes sounds like tardies ï¿½ afternoon is when you're late!" },
+  { es:"Buenas noches", en:"Good night",      emoji:"??", hook:"BWEH-nas NO-ches ï¿½ noches sounds like no-chess ï¿½ no chess at night, time for bed!" },
+  { es:"Por favor",     en:"Please",          emoji:"??", hook:"por fah-VOR ï¿½ sounds like pour the flavor ï¿½ please pour the flavor!" },
+  { es:"Gracias",       en:"Thank you",       emoji:"??", hook:"GRAH-see-as ï¿½ sounds like grassy-us ï¿½ thank you for the grassy field!" },
+  { es:"De nada",       en:"You're welcome",  emoji:"??", hook:"day NAH-da ï¿½ means of nothing ï¿½ it was nothing, you're welcome!" },
+  { es:"Mucho gusto",   en:"Nice to meet you",emoji:"??", hook:"MOO-cho GOO-sto ï¿½ much pleasure meeting you!" },
+  { es:"ï¿½Cï¿½mo estï¿½s?",  en:"How are you?",    emoji:"?", hook:"KOH-mo es-TAS ï¿½ how are you doing today?" },
+  { es:"Bien",          en:"Good / Fine",      emoji:"?", hook:"bee-EN ï¿½ short and sweet. Been good!" },
+  { es:"Hasta luego",   en:"See you later",   emoji:"??", hook:"AHS-ta loo-EH-go ï¿½ hasta la vista's friendlier cousin!" },
 ];
 
 // -- FALLING WORDS GAME --------------------------------------------
@@ -846,7 +846,7 @@ function ShootingGame({ words, color, title, onComplete, emoji }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{background:color,padding:"14px 16px"}}>
         <div style={{fontSize:16,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>{emoji} {title}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} — Shoot the right answer!</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} ï¿½ Shoot the right answer!</div>
       </div>
       <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
         <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
@@ -909,7 +909,7 @@ function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) 
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
         @keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}`}</style>
       <div style={{fontSize:80,animation:"bounce 0.8s ease infinite",marginBottom:16}}>??</div>
-      <div style={{fontSize:32,color:"#FCD34D",fontFamily:"Nunito,sans-serif",fontWeight:900,marginBottom:8}}>¡Felicidades!</div>
+      <div style={{fontSize:32,color:"#FCD34D",fontFamily:"Nunito,sans-serif",fontWeight:900,marginBottom:8}}>ï¿½Felicidades!</div>
       <div style={{fontSize:18,color:"white",marginBottom:4,fontFamily:"Nunito,sans-serif"}}>You completed {landName}!</div>
       <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:24,fontFamily:"Nunito,sans-serif"}}>{nextLand} is now unlocked! ???</div>
       <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end"}}>
@@ -926,7 +926,7 @@ function BossChallenge({ words, color, landName, nextLand, onComplete, emoji }) 
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",transform:shake?"translateX(-6px)":"none",transition:"transform 0.1s"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>
       <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{flex:1,fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? BOSS CHALLENGE — {landName}</div>
+        <div style={{flex:1,fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? BOSS CHALLENGE ï¿½ {landName}</div>
         <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>{idx+1}/{words.length}</div>
       </div>
       <div style={{height:10,background:"rgba(255,255,255,0.1)"}}>
@@ -968,12 +968,8 @@ function Land1Screen({ profile, onBack, onComplete }) {
     { type:"story", text:"He walks over, smiles, and says something in Spanish. You have absolutely no idea what he said." },
     { type:"story", text:"You smile and nod anyway. He keeps talking. You keep nodding. Twenty minutes later..." },
     { type:"story", text:"...you realize you just agreed to help him move furniture on Saturday. ???" },
-    { type:"story", text:"This is why we learn to say hello first. ¡Vámonos!" },
-    { type:"limerick", text:"A traveler arrived in Cuenca one day,
-And tried to say Hola the very wrong way,
-He said 'Holla' like money,
-Which the locals found funny,
-Now they call him DJ Dollar to this day. ??" },
+    { type:"story", text:"This is why we learn to say hello first. ï¿½Vï¿½monos!" },
+    { type:"limerick", text:"A traveler arrived in Cuenca one day, tried to say Hola the very wrong way. He said Holla like money, which the locals found funny - now they call him DJ Dollar to this day!" },
     { type:"joke", text:"A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' ??" },
   ];
 
@@ -1008,7 +1004,7 @@ Now they call him DJ Dollar to this day. ??" },
           @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
         <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
           <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>?</button>
-          <div style={{fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? Land 1 — Greetings</div>
+          <div style={{fontSize:18,color:"white",fontFamily:"Nunito,sans-serif",fontWeight:800}}>?? Land 1 ï¿½ Greetings</div>
         </div>
         <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
           <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>
@@ -1027,7 +1023,7 @@ Now they call him DJ Dollar to this day. ??" },
             {storySlides.map((_,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=storyIdx?color:"#E5E7EB"}}/>)}
           </div>
           {storyIdx<storySlides.length-1
-            ?<button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next ›</button>
+            ?<button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next ï¿½</button>
             :<button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Start Learning! ??</button>
           }
         </div>
@@ -1068,7 +1064,7 @@ Now they call him DJ Dollar to this day. ??" },
             {lessonWords.map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<=wordIdx?color:"#E5E7EB"}}/>)}
           </div>
           {wordIdx<3
-            ?<button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next Word ›</button>
+            ?<button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Next Word ï¿½</button>
             :<button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",fontFamily:"Nunito,sans-serif",fontWeight:800}}>Let's Play! ??</button>
           }
         </div>
@@ -1076,7 +1072,7 @@ Now they call him DJ Dollar to this day. ??" },
     );
   }
 
-  if(phase==="game1") return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street — Match the Greetings!" onComplete={()=>{setPhase("lesson2");setWordIdx(0);}} emoji="???"/>;
+  if(phase==="game1") return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street ï¿½ Match the Greetings!" onComplete={()=>{setPhase("lesson2");setWordIdx(0);}} emoji="???"/>;
   if(phase==="game2") return <ShootingGame words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>{setPhase("lesson3");setWordIdx(0);}} emoji="??"/>;
   if(phase==="game3") return <FallingWordsGame words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="??"/>;
   if(phase==="boss") return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} emoji="??"/>;
