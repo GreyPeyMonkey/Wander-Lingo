@@ -972,11 +972,7 @@ function Land1Screen({ profile, onBack, onComplete }) {
     { type:"story", text:"You smile and nod anyway. He keeps talking. You keep nodding. Twenty minutes later..." },
     { type:"story", text:"...you realize you just agreed to help him move furniture on Saturday. 🛋️" },
     { type:"story", text:"This is why we learn to say hello first. ¡Vámonos!" },
-    { type:"limerick", text:"A traveler arrived in Cuenca one day,
-And tried to say Hola the very wrong way,
-He said 'Holla' like money,
-Which the locals found funny,
-Now they call him DJ Dollar to this day. 🎵" },
+    { type:"limerick", text:"A traveler arrived in Cuenca one day, tried to say Hola the very wrong way. He said Holla like money, which the locals found funny - now they call him DJ Dollar to this day!" },
     { type:"joke", text:"A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' 😄" },
   ];
 
