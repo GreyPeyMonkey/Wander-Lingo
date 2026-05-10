@@ -1015,7 +1015,7 @@ useEffect(()=>{
             {!isLimerick&&!isJoke&&<div style={{fontSize:12,color,fontWeight:800,marginBottom:8,fontFamily:"Nunito,sans-serif"}}>THE STORY</div>}
             <div style={{fontSize:15,color:"#1C1917",lineHeight:1.7,fontFamily:"Nunito,sans-serif",whiteSpace:"pre-line"}}>{slide.text}</div>
             <button onClick={()=>speakEn(slide.text)} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>🔊 Hear this</button>
-/g," "))} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,fontFamily:"Nunito,sans-serif"}}>?? Hear this</button>
+
           </div>
           <div style={{display:"flex",gap:6,marginBottom:16}}>
             {storySlides.map((_,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=storyIdx?color:"#E5E7EB"}}/>)}
