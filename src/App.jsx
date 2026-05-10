@@ -976,9 +976,7 @@ function Land1Screen({ profile, onBack, onComplete }) {
   useEffect(()=>{
     if(phase==="story"){
       const slide = storySlides[storyIdx];
-      if(slide) setTimeout(()=>speakEn(slide.text.replace(/
-/g," ")),300);
-    }
+   if(slide) setTimeout(()=>speakEn(slide.text.split("\\n").join(" ")),300);
   },[storyIdx,phase]);
 
   useEffect(()=>{
