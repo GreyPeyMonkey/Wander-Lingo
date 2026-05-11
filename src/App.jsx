@@ -1,1393 +1,1567 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-// -- LEVEL 1 VOCAB ó every word has a memory hook -----------------------------
-const VOCAB_L1 = {
-  greetings: { icon:"??", label:"Greetings", color:"#E8445A", words:[
-    {es:"Hola",              en:"Hello",           emoji:"??", hook:"Imagine a giant HOLE-A in the ground waving hello!"},
-    {es:"Buenos dÌas",       en:"Good morning",    emoji:"??", hook:"BOO! A friendly ghost pops out saying good morning ó BOO-en-os DEE-as!"},
-    {es:"Buenas tardes",     en:"Good afternoon",  emoji:"??", hook:"The BOO ghost is back in the afternoon! BWEH-nas TAR-days."},
-    {es:"Buenas noches",     en:"Good night",      emoji:"??", hook:"BOO at NIGHT ó NOH-ches sounds like 'no chess at night'!"},
-    {es:"øCÛmo est·s?",      en:"How are you?",    emoji:"??", hook:"COMO a lake asking HOW you're doing ó KOH-mo es-TAS?"},
-    {es:"Estoy bien",        en:"I'm fine",        emoji:"??", hook:"I'm STAYING (es-TOY) just BEAN (bien) fine ó like a happy jumping bean!"},
-    {es:"Gracias",           en:"Thank you",       emoji:"??", hook:"GRAS-ee-us ó you're thankful someone mowed your GRASS for you!"},
-    {es:"De nada",           en:"You're welcome",  emoji:"??", hook:"It's NADA ó NOTHING ó like saying 'it was nothing at all!'"},
-    {es:"Por favor",         en:"Please",          emoji:"?", hook:"POUR FLAVOR on it please ó por fa-VOR!"},
-    {es:"AdiÛs",             en:"Goodbye",         emoji:"??", hook:"ADD one more OH when leaving ó ah-dee-OHS!"},
-    {es:"Hasta luego",       en:"See you later",   emoji:"??", hook:"HASTA la vista! See you LUEGO (LOO-ay-go) ó like a logo you'll see again!"},
-    {es:"øCÛmo te llamas?",  en:"What's your name?",emoji:"?", hook:"A LLAMA is calling YOUR name ó YAH-mas? The llama wants to know!"},
-    {es:"Me llamo...",       en:"My name is...",   emoji:"???", hook:"ME + a LLAMA ó MY llama's name is... YAH-mo!"},
-    {es:"Mucho gusto",       en:"Nice to meet you",emoji:"??", hook:"MUCHO GUSTO ó a GUST of wind blows you together ó so nice to meet!"},
-  ]},
-  around: { icon:"???", label:"Around Town", color:"#DC6B19", words:[
-    {es:"Disculpe",                  en:"Excuse me",              emoji:"??", hook:"DIS-COOL-pay ó excuse the super DIS-COOL person!"},
-    {es:"øDÛnde est· el baÒo?",      en:"Where is the bathroom?", emoji:"??", hook:"DON'T-ay? DON'T wait ó find the bathroom fast! DOHN-day es-TA?"},
-    {es:"La cuenta por favor",       en:"The check please",       emoji:"??", hook:"KWEN-ta ó COUNT the bill before paying!"},
-    {es:"Una mesa para dos",         en:"A table for two",        emoji:"??", hook:"A MESA (table) for DOS ó like two DOSAS on the table!"},
-    {es:"øCu·nto cuesta?",           en:"How much does it cost?", emoji:"??", hook:"KWAHN-to KWES-ta ó HOW MUCH does this QUEST cost?"},
-    {es:"Quiero ordenar",            en:"I'd like to order",      emoji:"??", hook:"KYER-oh ó I CHEER-oh to order my food!"},
-    {es:"Un cafÈ con leche",         en:"Coffee with milk",       emoji:"?", hook:"CAF-ay con LEH-chay ó coffee with LECHY stretchy milk!"},
-    {es:"øHabla inglÈs?",            en:"Do you speak English?",  emoji:"???", hook:"AH-bla ó is this ABLE person speaking my language?"},
-    {es:"No hablo espaÒol bien",     en:"I don't speak Spanish well",emoji:"??", hook:"No AH-blo ó I'm NOT ABLE to speak it well yet!"},
-    {es:"M·s despacio por favor",    en:"More slowly please",     emoji:"??", hook:"MAS des-PAH-see-oh ó MORE slowly like a turtle! MUCH slower!"},
-    {es:"A la derecha",              en:"To the right",           emoji:"??", hook:"DARE-echa ó I DARE you to go RIGHT!"},
-    {es:"A la izquierda",            en:"To the left",            emoji:"??", hook:"ees-kee-AIR-da ó it's QUIRKY and airy going LEFT!"},
-    {es:"Todo recto",                en:"Straight ahead",         emoji:"??", hook:"TODO RECTO ó totally ERECT and straight ahead!"},
-    {es:"øMe puede ayudar?",         en:"Can you help me?",       emoji:"??", hook:"AYE-oo-DAR ó AYE! You DARE to help me? Please!"},
-  ]},
-  family: { icon:"????????", label:"Family", color:"#10B981", words:[
-    {es:"Mam·",    en:"Mom",           emoji:"??", hook:"MA + MA ó double the love, double the MA!"},
-    {es:"Pap·",    en:"Dad",           emoji:"??", hook:"PA + PA ó double the PA, double the dad hugs!"},
-    {es:"Hermana", en:"Sister",        emoji:"??", hook:"HER MANA ó SHE has the magic MANA ó that's your sister!"},
-    {es:"Hermano", en:"Brother",       emoji:"??", hook:"HER MANO ó your bro is HER MAN-OH!"},
-    {es:"Abuela",  en:"Grandma",       emoji:"??", hook:"ah-BWEH-la ó grandma flies in on a propeller ó BWEH!"},
-    {es:"Abuelo",  en:"Grandpa",       emoji:"??", hook:"ah-BWEH-lo ó grandpa flies in too ó BWEH-lo!"},
-    {es:"BebÈ",    en:"Baby",          emoji:"??", hook:"BAY-BAY ó babies say BAY-BAY and everyone smiles!"},
-    {es:"Amigo",   en:"Friend (boy)",  emoji:"??", hook:"ah-MEE-go ó your buddy from the movie saying I GO with you amigo!"},
-    {es:"Amiga",   en:"Friend (girl)", emoji:"??", hook:"ah-MEE-ga ó your girl friend ó ME + GA, she goes everywhere with you!"},
-    {es:"Mascota", en:"Pet",           emoji:"??", hook:"mas-KOH-ta ó your pet wears a MASCOT costume at every game!"},
-  ]},
-  food: { icon:"??", label:"Food", color:"#F59E0B", words:[
-    {es:"Agua",        en:"Water",       emoji:"??", hook:"AH-gwa ó water goes AH-GWA-GWA when you splash in it!"},
-    {es:"Leche",       en:"Milk",        emoji:"??", hook:"LEH-chay ó milk is so LECHY and stretchy when it pours!"},
-    {es:"Pan",         en:"Bread",       emoji:"??", hook:"PAN ó you cook bread IN A PAN ó simple as that!"},
-    {es:"Arroz",       en:"Rice",        emoji:"??", hook:"ah-ROSE ó rice grows in fields like a beautiful ROSE garden!"},
-    {es:"Pollo",       en:"Chicken",     emoji:"??", hook:"POY-yo ó POLO the chicken plays polo on horseback!"},
-    {es:"Manzana",     en:"Apple",       emoji:"??", hook:"man-ZAH-na ó a MAN-sized BANANA shaped like an apple!"},
-    {es:"Naranja",     en:"Orange",      emoji:"??", hook:"nah-RAN-ha ó the runner RAN to grab the orange ó nah-RAN-ha!"},
-    {es:"Helado",      en:"Ice cream",   emoji:"??", hook:"eh-LAH-do ó HELD the ice cream before it melted ó HELD-ado!"},
-    {es:"Tengo hambre",en:"I'm hungry",  emoji:"??", hook:"TEN-go ó I'm so TENSE because my stomach has TEN growls!"},
-    {es:"Tengo sed",   en:"I'm thirsty", emoji:"??", hook:"SED ó so DRY and SAID to be thirsty!"},
-    {es:"Delicioso",   en:"Delicious",   emoji:"??", hook:"deh-lee-SEE-oh-so ó so delicious you can SEE it glowing!"},
-    {es:"Quiero m·s",  en:"I want more", emoji:"??", hook:"KYER-oh MAS ó CHEER-oh for MAS more ó MORE MORE MORE!"},
-  ]},
-  feelings: { icon:"??", label:"Feelings", color:"#8B5CF6", words:[
-    {es:"Feliz",          en:"Happy",    emoji:"??", hook:"feh-LEES ó FEEL the happiness in your knees!"},
-    {es:"Triste",         en:"Sad",      emoji:"??", hook:"TREES-tay ó a sad TREE just stood there dripping tears today!"},
-    {es:"Cansado",        en:"Tired",    emoji:"??", hook:"kan-SAH-do ó CAN'T-DO anything because I'm so tired!"},
-    {es:"Emocionado",     en:"Excited",  emoji:"??", hook:"eh-mo-see-OH-nah-do ó your EMOTIONS explode like a volcano!"},
-    {es:"Asustado",       en:"Scared",   emoji:"??", hook:"ah-soos-TAH-do ó a GHOST says BOO and you're so SCARED-ado!"},
-    {es:"Enojado",        en:"Angry",    emoji:"??", hook:"eh-no-HA-do ó ENOUGH! No HA-do! I'm angry!"},
-    {es:"Te quiero",      en:"I love you",emoji:"??", hook:"tay KYER-oh ó CHEER for the one you love ó te CHEER-oh!"},
-    {es:"Me siento bien", en:"I feel good",emoji:"?", hook:"see-EN-to ó I SENSE I feel amazing ó me see-EN-to bien!"},
-  ]},
-  school: { icon:"??", label:"School", color:"#3B82F6", words:[
-    {es:"Maestra",         en:"Teacher (f)",          emoji:"?????", hook:"my-EHS-tra ó the MASTER-A teacher rules the class!"},
-    {es:"Maestro",         en:"Teacher (m)",          emoji:"?????", hook:"my-EHS-tro ó the MAESTRO teacher leads like an orchestra!"},
-    {es:"Libro",           en:"Book",                 emoji:"??", hook:"LEE-bro ó LEE BROught his favorite book to read!"},
-    {es:"L·piz",           en:"Pencil",               emoji:"??", hook:"LAH-pees ó the PENCIL draws in LAPS around the page!"},
-    {es:"Escuela",         en:"School",               emoji:"??", hook:"es-KWAY-la ó SCHOOL is the ESKIMO way of learning ó es-KWAY-la!"},
-    {es:"No entiendo",     en:"I don't understand",   emoji:"??", hook:"en-tee-EN-do ó I don't TEND-to understand this at all!"},
-    {es:"øMe puedes ayudar?",en:"Can you help me?",  emoji:"??", hook:"AYE-oo-DAR ó AYE! You DARE help me with this?"},
-    {es:"Entiendo",        en:"I understand",         emoji:"??", hook:"en-tee-EN-do ó NOW I TEND-to understand ó the light bulb is ON!"},
-  ]},
-  numbers: { icon:"??", label:"Numbers", color:"#06B6D4", words:[
-    {es:"Uno",   en:"One",   emoji:"1??", hook:"OO-no ó ONE more OOH makes everything fun!"},
-    {es:"Dos",   en:"Two",   emoji:"2??", hook:"DOSE ó the doctor gives you TWO doses of medicine!"},
-    {es:"Tres",  en:"Three", emoji:"3??", hook:"TRACE ó THREE lines to trace on the paper!"},
-    {es:"Cuatro",en:"Four",  emoji:"4??", hook:"KWAH-tro ó FOUR QUARTERS make one dollar ó KWAH-tro!"},
-    {es:"Cinco", en:"Five",  emoji:"5??", hook:"SINK-oh ó FIVE things fell into the SINK-oh!"},
-    {es:"Seis",  en:"Six",   emoji:"6??", hook:"SACE ó SIX geese went SACE SACE SACE!"},
-    {es:"Siete", en:"Seven", emoji:"7??", hook:"see-EH-tay ó SEVEN ate (see-ATE) nine for breakfast!"},
-    {es:"Ocho",  en:"Eight", emoji:"8??", hook:"OH-cho ó EIGHT is an OH with a CHO CHO train!"},
-    {es:"Nueve", en:"Nine",  emoji:"9??", hook:"NWEH-bay ó NINE bees went WHEW into the hive!"},
-    {es:"Diez",  en:"Ten",   emoji:"??", hook:"dee-EHS ó TEN DAYS in the sun ó dee-EHS days!"},
-  ]},
-  colors: { icon:"??", label:"Colors", color:"#EC4899", words:[
-    {es:"Rojo",     en:"Red",    emoji:"??", hook:"ROH-ho ó RED ROH-hos of roses everywhere!"},
-    {es:"Azul",     en:"Blue",   emoji:"??", hook:"ah-ZOOL ó the AZURE blue sky goes ah-ZOOL!"},
-    {es:"Verde",    en:"Green",  emoji:"??", hook:"BAIR-day ó GREEN bears eating leaves today ó BEAR-day!"},
-    {es:"Amarillo", en:"Yellow", emoji:"??", hook:"ah-mah-REE-yo ó an ARMADILLO painted itself YELLOW!"},
-    {es:"Naranja",  en:"Orange", emoji:"??", hook:"nah-RAN-ha ó ORANGE? You RAN here to get one!"},
-    {es:"Morado",   en:"Purple", emoji:"??", hook:"moh-RAH-do ó MORE-ado purple please ó I want MORE!"},
-    {es:"Rosa",     en:"Pink",   emoji:"??", hook:"ROH-sa ó ROSA always wears PINK roses!"},
-    {es:"Blanco",   en:"White",  emoji:"?", hook:"BLAN-co ó a BLANK white piece of paper ó BLANK-o!"},
-    {es:"Negro",    en:"Black",  emoji:"?", hook:"NEH-gro ó NEGRO means BLACK like the night sky!"},
-    {es:"CafÈ",     en:"Brown",  emoji:"??", hook:"cah-FAY ó COFFEE is BROWN ó cafe au lait!"},
-  ]},
-  animals: { icon:"??", label:"Animals", color:"#64748B", words:[
-    {es:"Perro",    en:"Dog",      emoji:"??", hook:"PAIR-oh ó a PAIR of dogs are better than one!"},
-    {es:"Gato",     en:"Cat",      emoji:"??", hook:"GAH-to ó the cat's GOTTA go ó see ya GAH-to!"},
-    {es:"P·jaro",   en:"Bird",     emoji:"??", hook:"PAH-ha-ro ó the bird PARACHUTES down ó PAH-ha-ro!"},
-    {es:"Pez",      en:"Fish",     emoji:"??", hook:"PEHZ ó PEZ candy is FISH-shaped ó same word!"},
-    {es:"Caballo",  en:"Horse",    emoji:"??", hook:"cah-BAH-yo ó the horse GALLOPS saying BAH-yo BAH-yo!"},
-    {es:"Vaca",     en:"Cow",      emoji:"??", hook:"BAH-ca ó the cow says BAH! BAH-ca BAH-ca!"},
-    {es:"Mono",     en:"Monkey",   emoji:"??", hook:"MOH-no ó MONO means alone ó the lonely monkey!"},
-    {es:"Elefante", en:"Elephant", emoji:"??", hook:"eh-leh-FAN-tay ó the ELEPHANT is a huge FAN of Spanish!"},
-    {es:"LeÛn",     en:"Lion",     emoji:"??", hook:"lay-ON ó the LION LAYS ON the grass in the sun!"},
-    {es:"Tortuga",  en:"Turtle",   emoji:"??", hook:"tor-TOO-ga ó the TURTLE took TOO long to get here!"},
-  ]},
+const sb = createClient(
+  "https://jlqrxshoilgmcfaitxta.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpscXJ4c2hvaWxnbWNmYWl0eHRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4NTI5MjIsImV4cCI6MjA5MzQyODkyMn0.meCHs-9bxNxgu87lzjUoPFZY-5jsT2fXRrAMwUwcwcQ"
+);
+
+const T = {
+  bg:"#FDF6EC", bgDark:"#2D1B69", cream:"#FDF6EC",
+  purple:"#7C3AED", purpleL:"#A78BFA",
+  blue:"#2563EB", blueL:"#60A5FA",
+  gold:"#F59E0B", goldL:"#FCD34D",
+  green:"#10B981", red:"#EF4444", orange:"#F97316",
+  text:"#1C1917", textSoft:"#78716C", white:"#FFFFFF", card:"#FFFFFF",
 };
+const DS = { fontFamily:"'Nunito','Quicksand',system-ui,sans-serif", fontWeight:800 };
 
-// -- LEVEL 2 VOCAB ó Intermediate ---------------------------------------------
-const VOCAB_L2 = {
-  verbs: { icon:"?", label:"Verbs & Actions", color:"#7C3AED", words:[
-    {es:"Quiero",           en:"I want",          emoji:"??", hook:"KYER-oh ó I CHEER-oh for what I want!"},
-    {es:"Necesito",         en:"I need",           emoji:"?", hook:"neh-seh-SEE-to ó I NEED to SEE-to it right now!"},
-    {es:"Tengo",            en:"I have",           emoji:"?", hook:"TEN-go ó I HAVE ten things to go do!"},
-    {es:"Voy",              en:"I'm going",        emoji:"??", hook:"BOY ó I'm going like a BOY SCOUT on a mission!"},
-    {es:"Me gusta",         en:"I like",           emoji:"??", hook:"me GOOS-ta ó I like it with GUSTO ó goos-TA!"},
-    {es:"Puedo",            en:"I can",            emoji:"??", hook:"PWEH-do ó I can POWER through anything!"},
-    {es:"SÈ",               en:"I know",           emoji:"??", hook:"SAY ó I KNOW what to SAY about that!"},
-    {es:"Hablo",            en:"I speak",          emoji:"???", hook:"AH-blo ó I speak BLOW by blow ó AH-blo!"},
-    {es:"Busco",            en:"I'm looking for",  emoji:"??", hook:"BOOS-co ó I'm BOOSTING my search ó BOOS-co!"},
-    {es:"Vivo en",          en:"I live in",        emoji:"??", hook:"BEE-bo ó I LIVE like a BEE in my hive ó BEE-bo!"},
-    {es:"No sÈ",            en:"I don't know",     emoji:"??", hook:"SAY ó I can't SAY because I just don't know!"},
-    {es:"øPuedes repetir?", en:"Can you repeat?",  emoji:"??", hook:"reh-peh-TEER ó REPEAT it like a spinning TIRE ó TEER TEER!"},
-    {es:"EntendÌ",          en:"I understood",     emoji:"??", hook:"en-ten-DEE ó I DID understand ó past tense ó DID-ee!"},
-    {es:"Quiero aprender",  en:"I want to learn",  emoji:"??", hook:"ah-pren-DAIR ó I want to learn from the thin AIR ó DAIR!"},
-  ]},
-  time: { icon:"??", label:"Time & Days", color:"#0369A1", words:[
-    {es:"Hoy",            en:"Today",         emoji:"??", hook:"OY ó TODAY I say OY what a day!"},
-    {es:"MaÒana",         en:"Tomorrow",      emoji:"??", hook:"mahn-YAH-na ó TOMORROW is like a man eating a BANANA ó man-YANA!"},
-    {es:"Ayer",           en:"Yesterday",     emoji:"?", hook:"ah-YAIR ó YESTERDAY the AIR smelled different!"},
-    {es:"Ahora",          en:"Right now",     emoji:"?", hook:"ah-OH-ra ó RIGHT NOW say AH-OH-RA really fast!"},
-    {es:"Lunes",          en:"Monday",        emoji:"1??", hook:"LOO-nes ó MONDAY on the MOON ó LUNAR Monday!"},
-    {es:"Martes",         en:"Tuesday",       emoji:"2??", hook:"MAR-tays ó TUESDAY on MARS with the MARTIANS!"},
-    {es:"MiÈrcoles",      en:"Wednesday",     emoji:"3??", hook:"mee-AIR-coh-les ó WEDNESDAY in the AIR with the MERCURIANS!"},
-    {es:"Jueves",         en:"Thursday",      emoji:"4??", hook:"HWEH-bes ó THURSDAY we have WEBS ó like JOVE the spider!"},
-    {es:"Viernes",        en:"Friday",        emoji:"5??", hook:"bee-AIR-nes ó FRIDAY in the AIR near VENUS ó vee-AIR-nes!"},
-    {es:"S·bado",         en:"Saturday",      emoji:"??", hook:"SAH-bah-do ó SATURDAY in the SAHARA DESERT!"},
-    {es:"Domingo",        en:"Sunday",        emoji:"??", hook:"doh-MING-go ó SUNDAY with DOMINOES ó dom-INGO!"},
-    {es:"øQuÈ hora es?",  en:"What time is it?",emoji:"??", hook:"KAY OH-ra ó WHAT HOUR is it ó KAY say the clock!"},
-    {es:"Por la maÒana",  en:"In the morning", emoji:"??", hook:"mahn-YAH-na ó MORNING banana time with the man!"},
-    {es:"Por la noche",   en:"At night",      emoji:"??", hook:"NOH-chay ó NO CHESS at night ó NIGHT time!"},
-  ]},
-  body: { icon:"??", label:"Body & Health", color:"#DC2626", words:[
-    {es:"Cabeza",              en:"Head",          emoji:"??", hook:"cah-BAY-sah ó a CAB drove into your HEAD ó cah-BAY!"},
-    {es:"Mano",                en:"Hand",          emoji:"?", hook:"MAH-no ó your HAND is your MAN-O helper!"},
-    {es:"Pie",                 en:"Foot",          emoji:"??", hook:"pee-EH ó your FOOT makes a PIE shape in the mud!"},
-    {es:"Ojo",                 en:"Eye",           emoji:"???", hook:"OH-ho ó your EYE goes OH-HO when it sees something amazing!"},
-    {es:"EstÛmago",            en:"Stomach",       emoji:"??", hook:"es-TOH-mah-go ó your STOMACH says STOP-mago I'm full!"},
-    {es:"Espalda",             en:"Back",          emoji:"??", hook:"es-PAL-da ó your BACK is your best PAL-da!"},
-    {es:"Me duele",            en:"It hurts",      emoji:"??", hook:"DWEH-lay ó it HURTS like a duel ó DWELL on the pain!"},
-    {es:"Estoy enfermo",       en:"I'm sick",      emoji:"??", hook:"en-FAIR-mo ó it's NOT FAIR-mo to be sick!"},
-    {es:"Necesito un mÈdico",  en:"I need a doctor",emoji:"?????", hook:"MEH-dee-co ó the MEDIC is your MEDICAL doctor!"},
-    {es:"La farmacia",         en:"The pharmacy",  emoji:"??", hook:"far-MAH-see-ah ó the PHARMACY is FAR-macia away!"},
-    {es:"Tengo fiebre",        en:"I have a fever", emoji:"???", hook:"fee-EH-bray ó FEVER is like a FEE you pay ó fee-EH!"},
-    {es:"Me siento mal",       en:"I feel bad",    emoji:"??", hook:"MAL ó feeling BAD is just plain MAL-icious!"},
-  ]},
-  descriptions: { icon:"??", label:"Describing Things", color:"#B45309", words:[
-    {es:"Grande",   en:"Big",       emoji:"??", hook:"GRAN-day ó GRAND and BIG ó it's a GRAND day!"},
-    {es:"PequeÒo",  en:"Small",     emoji:"??", hook:"peh-KEN-yo ó SMALL like little KENNY YO!"},
-    {es:"Bonito",   en:"Beautiful", emoji:"??", hook:"boh-NEE-to ó BEAUTIFUL like a BONITO fish in the sea!"},
-    {es:"Caro",     en:"Expensive", emoji:"??", hook:"CAR-oh ó as EXPENSIVE as a CAR ó CAR-oh!"},
-    {es:"Barato",   en:"Cheap",     emoji:"??", hook:"bah-RAH-to ó CHEAP like a BURRITO that costs almost nothing!"},
-    {es:"Cerca",    en:"Near",      emoji:"??", hook:"SAIR-ca ó NEAR the CIRCUS ó sair-CA!"},
-    {es:"Lejos",    en:"Far",       emoji:"???", hook:"LEH-hos ó FAR like a LEGION of miles away!"},
-    {es:"R·pido",   en:"Fast",      emoji:"?", hook:"RAH-pee-do ó RAPID and FAST like a RAPID-o rocket!"},
-    {es:"Lento",    en:"Slow",      emoji:"??", hook:"LEN-to ó SLOW like LENTO music ó nice and slow!"},
-    {es:"Caliente", en:"Hot",       emoji:"??", hook:"cah-lee-EN-tay ó HOT like a KALEIDOSCOPE of fire!"},
-    {es:"FrÌo",     en:"Cold",      emoji:"??", hook:"FREE-oh ó COLD and FREE-zing cold ó FREE-oh!"},
-    {es:"F·cil",    en:"Easy",      emoji:"??", hook:"FAH-seel ó EASY peasy like a FOSSIL in the ground!"},
-    {es:"DifÌcil",  en:"Difficult", emoji:"??", hook:"dee-FEE-seel ó DIFFICULT FEE to pay ó dee-FEE!"},
-    {es:"Mucho",    en:"A lot",     emoji:"??", hook:"MOO-cho ó A LOT of MOOs from the cow ó MOO-cho!"},
-  ]},
-  shopping: { icon:"??", label:"Shopping & Market", color:"#065F46", words:[
-    {es:"El mercado",            en:"The market",          emoji:"??", hook:"mehr-CAH-do ó the MARKET is your MERCADO adventure!"},
-    {es:"øTiene cambio?",        en:"Do you have change?", emoji:"??", hook:"CAHM-bee-oh ó CHANGE your CAMBIA coins!"},
-    {es:"Es muy caro",           en:"It's very expensive", emoji:"??", hook:"MOO-ee CAR-oh ó the CAR is VERY expensive ó moo-ee!"},
-    {es:"Me llevo esto",         en:"I'll take this",      emoji:"???", hook:"YEH-bo ó I'll TAKE it YEBO style ó YEH-bo!"},
-    {es:"øCu·nto es todo?",      en:"How much is everything?",emoji:"??", hook:"KWAHN-to ó HOW MUCH in this QUANTUM universe?"},
-    {es:"Quiero comprar",        en:"I want to buy",       emoji:"??", hook:"cohm-PRAR ó I want to COMPARE prices before buying!"},
-    {es:"øAcepta tarjeta?",      en:"Do you accept card?", emoji:"??", hook:"tar-HEH-ta ó CARD like a TARGET credit card!"},
-    {es:"El precio",             en:"The price",           emoji:"???", hook:"PREH-see-oh ó the PRICE is oh so PRECIOUS!"},
-    {es:"La bolsa",              en:"The bag",             emoji:"???", hook:"BOWL-sah ó the BAG is shaped like a BOWL!"},
-    {es:"øPuede bajar el precio?",en:"Can you lower the price?",emoji:"??", hook:"bah-HAR ó can you lower it like going DOWN to a BAR?"},
-    {es:"øDÛnde encuentro...?",  en:"Where do I find...?", emoji:"??", hook:"en-KWEN-tro ó WHERE do I ENCOUNTER what I'm looking for?"},
-    {es:"Me da uno m·s",         en:"Give me one more",    emoji:"??", hook:"Give me UNO MAS ó one MORE please!"},
-  ]},
-  weather: { icon:"???", label:"Weather", color:"#1D4ED8", words:[
-    {es:"Hace calor",        en:"It's hot",          emoji:"??", hook:"AH-say cah-LOR ó it makes CALOR ó HOT HOT HOT!"},
-    {es:"Hace frÌo",         en:"It's cold",         emoji:"??", hook:"FREE-oh ó it's COLD and FREE-zing cold!"},
-    {es:"Est· lloviendo",    en:"It's raining",      emoji:"???", hook:"yo-bee-EN-do ó it's raining LOVING drops from the sky!"},
-    {es:"Hace viento",       en:"It's windy",        emoji:"??", hook:"bee-EN-to ó WINDY like a VENT blowing hard!"},
-    {es:"Est· nublado",      en:"It's cloudy",       emoji:"??", hook:"noo-BLAH-do ó CLOUDY and totally BLAH-do gray!"},
-    {es:"øCÛmo est· el clima?",en:"What's the weather like?",emoji:"???", hook:"KLEE-mah ó the CLIMATE CLIME changes fast in Cuenca!"},
-    {es:"Va a llover",       en:"It's going to rain",emoji:"??", hook:"yo-BAIR ó it's going to rain like a LOVER of water!"},
-    {es:"Hace buen tiempo",  en:"The weather is nice",emoji:"??", hook:"tee-EM-po ó nice weather TEMPO ó what a GOOD time!"},
-    {es:"El sol",            en:"The sun",           emoji:"??", hook:"SOLE ó the SUN is your SOLE friend on cold days!"},
-    {es:"La lluvia",         en:"The rain",          emoji:"???", hook:"YOO-bee-ah ó the rain goes YOOBIA YOOBIA down!"},
-    {es:"La neblina",        en:"The fog",           emoji:"???", hook:"neh-BLEE-nah ó FOG like a NEBULA floating down!"},
-    {es:"QuÈ fresco",        en:"How pleasant",      emoji:"??", hook:"FRES-co ó how FRESH and pleasant ó FRESCO cool!"},
-  ]},
-};
-
-const ALL_WORDS_L1 = Object.values(VOCAB_L1).flatMap(c => c.words);
-const ALL_WORDS_L2 = Object.values(VOCAB_L2).flatMap(c => c.words);
-const ALL_WORDS    = [...ALL_WORDS_L1, ...ALL_WORDS_L2];
-
-// -- STORY MODE DATA ó set in Cuenca, full audio on every line ----------------
-const STORIES = [
-  {
-    id:"cafe",
-    title:"Un CafÈ en Cuenca",
-    titleEn:"A CafÈ in Cuenca",
-    emoji:"?",
-    color:"#DC6B19",
-    panels:[
-      {scene:"You walk into a cozy cafÈ in the center of Cuenca.", sceneEs:"Entran a una cafeterÌa bonita en Cuenca."},
-      {speaker:"Leanne",  avatar:"??", es:"Buenos dÌas. øTienen una mesa para dos?",    en:"Good morning. Do you have a table for two?"},
-      {speaker:"Waiter",  avatar:"??", es:"°Claro que sÌ! Por aquÌ, por favor.",        en:"Of course! Right this way, please."},
-      {scene:"You sit down and look at the menu.", sceneEs:"Se sientan y miran el men˙."},
-      {speaker:"Grayson", avatar:"??", es:"Mam·, øquÈ es esto?",                        en:"Mom, what is this?"},
-      {speaker:"Leanne",  avatar:"??", es:"Es el men˙, mi amor. Mira los precios.",     en:"It's the menu, my love. Look at the prices."},
-      {speaker:"Waiter",  avatar:"??", es:"øQuÈ desean ordenar?",                       en:"What would you like to order?"},
-      {speaker:"Leanne",  avatar:"??", es:"Un cafÈ con leche, por favor.",              en:"A coffee with milk, please."},
-      {speaker:"Grayson", avatar:"??", es:"Y yo quiero un jugo de naranja.",            en:"And I want an orange juice."},
-      {speaker:"Waiter",  avatar:"??", es:"°Perfecto! Ya les traigo.",                  en:"Perfect! I'll bring it right out."},
-      {scene:"After enjoying your drinks!", sceneEs:"°DespuÈs de disfrutar sus bebidas!"},
-      {speaker:"Leanne",  avatar:"??", es:"Disculpe, la cuenta por favor.",             en:"Excuse me, the check please."},
-      {speaker:"Waiter",  avatar:"??", es:"Son cuatro dÛlares con cincuenta.",          en:"That's four dollars and fifty cents."},
-      {speaker:"Leanne",  avatar:"??", es:"Gracias, °muy amable!",                     en:"Thank you, very kind!"},
-      {speaker:"Waiter",  avatar:"??", es:"°Hasta luego! °Que tengan un buen dÌa!",    en:"See you later! Have a great day!"},
-    ]
-  },
-  {
-    id:"market",
-    title:"En el Mercado",
-    titleEn:"At the Market",
-    emoji:"??",
-    color:"#10B981",
-    panels:[
-      {scene:"You arrive at the colorful Cuenca market ó flowers, fruit, and food everywhere!", sceneEs:"Llegan al mercado de Cuenca ó flores, frutas y comida por todas partes."},
-      {speaker:"Victor",  avatar:"???", es:"°Miren quÈ frutas tan bonitas!",            en:"Look at these beautiful fruits!"},
-      {speaker:"Peyton",  avatar:"??", es:"Pap·, øquÈ es eso rojo?",                  en:"Dad, what is that red thing?"},
-      {speaker:"Victor",  avatar:"???", es:"Es una manzana, Peyton. °Es roja!",        en:"It's an apple, Peyton. It's red!"},
-      {speaker:"Vendor",  avatar:"??", es:"Buenos dÌas, øquÈ desean?",                 en:"Good morning, what do you need?"},
-      {speaker:"Victor",  avatar:"???", es:"øCu·nto cuestan las naranjas?",            en:"How much do the oranges cost?"},
-      {speaker:"Vendor",  avatar:"??", es:"Son cincuenta centavos cada una.",          en:"They're fifty cents each."},
-      {speaker:"Victor",  avatar:"???", es:"Me llevo seis, por favor.",                en:"I'll take six, please."},
-      {speaker:"Peyton",  avatar:"??", es:"°Pap·, quiero helado!",                    en:"Dad, I want ice cream!"},
-      {speaker:"Victor",  avatar:"???", es:"Primero las frutas. °Por favor, Peyton!",  en:"Fruit first. Please, Peyton!"},
-      {speaker:"Vendor",  avatar:"??", es:"°QuÈ niÒa tan bonita!",                    en:"What a beautiful girl!"},
-      {speaker:"Peyton",  avatar:"??", es:"°Gracias! Me llamo Peyton.",               en:"Thank you! My name is Peyton."},
-      {speaker:"Vendor",  avatar:"??", es:"°Mucho gusto, Peyton! °QuÈ nombre tan bonito!",en:"Nice to meet you, Peyton! What a pretty name!"},
-      {speaker:"Victor",  avatar:"???", es:"°Gracias! °Hasta luego!",                 en:"Thank you! See you later!"},
-    ]
-  },
-  {
-    id:"friend",
-    title:"Una Nueva Amiga",
-    titleEn:"A New Friend",
-    emoji:"??",
-    color:"#8B5CF6",
-    panels:[
-      {scene:"Grayson is playing in a park in Cuenca when a local girl walks over.", sceneEs:"Grayson juega en un parque cuando una niÒa se acerca."},
-      {speaker:"SofÌa",   avatar:"??", es:"°Hola! øCÛmo te llamas?",                  en:"Hi! What's your name?"},
-      {speaker:"Grayson", avatar:"??", es:"Me llamo Grayson. øY t˙?",                 en:"My name is Grayson. And you?"},
-      {speaker:"SofÌa",   avatar:"??", es:"Me llamo SofÌa. °Mucho gusto!",            en:"My name is SofÌa. Nice to meet you!"},
-      {speaker:"Grayson", avatar:"??", es:"°Mucho gusto, SofÌa!",                     en:"Nice to meet you too, SofÌa!"},
-      {speaker:"SofÌa",   avatar:"??", es:"øDe dÛnde eres?",                          en:"Where are you from?"},
-      {speaker:"Grayson", avatar:"??", es:"Soy de Florida, en los Estados Unidos.",   en:"I'm from Florida, in the United States."},
-      {speaker:"SofÌa",   avatar:"??", es:"°QuÈ interesante! øTe gusta Cuenca?",      en:"How interesting! Do you like Cuenca?"},
-      {speaker:"Grayson", avatar:"??", es:"°SÌ! Me gusta mucho. Es muy bonita.",      en:"Yes! I like it a lot. It's very beautiful."},
-      {speaker:"SofÌa",   avatar:"??", es:"øQuieres jugar conmigo?",                  en:"Do you want to play with me?"},
-      {speaker:"Grayson", avatar:"??", es:"°SÌ, por favor! øCÛmo se juega?",         en:"Yes please! How do you play?"},
-      {scene:"They play together and laugh for a long time.", sceneEs:"Juegan juntas y se rÌen mucho."},
-      {speaker:"Grayson", avatar:"??", es:"°Esto es muy divertido!",                  en:"This is so much fun!"},
-      {speaker:"SofÌa",   avatar:"??", es:"°SÌ! °Eres mi nueva amiga, Grayson!",     en:"Yes! You're my new friend, Grayson!"},
-      {speaker:"Grayson", avatar:"??", es:"°Y t˙ eres mi amiga tambiÈn, SofÌa!",     en:"And you're my friend too, SofÌa!"},
-    ]
-  },
-  {
-    id:"directions",
-    title:"øDÛnde Est·?",
-    titleEn:"Where Is It?",
-    emoji:"???",
-    color:"#E8445A",
-    panels:[
-      {scene:"Leanne is on a street in Cuenca and is a little lost!", sceneEs:"Leanne est· en una calle de Cuenca y est· un poco perdida."},
-      {speaker:"Leanne",  avatar:"??", es:"Disculpe, seÒor. øMe puede ayudar?",       en:"Excuse me, sir. Can you help me?"},
-      {speaker:"Man",     avatar:"??", es:"°Claro! øEn quÈ le puedo ayudar?",         en:"Of course! How can I help you?"},
-      {speaker:"Leanne",  avatar:"??", es:"øDÛnde est· el mercado, por favor?",       en:"Where is the market, please?"},
-      {speaker:"Man",     avatar:"??", es:"Es f·cil. Camine todo recto.",             en:"It's easy. Walk straight ahead."},
-      {speaker:"Man",     avatar:"??", es:"Luego doble a la derecha.",                en:"Then turn to the right."},
-      {speaker:"Leanne",  avatar:"??", es:"øEst· lejos?",                            en:"Is it far?"},
-      {speaker:"Man",     avatar:"??", es:"No, est· muy cerca. Solo cinco minutos.",  en:"No, it's very close. Only five minutes."},
-      {speaker:"Leanne",  avatar:"??", es:"M·s despacio, por favor. No hablo espaÒol bien.",en:"More slowly, please. I don't speak Spanish well."},
-      {speaker:"Man",     avatar:"??", es:"°No hay problema! Hablo m·s despacio.",    en:"No problem! I'll speak more slowly."},
-      {speaker:"Man",     avatar:"??", es:"Todo recto, luego a la derecha. °Muy cerca!",en:"Straight ahead, then to the right. Very close!"},
-      {speaker:"Leanne",  avatar:"??", es:"°EntendÌ! °MuchÌsimas gracias!",          en:"I understood! Thank you so very much!"},
-      {speaker:"Man",     avatar:"??", es:"°De nada! °Que le vaya bien!",            en:"You're welcome! Have a great day!"},
-    ]
-  },
-  {
-    id:"negotiating",
-    title:"°QuÈ Precio Tan Caro!",
-    titleEn:"What an Expensive Price! (Intermediate)",
-    emoji:"??",
-    color:"#065F46",
-    panels:[
-      {scene:"Leanne is shopping at the artisan market in Cuenca for a handmade bag.", sceneEs:"Leanne est· en el mercado artesanal de Cuenca buscando una bolsa hecha a mano."},
-      {speaker:"Leanne",  avatar:"??", es:"Disculpe, øcu·nto cuesta esta bolsa?",        en:"Excuse me, how much does this bag cost?"},
-      {speaker:"Vendor",  avatar:"??", es:"Cuesta cuarenta dÛlares, seÒora.",             en:"It costs forty dollars, ma'am."},
-      {speaker:"Leanne",  avatar:"??", es:"°Ay, es muy caro! øPuede bajar el precio?",   en:"Oh, that's very expensive! Can you lower the price?"},
-      {speaker:"Vendor",  avatar:"??", es:"Es hecha a mano. Mucho trabajo.",              en:"It's handmade. A lot of work."},
-      {speaker:"Leanne",  avatar:"??", es:"Entiendo. øCu·nto es su mejor precio?",       en:"I understand. What is your best price?"},
-      {speaker:"Vendor",  avatar:"??", es:"Para usted, treinta y cinco dÛlares.",         en:"For you, thirty-five dollars."},
-      {speaker:"Leanne",  avatar:"??", es:"Mmm. øTiene cambio de treinta dÛlares?",      en:"Hmm. Do you have change for thirty dollars?"},
-      {speaker:"Vendor",  avatar:"??", es:"SÌ, tengo cambio. øQuiere la bolsa por treinta?", en:"Yes, I have change. Do you want the bag for thirty?"},
-      {speaker:"Leanne",  avatar:"??", es:"°Perfecto! Me llevo esta. °Muchas gracias!",  en:"Perfect! I'll take this one. Thank you so much!"},
-      {speaker:"Vendor",  avatar:"??", es:"°Gracias a usted! °Que le vaya muy bien!",    en:"Thank you! Have a wonderful day!"},
-      {scene:"Leanne walks away happily with her new bag ó a real Cuenca treasure!", sceneEs:"Leanne se va feliz con su nueva bolsa ó °un tesoro de Cuenca!"},
-    ]
-  },
-  {
-    id:"planning",
-    title:"øQuÈ Hacemos MaÒana?",
-    titleEn:"What Are We Doing Tomorrow? (Intermediate)",
-    emoji:"??",
-    color:"#7C3AED",
-    panels:[
-      {scene:"The family is at home in Cuenca planning their week together.", sceneEs:"La familia est· en casa en Cuenca planeando su semana."},
-      {speaker:"Victor",  avatar:"???", es:"øQuÈ quieren hacer maÒana?",                 en:"What do you want to do tomorrow?"},
-      {speaker:"Grayson", avatar:"??", es:"°Quiero ir al parque! Me gusta mucho.",       en:"I want to go to the park! I really like it."},
-      {speaker:"Peyton",  avatar:"??", es:"°Yo tambiÈn! øHace buen tiempo maÒana?",      en:"Me too! Is the weather nice tomorrow?"},
-      {speaker:"Leanne",  avatar:"??", es:"Creo que sÌ. Por la maÒana hace sol.",        en:"I think so. In the morning it's sunny."},
-      {speaker:"Victor",  avatar:"???", es:"Pero por la tarde puede llover. Es Cuenca.",  en:"But in the afternoon it might rain. It's Cuenca."},
-      {speaker:"Grayson", avatar:"??", es:"°No importa! La lluvia es divertida.",        en:"It doesn't matter! Rain is fun."},
-      {speaker:"Leanne",  avatar:"??", es:"Bien. Vamos al parque por la maÒana.",        en:"Good. We'll go to the park in the morning."},
-      {speaker:"Leanne",  avatar:"??", es:"Necesito buscar un mercado cerca tambiÈn.",   en:"I also need to find a market nearby."},
-      {speaker:"Victor",  avatar:"???", es:"SÈ dÛnde hay uno. Est· muy cerca, a la derecha.", en:"I know where there is one. It's very close, to the right."},
-      {speaker:"Peyton",  avatar:"??", es:"°Pap· sabe todo! Es muy inteligente.",        en:"Dad knows everything! He's very smart."},
-      {speaker:"Victor",  avatar:"???", es:"°Ja! Aprendo mucho viviendo aquÌ en Cuenca.", en:"Ha! I learn a lot living here in Cuenca."},
-      {speaker:"Grayson", avatar:"??", es:"°Nosotras tambiÈn! Cada dÌa aprendemos m·s.", en:"Us too! Every day we learn more."},
-      {scene:"A perfect Cuenca evening ó planning, laughing, and learning together.", sceneEs:"Una noche perfecta en Cuenca ó planeando, riendo y aprendiendo juntos."},
-    ]
-  },
-  {
-    id:"weather",
-    title:"°QuÈ Clima Raro!",
-    titleEn:"What Weird Weather!",
-    emoji:"???",
-    color:"#1D4ED8",
-    panels:[
-      {scene:"A beautiful morning in Cuenca ó but the weather changes fast here!", sceneEs:"Una maÒana bonita en Cuenca ó °pero el clima cambia r·pido aquÌ!"},
-      {speaker:"Peyton",  avatar:"??", es:"Mam·, øhace frÌo hoy?",                   en:"Mom, is it cold today?"},
-      {speaker:"Leanne",  avatar:"??", es:"No, hace calor. °Es un dÌa muy bonito!",  en:"No, it's hot. It's a very beautiful day!"},
-      {speaker:"Grayson", avatar:"??", es:"°Mam·! øVamos al parque?",               en:"Mom! Are we going to the park?"},
-      {speaker:"Leanne",  avatar:"??", es:"°SÌ! Pero lleven agua. Hace mucho calor.",en:"Yes! But bring water. It's very hot."},
-      {scene:"At the park, the sky suddenly gets cloudy.", sceneEs:"En el parque, el cielo se pone nublado de repente."},
-      {speaker:"Peyton",  avatar:"??", es:"°Ay! Est· nublado ahora.",                en:"Oh! It's cloudy now."},
-      {speaker:"Grayson", avatar:"??", es:"Mam·, creo que va a llover.",             en:"Mom, I think it's going to rain."},
-      {speaker:"Leanne",  avatar:"??", es:"°SÌ! °Vamos r·pido a casa!",             en:"Yes! Let's go home quickly!"},
-      {scene:"It starts raining ó they run and laugh!", sceneEs:"°Empieza a llover ó corren y se rÌen!"},
-      {speaker:"Peyton",  avatar:"??", es:"°Est· lloviendo! °Corro muy r·pido!",    en:"It's raining! I'm running very fast!"},
-      {speaker:"Grayson", avatar:"??", es:"°Yo tambiÈn! °EspÈrame, Peyton!",        en:"Me too! Wait for me, Peyton!"},
-      {scene:"Safe at home, all laughing together.", sceneEs:"En casa, todos se rÌen juntos."},
-      {speaker:"Leanne",  avatar:"??", es:"°Estamos bien! El clima en Cuenca es especial.",en:"We're fine! The weather in Cuenca is special."},
-      {speaker:"Peyton",  avatar:"??", es:"°Me gustÛ la lluvia! °Fue muy divertido!",en:"I liked the rain! It was so much fun!"},
-      {speaker:"Grayson", avatar:"??", es:"°SÌ! °MaÒana volvemos al parque!",       en:"Yes! Tomorrow we go back to the park!"},
-    ]
-  },
+const LANDS = [
+  { id:1,  name:"Greetings",     emoji:"üëã", color:"#E8445A", level:"Beginner",     region:"Cuenca Plaza" },
+  { id:2,  name:"Around Town",   emoji:"üèòÔ∏è", color:"#F97316", level:"Beginner",     region:"Cuenca Streets" },
+  { id:3,  name:"Family",        emoji:"üè†", color:"#F59E0B", level:"Beginner",     region:"Casa Familiar" },
+  { id:4,  name:"Food",          emoji:"üçΩÔ∏è", color:"#10B981", level:"Beginner",     region:"Mercado Central" },
+  { id:5,  name:"Feelings",      emoji:"üé≠", color:"#3B82F6", level:"Beginner",     region:"Parque Calderon" },
+  { id:6,  name:"Core Words 1",  emoji:"‚≠ê", color:"#7C3AED", level:"Checkpoint",   region:"La Ruta Magica" },
+  { id:7,  name:"School",        emoji:"üè´", color:"#E8445A", level:"Beginner",     region:"La Escuela" },
+  { id:8,  name:"Numbers",       emoji:"üî¢", color:"#F97316", level:"Beginner",     region:"El Mercado" },
+  { id:9,  name:"Colors",        emoji:"üé®", color:"#8B5CF6", level:"Beginner",     region:"Arte de Cuenca" },
+  { id:10, name:"Animals",       emoji:"üêæ", color:"#10B981", level:"Beginner",     region:"El Campo" },
+  { id:11, name:"Core Words 2",  emoji:"‚≠ê", color:"#7C3AED", level:"Checkpoint",   region:"La Ruta Magica" },
+  { id:12, name:"Verbs",         emoji:"‚ö°", color:"#F59E0B", level:"Intermediate", region:"Centro Historico" },
+  { id:13, name:"Time",          emoji:"‚è∞", color:"#3B82F6", level:"Intermediate", region:"El Reloj" },
+  { id:14, name:"Body",          emoji:"üßç", color:"#E8445A", level:"Intermediate", region:"La Clinica" },
+  { id:15, name:"Descriptions",  emoji:"‚ú®", color:"#8B5CF6", level:"Intermediate", region:"Las Galerias" },
+  { id:16, name:"Shopping",      emoji:"üõçÔ∏è", color:"#10B981", level:"Intermediate", region:"Artesanias" },
+  { id:17, name:"Weather",       emoji:"üå¶Ô∏è", color:"#F97316", level:"Intermediate", region:"Los Andes" },
+  { id:18, name:"Core Words 3",  emoji:"‚≠ê", color:"#7C3AED", level:"Checkpoint",   region:"La Ruta Magica" },
+  { id:19, name:"Core Words 4",  emoji:"‚≠ê", color:"#7C3AED", level:"Checkpoint",   region:"La Ruta Magica" },
+  { id:20, name:"Opinions",      emoji:"üó£Ô∏è", color:"#E8445A", level:"Advanced",     region:"El Debate" },
+  { id:21, name:"Travel",        emoji:"‚úàÔ∏è", color:"#3B82F6", level:"Advanced",     region:"El Aeropuerto" },
+  { id:22, name:"Health",        emoji:"üè•", color:"#10B981", level:"Advanced",     region:"La Farmacia" },
+  { id:23, name:"Social Life",   emoji:"üë•", color:"#F59E0B", level:"Advanced",     region:"La Fiesta" },
+  { id:24, name:"Technology",    emoji:"üì±", color:"#8B5CF6", level:"Advanced",     region:"El Cafe WiFi" },
+  { id:25, name:"The Grand Final",emoji:"üèÜ", color:"#7C3AED", level:"Final Boss",   region:"La Gran Final" },
 ];
 
-const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
-const todayStr = () => new Date().toISOString().slice(0, 10);
+const speakEs = (text) => { try{ const u=new SpeechSynthesisUtterance(text); u.lang="es-ES"; u.rate=0.85; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} };
+const speakEn = (text) => { try{ const u=new SpeechSynthesisUtterance(text); u.lang="en-US"; u.rate=0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} };
 
-// -- CONFIG --------------------------------------------------------------------
-const AVATARS = ["??","??","??","??","??","??","??","??","?","??","???","??","??","??","??","??"];
-const PCOLORS = ["#E8445A","#10B981","#8B5CF6","#F59E0B","#3B82F6","#EC4899","#DC6B19","#06B6D4"];
-const DS = { fontFamily:"'Nunito', sans-serif", fontWeight:900 };
+const FONT_LINK = <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>;
 
-const BADGE_DEF = {
-  first_star: {icon:"??",name:"First Star",    desc:"Earned your first star!"},
-  stars_50:   {icon:"?",name:"Star Collector",desc:"50 stars earned!"},
-  stars_100:  {icon:"??",name:"Champion",      desc:"100 stars earned!"},
-  stars_250:  {icon:"??",name:"Royalty",        desc:"250 stars ó amazing!"},
-  streak_3:   {icon:"??",name:"On Fire!",       desc:"3-day streak!"},
-  streak_7:   {icon:"??",name:"Week Warrior",   desc:"7 days in a row!"},
-  streak_14:  {icon:"??",name:"Legend",         desc:"14-day streak!"},
-  quiz_10:    {icon:"??",name:"Quiz Master",    desc:"10 quiz answers right"},
-  speak_5:    {icon:"??",name:"Speak Up!",      desc:"5 pronunciation tries"},
-  explorer:   {icon:"??",name:"Explorer",       desc:"Played 3 categories"},
-  match_win:  {icon:"??",name:"Match Maker",    desc:"Completed a match game"},
-  daily_done: {icon:"??",name:"Daily Hero",     desc:"Finished a Daily Challenge"},
-  storyteller:{icon:"??",name:"Storyteller",    desc:"Completed a full story!"},
-  level2:     {icon:"??",name:"Level Up!",      desc:"Unlocked Intermediate level"},
-};
-
-const calcBadges = (p) => {
-  const s = new Set(p.badges||[]);
-  if((p.stars||0)>=1)              s.add("first_star");
-  if((p.stars||0)>=50)             s.add("stars_50");
-  if((p.stars||0)>=100)            s.add("stars_100");
-  if((p.stars||0)>=250)            s.add("stars_250");
-  if((p.streak||0)>=3)             s.add("streak_3");
-  if((p.streak||0)>=7)             s.add("streak_7");
-  if((p.streak||0)>=14)            s.add("streak_14");
-  if((p.quizCorrect||0)>=10)       s.add("quiz_10");
-  if((p.speakAttempts||0)>=5)      s.add("speak_5");
-  if((p.catsPlayed||[]).length>=3) s.add("explorer");
-  if((p.matchWins||0)>=1)          s.add("match_win");
-  if((p.dailyDone||0)>=1)          s.add("daily_done");
-  if((p.storiesRead||0)>=1)        s.add("storyteller");
-  if((p.level||1)>=2)              s.add("level2");
-  return [...s];
-};
-
-// -- SUPABASE SETUP ------------------------------------------------------------
-// ??  STEP 1: Paste your Supabase Project URL between the quotes below
-const SUPABASE_URL = 'https://jlqrxshoilgmcfaitxta.supabase.co'
-// ??  STEP 2: Paste your Supabase anon/public key between the quotes below
-const SUPABASE_KEY = 'sb_publishable_5ImngTBY4P21KP3bzBu75Q_FYgl4Pn9'
-
-const db = createClient(SUPABASE_URL, SUPABASE_KEY)
-
-// -- FAMILY CODE HELPERS -------------------------------------------------------
-const makeCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
-const LS_FAMILY = 'wl_family_id';
-const getFamilyId = () => localStorage.getItem(LS_FAMILY);
-const setFamilyId = (id) => localStorage.setItem(LS_FAMILY, id);
-
-// -- LOAD / SAVE ----------------------------------------------------------------
-const loadProfiles = async () => {
-  const familyId = getFamilyId();
-  if (!familyId) return [];
-  const { data } = await db.from('players').select('*').eq('family_id', familyId);
-  if (!data) return [];
-  return data.map(r => ({
-    id: r.id, name: r.name, avatar: r.avatar, color: r.color,
-    stars: r.stars || 0, streak: r.streak || 0,
-    longestStreak: r.longest_streak || 0, lastDate: r.last_date,
-    badges: r.badges || [], quizCorrect: r.quiz_correct || 0,
-    speakAttempts: r.speak_attempts || 0, catsPlayed: r.cats_played || [],
-    matchWins: r.match_wins || 0, dailyDone: r.daily_done || 0,
-    dailyScores: r.daily_scores || {}, storiesRead: r.stories_read || 0,
-    level: r.level || 1,
-  }));
-};
-
-const saveProfile = async (profile) => {
-  const familyId = getFamilyId();
-  if (!familyId) return;
-  await db.from('players').upsert({
-    id: profile.id, family_id: familyId,
-    name: profile.name, avatar: profile.avatar, color: profile.color,
-    stars: profile.stars, streak: profile.streak,
-    longest_streak: profile.longestStreak, last_date: profile.lastDate,
-    badges: profile.badges, quiz_correct: profile.quizCorrect,
-    speak_attempts: profile.speakAttempts, cats_played: profile.catsPlayed,
-    match_wins: profile.matchWins, daily_done: profile.dailyDone,
-    daily_scores: profile.dailyScores, stories_read: profile.storiesRead,
-    level: profile.level, updated_at: new Date().toISOString()
-  });
-};
-
-const createFamily = async (familyName) => {
-  const code = makeCode();
-  const { data } = await db.from('families').insert({ code, name: familyName }).select().single();
-  if (data) setFamilyId(data.id);
-  return data;
-};
-
-const joinFamily = async (code) => {
-  const { data } = await db.from('families').select('*').eq('code', code.toUpperCase()).single();
-  if (data) { setFamilyId(data.id); return data; }
-  return null;
-};
-
-const createProfile = (name, avatar, color) => ({
-  id: Date.now().toString(), name, avatar, color,
-  stars: 0, streak: 0, longestStreak: 0, lastDate: null,
-  badges: [], quizCorrect: 0, speakAttempts: 0,
-  catsPlayed: [], matchWins: 0, dailyDone: 0, dailyScores: {},
-  storiesRead: 0, level: 1,
-});
-
-// -- SPEECH --------------------------------------------------------------------
-let esVoice=null, enVoice=null;
-const findVoices = () => {
-  const vs = window.speechSynthesis?window.speechSynthesis.getVoices():[];
-  esVoice=vs.find(v=>v.lang==="es-MX")||vs.find(v=>v.lang==="es-US")||vs.find(v=>v.lang.startsWith("es"))||null;
-  enVoice=vs.find(v=>v.lang==="en-US")||vs.find(v=>v.lang.startsWith("en"))||null;
-  return !!esVoice;
-};
-const speakEs = (text,onEnd) => {
-  if(!window.speechSynthesis)return;
-  window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang="es-MX"; u.rate=0.82; u.pitch=1.05;
-  if(esVoice)u.voice=esVoice;
-  if(onEnd)u.onend=onEnd;
-  window.speechSynthesis.speak(u);
-};
-const speakEn = (text,onEnd) => {
-  if(!window.speechSynthesis)return;
-  window.speechSynthesis.cancel();
-  const u=new SpeechSynthesisUtterance(text);
-  u.lang="en-US"; u.rate=0.85;
-  if(enVoice)u.voice=enVoice;
-  if(onEnd)u.onend=onEnd;
-  window.speechSynthesis.speak(u);
-};
-
-// -- DAILY ---------------------------------------------------------------------
-const getDailyWords = (level) => {
-  const pool=level>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const d=todayStr();
-  let s=parseInt(d.replace(/-/g,""));
-  const result=[];
-  while(result.length<5){
-    s=Math.abs((s*1664525+1013904223)&0x7fffffff);
-    const w=pool[s%pool.length];
-    if(!result.some(x=>x.es===w.es))result.push(w);
-  }
-  return{date:d,words:result};
-};
-
-// -- PRONUNCIATION -------------------------------------------------------------
-const normText=str=>str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[ø°.,!?]/g,"").trim();
-const scoreMatch=(heard,target)=>{
-  const h=normText(heard),t=normText(target);
-  if(!h)return 0;if(h===t)return 100;
-  const tw=t.split(" "),hw=h.split(" ");
-  const hits=tw.filter(tw=>hw.some(hw=>hw===tw||(tw.length>3&&(hw.includes(tw)||tw.includes(hw)))));
-  return Math.min(99,Math.round((hits.length/tw.length)*100));
-};
-const SRClass=typeof window!=="undefined"?(window.SpeechRecognition||window.webkitSpeechRecognition):null;
-const BG="linear-gradient(160deg,#0f172a 0%,#1e3a5f 50%,#0d4f3c 100%)";
-
-// -- SHARED COMPONENTS --------------------------------------------------------
-
-function SpeakEsBtn({text,color,size=40,showLabel=false}){
-  const[on,setOn]=useState(false);
-  const go=e=>{e.stopPropagation();setOn(true);speakEs(text,()=>setOn(false));setTimeout(()=>setOn(false),4000);};
-  if(showLabel)return(
-    <button onClick={go} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 18px",borderRadius:20,background:on?color:`${color}18`,border:`2px solid ${color}`,fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:on?"white":color,transition:"all .18s"}}>
-      <span style={{fontSize:18}}>{on?"??":"??"}</span><span>Hear Spanish</span>
-    </button>
-  );
-  return(
-    <button onClick={go} style={{width:size,height:size,borderRadius:"50%",flexShrink:0,background:on?color:`${color}18`,border:`2.5px solid ${color}`,fontSize:size*.42,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .18s",transform:on?"scale(1.12)":"scale(1)"}}>
-      {on?"??":"??"}
-    </button>
-  );
-}
-
-function SpeakEnBtn({text,color}){
-  const[on,setOn]=useState(false);
-  const go=e=>{e.stopPropagation();setOn(true);speakEn(text,()=>setOn(false));setTimeout(()=>setOn(false),3000);};
-  return(
-    <button onClick={go} style={{width:32,height:32,borderRadius:"50%",flexShrink:0,background:on?color:`${color}20`,border:`2px solid ${color}60`,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .18s"}}>
-      {on?"??":"??"}
-    </button>
-  );
-}
-
-function SpeakEnIconBtn({text,size=40}){
-  const[on,setOn]=useState(false);
-  const go=e=>{e.stopPropagation();setOn(true);speakEn(text,()=>setOn(false));setTimeout(()=>setOn(false),3000);};
-  return(
-    <button onClick={go} style={{width:size,height:size,borderRadius:"50%",flexShrink:0,background:on?"rgba(255,255,255,.9)":"rgba(255,255,255,.25)",border:"2.5px solid rgba(255,255,255,.8)",fontSize:size*.42,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",transition:"all .18s",transform:on?"scale(1.12)":"scale(1)"}}>
-      {on?"??":"??"}
-    </button>
-  );
-}
-
-function SpeakEnPill({text,color}){
-  const[on,setOn]=useState(false);
-  const go=e=>{e.stopPropagation();setOn(true);speakEn(text,()=>setOn(false));setTimeout(()=>setOn(false),3000);};
-  return(
-    <button onClick={go} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:20,background:on?"rgba(255,255,255,.35)":"rgba(255,255,255,.18)",border:"2px solid rgba(255,255,255,.6)",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white",transition:"all .18s"}}>
-      <span style={{fontSize:16}}>{on?"??":"??"}</span><span>Hear English</span>
-    </button>
-  );
-}
-
-function ActionBtn({onClick,bg,color="white",children,style={}}){
-  return(
-    <button onClick={onClick} style={{padding:"12px 20px",borderRadius:18,background:bg,border:"none",color,fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"inherit",...style}}>
-      {children}
-    </button>
-  );
-}
-
-function StarCount({count,color}){
-  return(
-    <span style={{display:"inline-flex",alignItems:"center",gap:3,background:`${color}20`,borderRadius:20,padding:"4px 12px"}}>
-      <span style={{fontSize:18}}>?</span>
-      <span style={{fontSize:18,fontWeight:900,color}}>{count}</span>
-    </span>
-  );
-}
-
-// -- FLASHCARD (with memory hook) ----------------------------------------------
-function FlashcardMode({words,color,onEarn}){
-  const[idx,setIdx]=useState(0);
-  const[flipped,setFlipped]=useState(false);
-  const[showHook,setShowHook]=useState(false);
-  const[learned,setLearned]=useState(new Set());
-  const word=words[idx];
-
-  const navigate=(dir,gotIt)=>{
-    if(gotIt){setLearned(p=>new Set([...p,idx]));onEarn(1);}
-    setFlipped(false);setShowHook(false);
-    setTimeout(()=>setIdx(i=>(i+dir+words.length)%words.length),160);
-  };
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>{idx+1} of {words.length} &nbsp;ï&nbsp; ? {learned.size} learned</div>
-      <div style={{width:"100%",height:6,background:"#F3F4F6",borderRadius:99}}>
-        <div style={{height:"100%",borderRadius:99,background:color,width:`${(learned.size/words.length)*100}%`,transition:"width .4s"}}/>
-      </div>
-
-      {/* Memory Hook hint */}
-      {word.hook&&!flipped&&(
-        <div style={{width:"100%",padding:"10px 14px",borderRadius:16,background:showHook?`${color}12`:"#FFFBEB",border:`1.5px solid ${showHook?color:"#FCD34D"}`}}>
-          <button onClick={()=>setShowHook(h=>!h)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"flex-start",gap:8,fontFamily:"inherit",padding:0}}>
-            <span style={{fontSize:20,flexShrink:0}}>??</span>
-            <div style={{flex:1}}>
-              <div style={{fontSize:12,fontWeight:800,color:color,marginBottom:showHook?4:0}}>Memory Hook {showHook?"":"ó tap to reveal!"}</div>
-              {showHook&&<div style={{fontSize:13,color:"#374151",lineHeight:1.5}}>{word.hook}</div>}
-            </div>
-          </button>
-          {showHook&&(
-            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,paddingTop:10,borderTop:`1px solid ${color}20`}}>
-              <button onClick={e=>{e.stopPropagation();speakEn(word.hook);}} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",borderRadius:14,background:color,border:"none",fontSize:13,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
-                <span style={{fontSize:16}}>??</span><span>Hear the hook!</span>
-              </button>
-              <span style={{fontSize:12,color:"#6B7280"}}>Tap to listen!</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Card */}
-      <div onClick={()=>setFlipped(f=>!f)} style={{width:"100%",minHeight:220,borderRadius:24,background:flipped?color:"white",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:"20px 24px",transition:"background .25s",gap:10,position:"relative",userSelect:"none"}}>
-        <span style={{fontSize:68,lineHeight:1}}>{word.emoji}</span>
-        <span style={{fontSize:28,textAlign:"center",color:flipped?"white":"#1F2937",lineHeight:1.2,...DS}}>
-          {flipped?word.en:word.es}
-        </span>
-        <span style={{fontSize:12,color:flipped?"rgba(255,255,255,.6)":"#9CA3AF"}}>
-          {flipped?"Tap for Spanish":"Tap for English"}
-        </span>
-        {!flipped&&<div style={{position:"absolute",top:12,right:12}}><SpeakEsBtn text={word.es} color={color} size={40}/></div>}
-        {flipped&&<div style={{position:"absolute",top:12,right:12}}><SpeakEnIconBtn text={word.en} size={40}/></div>}
-      </div>
-
-      {!flipped&&<div style={{fontSize:12,color:"#9CA3AF",textAlign:"center"}}>Tap ?? to hear it ∑ Tap ?? for a memory trick ∑ Tap card to flip</div>}
-
-      <div style={{display:"flex",gap:10,width:"100%"}}>
-        <ActionBtn onClick={()=>navigate(-1,false)} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>? Back</ActionBtn>
-        <ActionBtn onClick={()=>navigate(1,false)}  bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>Skip</ActionBtn>
-        <ActionBtn onClick={()=>navigate(1,true)}   bg={color}                   style={{flex:1.4}}>Got it! ?</ActionBtn>
-      </div>
-    </div>
-  );
-}
-
-// -- QUIZ ----------------------------------------------------------------------
-function QuizMode({words,color,onEarn,onStat,allWords}){
-  const queue=useRef(shuffle(words));
-  const[idx,setIdx]=useState(0);
-  const[opts,setOpts]=useState([]);
-  const[selected,setSelected]=useState(null);
-  const[score,setScore]=useState(0);
-  const[total,setTotal]=useState(0);
-  const word=queue.current[idx%queue.current.length];
-
-  useEffect(()=>{
-    if(!word)return;
-    const wrong=shuffle(allWords.filter(w=>w.en!==word.en)).slice(0,3);
-    setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
-  },[idx]);
-
-  const pick=opt=>{
-    if(selected)return;setSelected(opt);setTotal(t=>t+1);
-    if(opt.en===word.en){setScore(s=>s+1);onEarn(2);onStat("quiz");}
-    setTimeout(()=>setIdx(i=>i+1),1400);
-  };
-
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>? {score} right &nbsp;ï&nbsp; {total} answered</div>
-      <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:72}}>{word.emoji}</div>
-        <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
-        <div style={{display:"flex",justifyContent:"center",marginTop:12,gap:8,alignItems:"center"}}>
-          <SpeakEsBtn text={word.es} color={color} size={44}/>
-          <span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear it again</span>
-        </div>
-        <div style={{fontSize:13,color:"#9CA3AF",marginTop:8,fontWeight:600}}>Tap ?? on each answer to hear it ó then choose!</div>
-      </div>
-      <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%"}}>
-        {opts.map((opt,i)=>{
-          const isC=opt.en===word.en,isCh=selected?.en===opt.en;
-          let bg="white",border="#E5E7EB",tc="#1F2937";
-          if(selected){if(isC){bg="#D1FAE5";border="#10B981";}else if(isCh){bg="#FEE2E2";border="#EF4444";}}
-          return(
-            <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderRadius:16,background:bg,border:`2px solid ${border}`,transition:"all .2s"}}>
-              <button onClick={()=>pick(opt)} style={{flex:1,background:"none",border:"none",textAlign:"left",fontSize:16,fontWeight:700,cursor:selected?"default":"pointer",color:tc,fontFamily:"inherit",padding:0,lineHeight:1.3}}>{opt.en}</button>
-              <SpeakEnBtn text={opt.en} color={selected&&isC?"#10B981":selected&&isCh?"#EF4444":color}/>
-            </div>
-          );
-        })}
-      </div>
-      {selected&&<div style={{fontSize:13,color:selected.en===word.en?"#10B981":"#EF4444",fontWeight:800,textAlign:"center"}}>{selected.en===word.en?"? °Correcto!":`? It was "${word.en}"`}</div>}
-    </div>
-  );
-}
-
-// -- MATCH ---------------------------------------------------------------------
-function MatchMode({words,color,onEarn,onStat}){
-  const mk=()=>{const s=shuffle(words).slice(0,4);return shuffle([...s.map((w,i)=>({id:`e${i}`,text:w.es,lang:"es",pid:i,emoji:w.emoji})),...s.map((w,i)=>({id:`n${i}`,text:w.en,lang:"en",pid:i}))]);};
-  const[cards,setCards]=useState(mk);
-  const[sel,setSel]=useState([]);
-  const[matched,setMatched]=useState(new Set());
-  const[wrong,setWrong]=useState(new Set());
-  const[pairs,setPairs]=useState(0);
-  const total=cards.length/2;
-  const reset=()=>{setCards(mk());setSel([]);setMatched(new Set());setWrong(new Set());setPairs(0);};
-  const tap=card=>{
-    if(matched.has(card.id)||wrong.has(card.id))return;
-    if(sel.length===0){setSel([card]);if(card.lang==="es")speakEs(card.text);else speakEn(card.text);return;}
-    if(sel[0].id===card.id){setSel([]);return;}
-    const[a,b]=[sel[0],card];
-    if(a.pid===b.pid&&a.lang!==b.lang){setMatched(p=>new Set([...p,a.id,b.id]));setSel([]);const np=pairs+1;setPairs(np);onEarn(3);if(np===total)onStat("match");}
-    else{setWrong(new Set([a.id,b.id]));setTimeout(()=>{setWrong(new Set());setSel([]);},650);}
-  };
-  if(pairs===total)return(<div style={{textAlign:"center",padding:32}}><div style={{fontSize:72}}>??</div><div style={{fontSize:26,color,...DS,margin:"8px 0"}}>°Perfecto!</div><ActionBtn onClick={reset} bg={color} style={{marginTop:8}}>Play Again ??</ActionBtn></div>);
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:14}}>
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>Match Spanish ?? English &nbsp;ï&nbsp; {pairs}/{total}</div>
-      <div style={{fontSize:12,color:"#9CA3AF",textAlign:"center"}}>Tapping any card reads it aloud!</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,width:"100%"}}>
-        {cards.map(card=>{
-          const isSel=sel.some(s=>s.id===card.id),isM=matched.has(card.id),isW=wrong.has(card.id);
-          return(
-            <button key={card.id} onClick={()=>tap(card)} style={{padding:"14px 10px",borderRadius:16,minHeight:80,background:isM?`${color}15`:isW?"#FEE2E2":isSel?`${color}28`:"white",border:`2.5px solid ${isM?color:isW?"#EF4444":isSel?color:"#E5E7EB"}`,fontSize:13,fontWeight:700,cursor:isM?"default":"pointer",transition:"all .18s",color:isM?"#9CA3AF":"#1F2937",textAlign:"center",fontFamily:"inherit",opacity:isM?.5:1,transform:isSel?"scale(.97)":"scale(1)"}}>
-              {card.lang==="es"?<React.Fragment><div style={{fontSize:26}}>{card.emoji}</div><div style={{fontSize:14,...DS}}>{card.text}</div></React.Fragment>:<div style={{fontSize:14,lineHeight:1.3}}>{card.text}</div>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// -- SPEAK ---------------------------------------------------------------------
-function SpeakMode({words,color,onEarn,onStat}){
-  const queue=useRef(shuffle(words));
-  const[idx,setIdx]=useState(0);
-  const[phase,setPhase]=useState("idle");
-  const[transcript,setTranscript]=useState("");
-  const[pct,setPct]=useState(null);
-  const[ss,setSs]=useState(0);
-  const recRef=useRef(null);
-  const word=queue.current[idx%queue.current.length];
-  const start=useCallback(()=>{
-    if(!SRClass||phase==="listening")return;
-    setPhase("listening");setTranscript("");setPct(null);
-    const rec=new SRClass();
-    rec.lang="es-MX";rec.continuous=false;rec.interimResults=false;rec.maxAlternatives=5;
-    recRef.current=rec;
-    rec.onresult=e=>{
-      const alts=Array.from(e.results[0]);
-      const best=alts.reduce((b,a)=>{const s=scoreMatch(a.transcript,word.es);return s>b.s?{s,t:a.transcript}:b},{s:0,t:alts[0]?.transcript||""});
-      setTranscript(alts.slice(0,2).map(a=>a.transcript).join(" / "));setPct(best.s);onStat("speak");
-      if(best.s>=55){setSs(n=>n+1);onEarn(2);}else setSs(0);setPhase("result");
-    };
-    rec.onerror=()=>{setTranscript("Couldn't hear you ó try again!");setPct(0);setPhase("result");};
-    rec.start();
-  },[word,phase,onEarn,onStat]);
-  const next=()=>{setPhase("idle");setTranscript("");setPct(null);setIdx(i=>i+1);};
-  const rb=pct===null?null:pct===100?{icon:"??",msg:"°Perfecto!",clr:"#10B981"}:pct>=75?{icon:"??",msg:"°Muy bien!",clr:"#10B981"}:pct>=50?{icon:"??",msg:"°Buen intento!",clr:"#F59E0B"}:{icon:"??",msg:"Try again!",clr:"#EF4444"};
-  return(
-    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-      {!SRClass&&<div style={{background:"#FEF3C7",border:"2px solid #F59E0B",borderRadius:16,padding:"10px 14px",fontSize:13,color:"#92400E",width:"100%",fontWeight:600}}>?? Pronunciation mode needs Chrome or Edge.</div>}
-      <div style={{fontSize:12,color:"#9CA3AF",fontWeight:700}}>?? Say it in Spanish! &nbsp;ï&nbsp; ?? {ss} streak</div>
-      <div style={{width:"100%",background:"white",borderRadius:24,padding:"22px 20px",border:`3px solid ${color}`,boxShadow:`0 8px 28px ${color}30`,textAlign:"center"}}>
-        <div style={{fontSize:72}}>{word.emoji}</div>
-        <div style={{fontSize:26,color:"#1F2937",lineHeight:1.2,marginTop:6,...DS}}>{word.es}</div>
-        <div style={{fontSize:15,color:"#6B7280",marginTop:4}}>{word.en}</div>
-        <div style={{display:"flex",justifyContent:"center",gap:10,marginTop:14}}>
-          <SpeakEsBtn text={word.es} color={color} showLabel={true}/>
-          <SpeakEnPill text={word.en} color={color}/>
-        </div>
-      </div>
-      {SRClass&&<React.Fragment>
-        <button onClick={phase==="listening"?()=>{recRef.current?.stop();setPhase("idle");}:start} style={{width:110,height:110,borderRadius:"50%",background:phase==="listening"?"linear-gradient(135deg,#EF4444,#DC2626)":`linear-gradient(135deg,${color},${color}cc)`,border:"none",fontSize:48,cursor:"pointer",boxShadow:phase==="listening"?"0 0 0 10px #EF444420,0 8px 28px #EF444450":`0 8px 28px ${color}50`,transition:"all .22s",display:"flex",alignItems:"center",justifyContent:"center"}}>
-          {phase==="listening"?"?":"??"}
-        </button>
-        <div style={{fontSize:13,color:"#9CA3AF",textAlign:"center"}}>{phase==="idle"?"Tap the mic and say it in Spanish!":phase==="listening"?"??? Listening ó speak now!":""}</div>
-      </React.Fragment>}
-      {phase==="result"&&rb&&<div style={{width:"100%",borderRadius:20,padding:18,background:`${rb.clr}12`,border:`2px solid ${rb.clr}`,textAlign:"center"}}>
-        <div style={{fontSize:36}}>{rb.icon}</div>
-        <div style={{fontSize:20,color:rb.clr,...DS}}>{rb.msg}</div>
-        {transcript&&<div style={{marginTop:6,fontSize:12,color:"#6B7280"}}>You said: <em>"{transcript}"</em></div>}
-        <div style={{marginTop:4,fontSize:12,fontWeight:700,color:"#9CA3AF"}}>Match: {pct}%</div>
-      </div>}
-      {phase==="result"&&<div style={{display:"flex",gap:10,width:"100%"}}>
-        {pct<55&&<ActionBtn onClick={()=>setPhase("idle")} bg="#F9FAFB" color="#6B7280" style={{flex:1,border:"2px solid #E5E7EB"}}>?? Again</ActionBtn>}
-        <ActionBtn onClick={next} bg={color} style={{flex:1}}>Next ?</ActionBtn>
-      </div>}
-    </div>
-  );
-}
-
-// -- STORY LIST SCREEN ---------------------------------------------------------
-function StoryListScreen({onBack,onStory,profile}){
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{fontSize:20,color:"white",...DS}}>?? Stories</div>
-      </div>
-      <div style={{padding:"20px 16px",display:"flex",flexDirection:"column",gap:4}}>
-        <div style={{fontSize:13,color:"rgba(255,255,255,.6)",marginBottom:12,lineHeight:1.5}}>
-          Real conversations from Cuenca! Tap any line to hear it spoken. Use the English hint if you need help. ??
-        </div>
-        {STORIES.map(story=>(
-          <button key={story.id} onClick={()=>onStory(story)} style={{width:"100%",padding:"18px",borderRadius:20,background:"rgba(255,255,255,.08)",border:`2px solid ${story.color}40`,cursor:"pointer",display:"flex",alignItems:"center",gap:14,textAlign:"left",marginBottom:10}}>
-            <div style={{width:56,height:56,borderRadius:16,background:`${story.color}30`,border:`2px solid ${story.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{story.emoji}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:17,color:"white",...DS}}>{story.title}</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:3}}>{story.titleEn} &nbsp;ï&nbsp; {story.panels.length} lines</div>
-            </div>
-            <div style={{fontSize:22,color:story.color}}>õ</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// -- STORY SCREEN ó full comic strip with per-line audio -----------------------
-function StoryScreen({story,onBack,onComplete}){
-  const[idx,setIdx]=useState(0);
-  const[showEn,setShowEn]=useState(false);
-  const[autoPlayed,setAutoPlayed]=useState(false);
-  const panels=story.panels;
-  const panel=panels[idx];
-  const isScene=!!panel.scene;
-  const isLast=idx===panels.length-1;
-
-  // Auto-play Spanish when panel changes
-  useEffect(()=>{
-    setShowEn(false);setAutoPlayed(false);
-    const timer=setTimeout(()=>{
-      if(isScene){speakEs(panel.sceneEs);}else{speakEs(panel.es);}
-      setAutoPlayed(true);
-    },300);
-    return()=>clearTimeout(timer);
-  },[idx]);
-
-  const next=()=>{
-    if(isLast){onComplete();}else{setIdx(i=>i+1);}
-  };
-  const prev=()=>{ if(idx>0)setIdx(i=>i-1); };
-
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      {/* Header */}
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{flex:1}}>
-          <div style={{fontSize:17,color:"white",...DS}}>{story.emoji} {story.title}</div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>Line {idx+1} of {panels.length}</div>
-        </div>
-        <div style={{fontSize:13,color:story.color,fontWeight:900,background:`${story.color}20`,padding:"6px 12px",borderRadius:20}}>{idx+1}/{panels.length}</div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{width:"100%",height:5,background:"rgba(255,255,255,.1)"}}>
-        <div style={{height:"100%",background:story.color,width:`${((idx+1)/panels.length)*100}%`,transition:"width .4s"}}/>
-      </div>
-
-      <div style={{flex:1,display:"flex",flexDirection:"column",padding:"20px 16px",gap:14}}>
-        {isScene?(
-          /* Scene description panel */
-          <div style={{background:`${story.color}15`,border:`2px solid ${story.color}40`,borderRadius:24,padding:"22px 20px",textAlign:"center"}}>
-            <div style={{fontSize:48,marginBottom:8}}>??</div>
-            <div style={{fontSize:15,color:"rgba(255,255,255,.85)",lineHeight:1.6,fontStyle:"italic"}}>
-              {panel.scene}
-            </div>
-            <div style={{display:"flex",justifyContent:"center",marginTop:14,gap:10}}>
-              <button onClick={()=>speakEs(panel.sceneEs)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 16px",borderRadius:20,background:story.color,border:"none",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white"}}>
-                <span>??</span><span>Hear in Spanish</span>
-              </button>
-            </div>
-          </div>
-        ):(
-          /* Dialogue panel */
-          <div style={{background:"white",borderRadius:24,padding:"22px 20px",boxShadow:`0 8px 32px ${story.color}30`,border:`3px solid ${story.color}`}}>
-            {/* Speaker */}
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-              <div style={{width:44,height:44,borderRadius:"50%",background:`${story.color}20`,border:`2px solid ${story.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>{panel.avatar}</div>
-              <div style={{fontSize:15,fontWeight:800,color:story.color}}>{panel.speaker}</div>
-            </div>
-
-            {/* Speech bubble */}
-            <div style={{background:`${story.color}08`,borderRadius:16,padding:"16px",marginBottom:14,position:"relative"}}>
-              <div style={{fontSize:20,color:"#1F2937",lineHeight:1.5,fontWeight:700}}>{panel.es}</div>
-            </div>
-
-            {/* Audio buttons */}
-            <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-              <button onClick={()=>speakEs(panel.es)} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 16px",borderRadius:20,background:story.color,border:"none",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:"white",flex:1}}>
-                <span style={{fontSize:18}}>??</span><span>Hear it!</span>
-              </button>
-              <button onClick={()=>setShowEn(s=>!s)} style={{display:"flex",alignItems:"center",gap:6,padding:"10px 16px",borderRadius:20,background:showEn?"#6B7280":"rgba(107,114,128,.15)",border:"2px solid #6B7280",fontSize:14,cursor:"pointer",fontFamily:"inherit",fontWeight:700,color:showEn?"white":"#374151",flex:1}}>
-                <span>{showEn?"???":"???"}</span><span>{showEn?"Hide English":"Show English"}</span>
-              </button>
-            </div>
-
-            {showEn&&(
-              <div style={{marginTop:12,padding:"12px 14px",background:"#F9FAFB",borderRadius:12,border:"1.5px solid #E5E7EB",display:"flex",alignItems:"center",gap:10}}>
-                <div style={{flex:1,fontSize:14,color:"#374151",fontStyle:"italic"}}>{panel.en}</div>
-                <SpeakEnBtn text={panel.en} color="#6B7280"/>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div style={{display:"flex",gap:10,marginTop:"auto"}}>
-          <ActionBtn onClick={prev} bg="rgba(255,255,255,.1)" color="rgba(255,255,255,.7)" style={{flex:1,opacity:idx===0?.4:1}}>? Back</ActionBtn>
-          <ActionBtn onClick={next} bg={story.color} style={{flex:1.6,padding:"14px 20px",fontSize:16}}>
-            {isLast?"Finish Story! ??":"Next ?"}
-          </ActionBtn>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// -- FAMILY SETUP SCREEN (first launch only) ------------------------------------
-function FamilySetupScreen({ onDone }) {
-  const [mode, setMode] = useState(null);
-  const [familyName, setFamilyName] = useState('');
-  const [code, setCode] = useState('');
+// ============================================================
+// UsernameLogin / Opening / Family / Profiles / Avatar pickers
+// ============================================================
+function UsernameLoginScreen({ onFound, onBack }) {
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [createdCode, setCreatedCode] = useState('');
-
-  const handleCreate = async () => {
-    if (!familyName.trim()) return;
+  const [error, setError] = useState("");
+  const findPlayer = async () => {
+    if(!username.trim()) return;
     setLoading(true);
-    const family = await createFamily(familyName.trim());
-    if (family) { setCreatedCode(family.code); }
-    setLoading(false);
+    const { data } = await sb.from("players").select("*, families(*)").eq("username", username.toLowerCase().trim()).single();
+    if(!data){ setError("Username not found. Check spelling and try again!"); setLoading(false); return; }
+    onFound(data);
   };
-
-  const handleJoin = async () => {
-    if (code.length < 6) return;
-    setLoading(true); setError('');
-    const family = await joinFamily(code);
-    if (family) { onDone(); }
-    else { setError("Code not found ó double-check spelling and try again!"); setLoading(false); }
-  };
-
-  if (createdCode) return (
-    <div style={{ minHeight:"100vh", background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 20px" }}>
-      <div style={{ textAlign:"center", background:"rgba(255,255,255,.1)", backdropFilter:"blur(12px)", borderRadius:28, padding:36, width:"100%", maxWidth:380 }}>
-        <div style={{ fontSize:56 }}>??</div>
-        <div style={{ fontSize:26, color:"white", marginTop:8, ...DS }}>Family Created!</div>
-        <div style={{ fontSize:14, color:"rgba(255,255,255,.7)", marginTop:8, marginBottom:20 }}>
-          Your family code is below. Write it down or take a screenshot ó share it with anyone you want to join your leaderboard!
-        </div>
-        <div style={{ background:"#FCD34D", borderRadius:20, padding:"16px 24px", marginBottom:24 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#78350F", letterSpacing:1, marginBottom:4 }}>YOUR FAMILY CODE</div>
-          <div style={{ fontSize:48, fontWeight:900, color:"#1F2937", letterSpacing:8 }}>{createdCode}</div>
-        </div>
-        <ActionBtn onClick={onDone} bg="#10B981" style={{ width:"100%", padding:16, fontSize:16 }}>
-          Let's Start Playing! ??
-        </ActionBtn>
-      </div>
-    </div>
-  );
-
   return (
-    <div style={{ minHeight:"100vh", background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 20px" }}>
-      <div style={{ paddingBottom:32, textAlign:"center" }}>
-        <div style={{ fontSize:56 }}>??</div>
-        <div style={{ fontSize:32, color:"white", lineHeight:1, marginTop:8, ...DS }}>Wander Lingo</div>
-        <div style={{ fontSize:14, color:"rgba(255,255,255,.6)", marginTop:8 }}>
-          First, let's set up your family group!
-        </div>
-      </div>
-
-      {!mode && (
-        <div style={{ width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
-          <button onClick={() => setMode('create')} style={{ padding:"20px", borderRadius:20, background:"#2563EB", border:"none", color:"white", fontSize:17, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12 }}>
-            <span style={{ fontSize:28 }}>?</span>
-            <div style={{ textAlign:"left" }}>
-              <div>Create a New Family</div>
-              <div style={{ fontSize:12, fontWeight:500, opacity:.8, marginTop:2 }}>First time? Start here</div>
-            </div>
-          </button>
-          <button onClick={() => setMode('join')} style={{ padding:"20px", borderRadius:20, background:"rgba(255,255,255,.1)", border:"2px solid rgba(255,255,255,.3)", color:"white", fontSize:17, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:12 }}>
-            <span style={{ fontSize:28 }}>??</span>
-            <div style={{ textAlign:"left" }}>
-              <div>Join with a Family Code</div>
-              <div style={{ fontSize:12, fontWeight:500, opacity:.8, marginTop:2 }}>Someone already made one</div>
-            </div>
-          </button>
-        </div>
-      )}
-
-      {mode === 'create' && (
-        <div style={{ width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,.7)", textAlign:"center", lineHeight:1.5 }}>
-            Give your family a name. You'll get a code to share with anyone you want on your leaderboard!
-          </div>
-          <input value={familyName} onChange={e => setFamilyName(e.target.value)}
-            placeholder="e.g. The Wanderers" maxLength={30}
-            style={{ padding:"14px 16px", borderRadius:16, border:"2px solid rgba(255,255,255,.2)", background:"rgba(255,255,255,.1)", color:"white", fontSize:18, fontFamily:"inherit", fontWeight:700 }} />
-          <ActionBtn onClick={handleCreate} bg={familyName.trim() ? "#10B981" : "#374151"} style={{ padding:16, fontSize:16, opacity: familyName.trim() ? 1 : 0.5 }}>
-            {loading ? "Creating..." : "Create Family! ??"}
-          </ActionBtn>
-          <button onClick={() => setMode(null)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.5)", cursor:"pointer", fontFamily:"inherit", fontSize:14 }}>? Back</button>
-        </div>
-      )}
-
-      {mode === 'join' && (
-        <div style={{ width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
-          <div style={{ fontSize:14, color:"rgba(255,255,255,.7)", textAlign:"center", lineHeight:1.5 }}>
-            Enter the 6-letter code from the person who created your family
-          </div>
-          <input value={code} onChange={e => setCode(e.target.value.toUpperCase())}
-            placeholder="ABCDEF" maxLength={6}
-            style={{ padding:"14px 16px", borderRadius:16, border:"2px solid rgba(255,255,255,.2)", background:"rgba(255,255,255,.1)", color:"white", fontSize:36, fontFamily:"inherit", fontWeight:900, textAlign:"center", letterSpacing:8 }} />
-          {error && <div style={{ color:"#FCA5A5", fontSize:13, textAlign:"center" }}>{error}</div>}
-          <ActionBtn onClick={handleJoin} bg={code.length >= 6 ? "#10B981" : "#374151"} style={{ padding:16, fontSize:16, opacity: code.length >= 6 ? 1 : 0.5 }}>
-            {loading ? "Joining..." : "Join Family! ??"}
-          </ActionBtn>
-          <button onClick={() => setMode(null)} style={{ background:"none", border:"none", color:"rgba(255,255,255,.5)", cursor:"pointer", fontFamily:"inherit", fontSize:14 }}>? Back</button>
-        </div>
-      )}
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      {FONT_LINK}
+      <button onClick={onBack} style={{position:"absolute",top:20,left:20,background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 14px",color:"white",cursor:"pointer",fontSize:14}}>‚Üê Back</button>
+      <div style={{fontSize:36,marginBottom:12}}>üîë</div>
+      <div style={{fontSize:24,color:"white",...DS,marginBottom:4}}>Welcome Back!</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:24,textAlign:"center"}}>Enter your username to pick up where you left off ‚Äî on any device!</div>
+      <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase())} placeholder="your username..." style={{width:"100%",maxWidth:300,padding:"16px",borderRadius:16,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"white",fontSize:18,fontFamily:"inherit",fontWeight:700,textAlign:"center",outline:"none",marginBottom:8}}/>
+      {error && <div style={{color:"#FCA5A5",fontSize:13,marginBottom:8,textAlign:"center"}}>{error}</div>}
+      <button onClick={findPlayer} disabled={!username.trim()||loading} style={{width:"100%",maxWidth:300,padding:16,borderRadius:18,background:username.trim()?"linear-gradient(135deg,#F59E0B,#F97316)":"rgba(255,255,255,0.2)",border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>{loading?"Finding you...":"Find My Account üó∫Ô∏è"}</button>
     </div>
   );
 }
 
-// -- PROFILE SELECT ------------------------------------------------------------
-function ProfileSelectScreen({profiles,onSelect,onCreate}){
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:"0 20px 40px"}}>
-      <div style={{paddingTop:52,textAlign:"center",marginBottom:32}}>
-        <div style={{fontSize:56}}>??</div>
-        <div style={{fontSize:34,color:"white",lineHeight:1,marginTop:8,...DS}}>Wander Lingo</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,.6)",marginTop:6}}>Who's exploring today?</div>
+function OpeningScreen({ onEnter, onReturning }) {
+  const [show, setShow] = useState(false);
+  useEffect(()=>{ setTimeout(()=>setShow(true),300); },[]);
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A 0%,#2D1B69 40%,#1A3A6B 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflow:"hidden",position:"relative"}}>
+      {[...Array(20)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${Math.random()*100}%`,top:`${Math.random()*100}%`,width:i%3===0?4:2,height:i%3===0?4:2,borderRadius:"50%",background:"white",opacity:0.3+Math.random()*0.5,animation:`twinkle ${2+Math.random()*3}s ease-in-out infinite`,animationDelay:`${Math.random()*3}s`}}/>))}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
+        @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.8}}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes floatR{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}`}</style>
+      <div style={{display:"flex",alignItems:"flex-end",gap:20,marginBottom:10,opacity:show?1:0,transition:"opacity 0.8s ease"}}>
+        <div style={{animation:"float 3s ease-in-out infinite",animationDelay:"0.2s"}}><img src="/characters/grayson.png" style={{height:160,filter:"drop-shadow(0 8px 24px rgba(124,58,237,0.5))"}} alt="Grayson" onError={e=>{e.target.style.display='none';}}/></div>
+        <div style={{animation:"floatR 3s ease-in-out infinite",animationDelay:"0.8s"}}><img src="/characters/peyton.png" style={{height:140,filter:"drop-shadow(0 8px 24px rgba(37,99,235,0.5))"}} alt="Peyton" onError={e=>{e.target.style.display='none';}}/></div>
       </div>
-      <div style={{width:"100%",maxWidth:400,display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{textAlign:"center",marginBottom:8,opacity:show?1:0,transition:"opacity 1s ease 0.4s",animation:show?"fadeUp 0.8s ease 0.4s both":"none"}}>
+        <div style={{fontSize:13,letterSpacing:4,color:"#A78BFA",fontWeight:700,marginBottom:6}}>BIENVENIDOS A</div>
+        <div style={{fontSize:42,color:"white",lineHeight:1.1,marginBottom:4,...DS,textShadow:"0 4px 20px rgba(124,58,237,0.6)"}}>Wander</div>
+        <div style={{fontSize:42,color:T.goldL,lineHeight:1.1,...DS,textShadow:"0 4px 20px rgba(245,158,11,0.5)"}}>Lingo</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginTop:8,fontStyle:"italic"}}>Learn Spanish. See the world.</div>
+      </div>
+      <div style={{display:"flex",gap:8,margin:"16px 0",alignItems:"center"}}>
+        {["#E8445A","#F97316","#F59E0B","#10B981","#3B82F6","#7C3AED"].map((c,i)=>(<div key={i} style={{width:10,height:10,borderRadius:"50%",background:c,opacity:0.7,animation:`pulse ${1.5+i*0.2}s ease-in-out infinite`,animationDelay:`${i*0.15}s`}}/>))}
+      </div>
+      <button onClick={onEnter} style={{background:`linear-gradient(135deg,${T.gold},${T.orange})`,border:"none",borderRadius:24,padding:"16px 48px",fontSize:20,color:"white",cursor:"pointer",...DS,boxShadow:"0 8px 32px rgba(245,158,11,0.5)",animation:"pulse 2s ease-in-out infinite",opacity:show?1:0,transition:"opacity 1s ease 0.8s",marginTop:8}}>¬°V√°monos! üó∫Ô∏è</button>
+      <button onClick={onReturning} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.4)",fontSize:13,cursor:"pointer",marginTop:8,textDecoration:"underline",opacity:show?1:0,transition:"opacity 1s ease 1s"}}>Returning explorer? Log in with username</button>
+      <div style={{fontSize:11,color:"rgba(255,255,255,0.3)",marginTop:8}}>25 lands ‚Ä¢ 15 games ‚Ä¢ 1 incredible adventure</div>
+    </div>
+  );
+}
+
+function FamilySetupScreen({ onDone }) {
+  const [mode, setMode] = useState("choose");
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const createFamily = async () => {
+    if(!input.trim()) return;
+    setLoading(true);
+    const code = Math.random().toString(36).substring(2,8).toUpperCase();
+    const { data, error: err } = await sb.from("families").insert({ name: input.trim(), code }).select().single();
+    if(err){ setError("Error: " + err.message); setLoading(false); return; }
+    onDone(data.id, data.code, data.name);
+  };
+  const joinFamily = async () => {
+    if(input.length < 6) return;
+    setLoading(true);
+    const { data, error: err } = await sb.from("families").select().eq("code", input.toUpperCase()).single();
+    if(err||!data){ setError("Family code not found. Check and try again!"); setLoading(false); return; }
+    onDone(data.id, data.code, data.name);
+  };
+  if(mode === "choose") return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      {FONT_LINK}
+      <div style={{fontSize:48,marginBottom:8}}>üåç</div>
+      <div style={{fontSize:28,color:"white",...DS,marginBottom:4}}>Start Your Adventure</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.5)",marginBottom:32,textAlign:"center"}}>Create a family group or join one that already exists</div>
+      <div style={{display:"flex",flexDirection:"column",gap:12,width:"100%",maxWidth:320}}>
+        <button onClick={()=>setMode("create")} style={{padding:"18px",borderRadius:20,background:`linear-gradient(135deg,${T.purple},${T.blue})`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>üè° Create My Family</button>
+        <button onClick={()=>setMode("join")} style={{padding:"18px",borderRadius:20,background:"rgba(255,255,255,0.1)",border:"2px solid rgba(255,255,255,0.2)",color:"white",fontSize:17,cursor:"pointer",...DS}}>üîë Join a Family</button>
+      </div>
+    </div>
+  );
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      {FONT_LINK}
+      <button onClick={()=>{setMode("choose");setInput("");setError("");}} style={{position:"absolute",top:20,left:20,background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 14px",color:"white",cursor:"pointer",fontSize:14}}>‚Üê Back</button>
+      <div style={{fontSize:36,marginBottom:12}}>{mode==="create"?"üè°":"üîë"}</div>
+      <div style={{fontSize:24,color:"white",...DS,marginBottom:4}}>{mode==="create"?"Name Your Family":"Enter Family Code"}</div>
+      <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:24,textAlign:"center"}}>{mode==="create"?"e.g. The Quintanas, The Wanderers":"Ask your family for their 6-letter code"}</div>
+      <input value={input} onChange={e=>setInput(e.target.value)} placeholder={mode==="create"?"Family name...":"XXXXXX"} maxLength={mode==="create"?30:6} style={{width:"100%",maxWidth:300,padding:"16px",borderRadius:16,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"white",fontSize:18,fontFamily:"inherit",fontWeight:700,textAlign:"center",outline:"none",marginBottom:8}}/>
+      {error && <div style={{color:"#FCA5A5",fontSize:13,marginBottom:8,textAlign:"center"}}>{error}</div>}
+      <button onClick={mode==="create"?createFamily:joinFamily} disabled={loading||(mode==="create"?!input.trim():input.length<6)} style={{width:"100%",maxWidth:300,padding:16,borderRadius:18,background:(mode==="create"?input.trim():input.length>=6)?`linear-gradient(135deg,${T.gold},${T.orange})`:"rgba(255,255,255,0.2)",border:"none",color:"white",fontSize:17,cursor:"pointer",...DS,opacity:loading?0.7:1}}>{loading?"...":mode==="create"?"Create Family üéâ":"Join Family üöÄ"}</button>
+    </div>
+  );
+}
+
+const AVATARS = ["ü¶Å","üêØ","ü¶ä","üê∫","ü¶Ö","üê¨","ü¶ã","üåü","üî•","‚ö°","üåà","üéØ"];
+const COLORS  = ["#E8445A","#F97316","#F59E0B","#10B981","#3B82F6","#7C3AED","#EC4899","#14B8A6"];
+
+function ProfileSelectScreen({ profiles, familyName, familyCode, onSelect, onCreate }) {
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",padding:20}}>
+      {FONT_LINK}
+      <div style={{textAlign:"center",marginBottom:24,marginTop:20}}>
+        <div style={{fontSize:13,color:T.goldL,letterSpacing:3,fontWeight:700,marginBottom:4}}>{familyName?.toUpperCase()}</div>
+        <div style={{fontSize:24,color:"white",...DS}}>Who's adventuring today?</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.3)",marginTop:4}}>Family code: {familyCode}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12,maxWidth:380,margin:"0 auto",width:"100%"}}>
         {profiles.map(p=>(
-          <button key={p.id} onClick={()=>onSelect(p)} style={{width:"100%",padding:"16px 20px",borderRadius:20,background:"rgba(255,255,255,.1)",border:`2.5px solid ${p.color}`,cursor:"pointer",display:"flex",alignItems:"center",gap:16,textAlign:"left",backdropFilter:"blur(8px)"}}>
-            <div style={{width:56,height:56,borderRadius:"50%",background:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{p.avatar}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:20,color:"white",...DS}}>{p.name}</div>
-              <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>? {p.stars}</span>
-                {p.streak>0&&<span style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>?? {p.streak}d</span>}
-                <span style={{fontSize:12,color:"rgba(255,255,255,.7)"}}>?? {(p.badges||[]).length}</span>
-                <span style={{fontSize:11,background:"rgba(255,255,255,.15)",borderRadius:8,padding:"1px 6px",color:"white",fontWeight:700}}>Level {p.level||1}</span>
-              </div>
-            </div>
-            <div style={{fontSize:24,color:p.color}}>õ</div>
+          <button key={p.id} onClick={()=>onSelect(p)} style={{padding:"16px 20px",borderRadius:20,background:"rgba(255,255,255,0.08)",border:`2px solid ${p.color||T.purple}40`,cursor:"pointer",display:"flex",alignItems:"center",gap:14,textAlign:"left"}}>
+            <div style={{width:52,height:52,borderRadius:"50%",background:p.color||T.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{p.avatar||"üåü"}</div>
+            <div><div style={{fontSize:18,color:"white",...DS}}>{p.name}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:2}}>‚≠ê {p.stars||0} stars ¬∑ Land {p.level||1}</div></div>
+            <div style={{marginLeft:"auto",fontSize:22,color:"rgba(255,255,255,0.3)"}}>‚Ä∫</div>
           </button>
         ))}
-        <button onClick={onCreate} style={{width:"100%",padding:"16px 20px",borderRadius:20,background:"rgba(255,255,255,.06)",border:"2.5px dashed rgba(255,255,255,.3)",cursor:"pointer",color:"rgba(255,255,255,.7)",fontSize:16,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <span style={{fontSize:24}}>+</span> Add New Player
-        </button>
+        <button onClick={onCreate} style={{padding:"16px",borderRadius:20,background:"rgba(255,255,255,0.05)",border:"2px dashed rgba(255,255,255,0.2)",cursor:"pointer",color:"rgba(255,255,255,0.5)",fontSize:15,...DS}}>+ Add Explorer</button>
       </div>
     </div>
   );
 }
 
-// -- CREATE PROFILE ------------------------------------------------------------
-function CreateProfileScreen({onDone,onBack}){
-  const[name,setName]=useState("");
-  const[avatar,setAvatar]=useState(AVATARS[0]);
-  const[color,setColor]=useState(PCOLORS[0]);
-  const valid=name.trim().length>0;
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 20px 40px"}}>
-      <div style={{width:"100%",maxWidth:400}}>
-        <button onClick={onBack} style={{background:"none",border:"none",color:"rgba(255,255,255,.7)",fontSize:24,cursor:"pointer",marginBottom:16,fontFamily:"inherit"}}>? Back</button>
-        <div style={{textAlign:"center",marginBottom:28}}>
-          <div style={{width:80,height:80,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,margin:"0 auto 12px"}}>{avatar}</div>
-          <div style={{fontSize:22,color:"white",...DS}}>Create Your Explorer</div>
-        </div>
-        <div style={{marginBottom:20}}>
-          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>YOUR NAME</label>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your name..." maxLength={16} style={{width:"100%",padding:"14px 16px",borderRadius:16,border:"2px solid rgba(255,255,255,.2)",background:"rgba(255,255,255,.1)",color:"white",fontSize:18,fontFamily:"inherit",fontWeight:700}}/>
-        </div>
-        <div style={{marginBottom:20}}>
-          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>PICK YOUR EXPLORER</label>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:8}}>
-            {AVATARS.map(a=><button key={a} onClick={()=>setAvatar(a)} style={{aspectRatio:"1",borderRadius:12,background:avatar===a?color:"rgba(255,255,255,.1)",border:avatar===a?"2px solid white":"2px solid transparent",fontSize:22,cursor:"pointer"}}>{a}</button>)}
+function CreateProfileScreen({ onDone, onBack }) {
+  const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState(AVATARS[0]);
+  const [color, setColor] = useState(COLORS[0]);
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",padding:20}}>
+      {FONT_LINK}
+      <button onClick={onBack} style={{alignSelf:"flex-start",background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 14px",color:"white",cursor:"pointer",fontSize:14,marginBottom:20}}>‚Üê Back</button>
+      <div style={{textAlign:"center",marginBottom:24}}>
+        <div style={{width:80,height:80,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,margin:"0 auto 12px"}}>{avatar}</div>
+        <div style={{fontSize:22,color:"white",...DS}}>Create Your Explorer</div>
+      </div>
+      <div style={{maxWidth:340,margin:"0 auto",width:"100%",display:"flex",flexDirection:"column",gap:16}}>
+        <input value={name} onChange={e=>setName(e.target.value)} placeholder="Your name..." maxLength={20} style={{padding:"14px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"white",fontSize:17,fontFamily:"inherit",fontWeight:700,outline:"none"}}/>
+        <input value={username} onChange={e=>setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g,""))} placeholder="Choose a username (for login on any device)" maxLength={20} style={{padding:"14px 16px",borderRadius:14,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"white",fontSize:15,fontFamily:"inherit",fontWeight:700,outline:"none"}}/>
+        <div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:8,fontWeight:700}}>CHOOSE YOUR AVATAR</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+            {AVATARS.map(a=>(<button key={a} onClick={()=>setAvatar(a)} style={{width:44,height:44,borderRadius:12,background:avatar===a?color:"rgba(255,255,255,0.1)",border:avatar===a?`2px solid ${color}`:"2px solid transparent",fontSize:20,cursor:"pointer"}}>{a}</button>))}
           </div>
         </div>
-        <div style={{marginBottom:28}}>
-          <label style={{color:"rgba(255,255,255,.7)",fontSize:12,fontWeight:700,display:"block",marginBottom:8,letterSpacing:.5}}>PICK YOUR COLOR</label>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            {PCOLORS.map(c=><button key={c} onClick={()=>setColor(c)} style={{width:40,height:40,borderRadius:"50%",background:c,border:color===c?"3px solid white":"3px solid transparent",cursor:"pointer",transition:"all .15s"}}/>)}
+        <div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:8,fontWeight:700}}>CHOOSE YOUR COLOR</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            {COLORS.map(c=>(<button key={c} onClick={()=>setColor(c)} style={{width:36,height:36,borderRadius:"50%",background:c,border:color===c?"3px solid white":"3px solid transparent",cursor:"pointer"}}/>))}
           </div>
         </div>
-        <ActionBtn onClick={()=>valid&&onDone(name.trim(),avatar,color)} bg={valid?color:"#374151"} style={{width:"100%",padding:16,fontSize:18,opacity:valid?1:.5}}>Start Exploring! ???</ActionBtn>
+        <button onClick={()=>{ if(name.trim()) onDone(name.trim(),avatar,color,username.trim()); }} disabled={!name.trim()||loading} style={{padding:16,borderRadius:18,background:name.trim()?`linear-gradient(135deg,${T.gold},${T.orange})`:"rgba(255,255,255,0.2)",border:"none",color:"white",fontSize:17,cursor:"pointer",...DS,opacity:loading?0.7:1}}>{loading?"...":"Start Adventuring! üó∫Ô∏è"}</button>
       </div>
     </div>
   );
 }
 
-// -- HOME SCREEN ---------------------------------------------------------------
-function HomeScreen({profile,onLearn,onDaily,onBoard,onMyProfile,onSwitch,onLevelChange,onStories,dailyDone}){
-  const lv=profile.level||1;
-  const vocab=lv>=2?VOCAB_L2:VOCAB_L1;
-  const catKeys=Object.keys(vocab);
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"16px 18px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:48,height:48,borderRadius:"50%",background:profile.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}>{profile.avatar}</div>
+// ============================================================
+// AdventureMap, LandIntro, StudyHall, MyProfile
+// ============================================================
+function AdventureMap({ profile, onSelectLand, onStudyHall, onMyProfile }) {
+  const unlockedLand = profile.level || 1;
+  const lc = {
+    "Beginner":     { text:"#92400E" },
+    "Checkpoint":   { text:"#4C1D95" },
+    "Intermediate": { text:"#1E3A5F" },
+    "Advanced":     { text:"#064E3B" },
+    "Final Boss":   { text:"#7F1D1D" },
+  };
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:"linear-gradient(135deg,#1C0A4A,#2D1B69)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:40,height:40,borderRadius:"50%",background:profile.color||T.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{profile.avatar||"üåü"}</div>
         <div style={{flex:1}}>
-          <div style={{fontSize:18,color:"white",lineHeight:1,...DS}}>Hola, {profile.name}! ??</div>
-          <div style={{display:"flex",gap:8,marginTop:4}}>
-            <StarCount count={profile.stars} color={profile.color}/>
-            {profile.streak>0&&<span style={{display:"inline-flex",alignItems:"center",gap:3,background:"rgba(252,211,77,.15)",borderRadius:20,padding:"4px 10px"}}><span style={{fontSize:16}}>??</span><span style={{fontSize:15,fontWeight:900,color:"#FCD34D"}}>{profile.streak}</span></span>}
-          </div>
+          <div style={{fontSize:16,color:"white",...DS}}>{profile.name}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)"}}>‚≠ê {profile.stars||0} stars</div>
         </div>
-        <button onClick={onSwitch} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>Switch</button>
+        <button onClick={onStudyHall} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:13,...DS}}>üìö Study Hall</button>
+        <button onClick={onMyProfile} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:13}}>üë§</button>
       </div>
-
-      <div style={{flex:1,overflowY:"auto",padding:"16px 16px 100px"}}>
-        {/* Daily Challenge */}
-        <button onClick={dailyDone?undefined:onDaily} style={{width:"100%",padding:"18px",borderRadius:22,background:dailyDone?"rgba(255,255,255,.06)":profile.color,border:dailyDone?"2px solid rgba(255,255,255,.12)":`2px solid ${profile.color}`,cursor:dailyDone?"default":"pointer",textAlign:"left",marginBottom:12,display:"flex",alignItems:"center",gap:14,opacity:dailyDone?.6:1}}>
-          <span style={{fontSize:36}}>??</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:15,color:"white",...DS}}>{dailyDone?"Daily Challenge Done! ?":"Daily Challenge ó New Today!"}</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,.75)",marginTop:3}}>{dailyDone?"Come back tomorrow for a new one!":"5 questions ∑ Same for everyone ∑ Bonus stars!"}</div>
-          </div>
-          {!dailyDone&&<span style={{fontSize:22,color:"white"}}>õ</span>}
-        </button>
-
-        {/* Stories button */}
-        <button onClick={onStories} style={{width:"100%",padding:"18px",borderRadius:22,background:"rgba(255,255,255,.08)",border:"2px solid rgba(255,255,255,.2)",cursor:"pointer",textAlign:"left",marginBottom:20,display:"flex",alignItems:"center",gap:14}}>
-          <span style={{fontSize:36}}>??</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:15,color:"white",...DS}}>Stories ó Listen & Learn!</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:3}}>Real conversations in Cuenca ó tap any line to hear it!</div>
-          </div>
-          <span style={{fontSize:22,color:"rgba(255,255,255,.5)"}}>õ</span>
-        </button>
-
-        {/* Level toggle */}
-        <div style={{display:"flex",marginBottom:14,background:"rgba(255,255,255,.08)",borderRadius:16,padding:4}}>
-          {[{lv:1,label:"? Beginner"},{lv:2,label:"?? Intermediate"}].map(({lv:l,label})=>(
-            <button key={l} onClick={()=>onLevelChange(l)} style={{flex:1,padding:"10px 0",borderRadius:12,background:lv===l?"white":"transparent",border:"none",color:lv===l?profile.color:"rgba(255,255,255,.6)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .2s"}}>
-              {label}
+      <div style={{padding:"16px 16px 8px",textAlign:"center"}}>
+        <div style={{fontSize:11,color:T.textSoft,letterSpacing:3,fontWeight:700,marginBottom:4}}>YOUR ADVENTURE PATH</div>
+        <div style={{fontSize:22,color:T.text,...DS}}>The Spanish Speaking World üåç</div>
+      </div>
+      <div style={{flex:1,overflowY:"auto",padding:"8px 14px 100px"}}>
+        {LANDS.map(land=>{
+          const unlocked = land.id <= unlockedLand;
+          const current  = land.id === unlockedLand;
+          const done     = land.id < unlockedLand;
+          return (
+            <button key={land.id} onClick={()=>unlocked&&onSelectLand(land)} style={{
+              width:"100%",padding:"14px 16px",borderRadius:18,marginBottom:8,
+              background:done?`${land.color}20`:current?"white":"rgba(0,0,0,0.04)",
+              border:current?`3px solid ${land.color}`:done?`2px solid ${land.color}40`:"2px solid rgba(0,0,0,0.08)",
+              cursor:unlocked?"pointer":"default",display:"flex",alignItems:"center",gap:12,textAlign:"left",
+              boxShadow:current?`0 4px 20px ${land.color}30`:"none",opacity:unlocked?1:0.4,transition:"all 0.2s"
+            }}>
+              <div style={{width:48,height:48,borderRadius:14,background:done?land.color:current?land.color:"rgba(0,0,0,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{done?"‚úÖ":unlocked?land.emoji:"üîí"}</div>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:15,color:unlocked?T.text:"#9CA3AF",...DS}}>{land.name}</span>
+                  {current && <span style={{fontSize:10,background:land.color,color:"white",borderRadius:8,padding:"2px 8px",fontWeight:800}}>CURRENT</span>}
+                  <span style={{fontSize:10,color:(lc[land.level]||lc["Beginner"]).text,fontWeight:800,marginLeft:"auto"}}>{land.level==="Checkpoint"?"‚≠ê CHECKPOINT":land.level.toUpperCase()}</span>
+                </div>
+                <div style={{fontSize:11,color:T.textSoft,marginTop:2}}>Land {land.id} ¬∑ {land.region}</div>
+              </div>
+              {unlocked && <div style={{fontSize:20,color:land.color}}>‚Ä∫</div>}
             </button>
+          );
+        })}
+      </div>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"white",borderTop:"1px solid rgba(0,0,0,0.08)",display:"flex",padding:"10px 0 16px"}}>
+        {[{icon:"üó∫Ô∏è",label:"Map",action:null},{icon:"üìö",label:"Study Hall",action:onStudyHall},{icon:"üë§",label:"My Profile",action:onMyProfile}].map(({icon,label,action})=>(
+          <button key={label} onClick={action||undefined} style={{flex:1,background:"none",border:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:3,cursor:action?"pointer":"default",opacity:action?1:0.5}}>
+            <span style={{fontSize:22}}>{icon}</span><span style={{fontSize:10,color:T.textSoft,fontWeight:700}}>{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LAND 1 WORDS + Game Components used by Land 1 specifically
+// ============================================================
+const LAND1_WORDS = [
+  { es:"Hola",          en:"Hello",            emoji:"üëã", hook:"HOH-la ‚Äî everyone knows this one!", speakHook:"Everyone already knows this one." },
+  { es:"Adios",         en:"Goodbye",          emoji:"üëã", hook:"ah-dee-OHS ‚Äî say goodbye to not knowing this!", speakHook:"Say goodbye to not knowing this word." },
+  { es:"Buenos dias",   en:"Good morning",     emoji:"üåÖ", hook:"BWEH-nos DEE-as ‚Äî good days to you!", speakHook:"Good days to you!" },
+  { es:"Buenas tardes", en:"Good afternoon",   emoji:"‚òÄÔ∏è", hook:"BWEH-nas TAR-des ‚Äî tardes sounds like tardies!", speakHook:"Tardes sounds like tardies. Afternoon is when you are late!" },
+  { es:"Buenas noches", en:"Good night",       emoji:"üåô", hook:"BWEH-nas NO-ches ‚Äî no chess at night!", speakHook:"No chess at night, time for bed!" },
+  { es:"Por favor",     en:"Please",           emoji:"üôè", hook:"por fah-VOR ‚Äî pour the flavor please!", speakHook:"Sounds like pour the flavor!" },
+  { es:"Gracias",       en:"Thank you",        emoji:"üíõ", hook:"GRAH-see-as ‚Äî grassy us, thank you!", speakHook:"Sounds like grassy us!" },
+  { es:"De nada",       en:"You are welcome",  emoji:"üòä", hook:"day NAH-da ‚Äî it was nothing!", speakHook:"Means of nothing, you are welcome!" },
+  { es:"Mucho gusto",   en:"Nice to meet you", emoji:"ü§ù", hook:"MOO-cho GOO-sto ‚Äî much pleasure!", speakHook:"Much pleasure meeting you!" },
+  { es:"Como estas",    en:"How are you",      emoji:"‚ùì", hook:"KOH-mo es-TAS ‚Äî how are you?", speakHook:"How are you doing today?" },
+  { es:"Bien",          en:"Good",             emoji:"‚úÖ", hook:"bee-EN ‚Äî been good!", speakHook:"Short and sweet. Like saying been good." },
+  { es:"Hasta luego",   en:"See you later",    emoji:"üëã", hook:"AHS-ta loo-EH-go ‚Äî friendlier hasta la vista!", speakHook:"Hasta la vista's friendlier cousin!" },
+];
+
+function FallingWordsGame({ words, allWords, color, title, onComplete, emoji }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [pos, setPos] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx % words.length];
+  const getOptions = () => {
+    const correct = word.en;
+    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
+    while(others.length<3) others.push("???");
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+  const [options, setOptions] = useState(()=>getOptions());
+  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    if(selected) return;
+    const t = setInterval(()=>setPos(p=>{ if(p>=100){ handlePick(null); return 0; } return p+0.8; }),50);
+    return ()=>clearInterval(t);
+    // eslint-disable-next-line
+  },[idx,selected]);
+  const handlePick = (opt) => {
+    if(selected) return;
+    const correct = opt===word.en;
+    setSelected(opt||"timeout");
+    if(correct){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      setSelected(null); setPos(0);
+      if(idx>=words.length-1){ onComplete(); return; }
+      setIdx(i=>i+1);
+      setOptions(()=>getOptions());
+    },1200);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Tap the correct meaning! Score: {score}/{words.length}</div>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{width:"100%",maxWidth:400,height:180,position:"relative",background:"white",borderRadius:20,border:`3px solid ${color}`,overflow:"hidden",marginBottom:16,boxShadow:`0 4px 20px ${color}20`}}>
+          <div style={{position:"absolute",left:"50%",transform:"translateX(-50%)",top:`${pos}%`,transition:"top 0.05s linear",textAlign:"center"}}>
+            <div style={{fontSize:36}}>{word.emoji}</div>
+            <div style={{fontSize:28,color,...DS,fontWeight:900}}>{word.es}</div>
+          </div>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:8,background:`${color}30`}}/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>handlePick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{opt}</button>
           ))}
         </div>
-
-        <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,marginBottom:10,letterSpacing:.5}}>{lv>=2?"INTERMEDIATE CATEGORIES":"BEGINNER CATEGORIES"}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-          {catKeys.map(key=>{
-            const c=vocab[key];
-            return(
-              <button key={key} onClick={()=>onLearn(key,lv)} style={{padding:"16px 8px",borderRadius:18,background:"rgba(255,255,255,.07)",border:`2px solid ${c.color}40`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-                <span style={{fontSize:28}}>{c.icon}</span>
-                <span style={{fontSize:11,fontWeight:800,color:"white",textAlign:"center",lineHeight:1.2}}>{c.label}</span>
-                <div style={{width:32,height:4,borderRadius:99,background:`${c.color}80`}}/>
-              </button>
-            );
-          })}
-        </div>
-
-        {profile.badges&&profile.badges.length>0&&(
-          <div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,marginBottom:10,letterSpacing:.5}}>YOUR BADGES</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {profile.badges.slice(0,6).map(b=>{const bd=BADGE_DEF[b];return bd?<div key={b} style={{background:"rgba(255,255,255,.1)",borderRadius:12,padding:"8px 12px",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:18}}>{bd.icon}</span><span style={{fontSize:11,color:"white",fontWeight:700}}>{bd.name}</span></div>:null;})}
-              {profile.badges.length>6&&<div style={{background:"rgba(255,255,255,.06)",borderRadius:12,padding:"8px 12px",fontSize:11,color:"rgba(255,255,255,.5)",fontWeight:700,alignSelf:"center"}}>+{profile.badges.length-6} more</div>}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={{position:"fixed",bottom:0,left:0,right:0,background:"rgba(15,23,42,.96)",backdropFilter:"blur(16px)",borderTop:"1px solid rgba(255,255,255,.1)",display:"flex",padding:"10px 0 16px"}}>
-        {[{icon:"??",label:"Home",action:null},{icon:"??",label:"Leaderboard",action:onBoard},{icon:"???",label:"My Profile",action:onMyProfile}].map(({icon,label,action})=>(
-          <button key={label} onClick={action||undefined} style={{flex:1,background:"none",border:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:4,cursor:action?"pointer":"default",opacity:action?1:.5}}>
-            <span style={{fontSize:22}}>{icon}</span>
-            <span style={{fontSize:11,color:"white",fontWeight:700}}>{label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// -- LEARN SCREEN --------------------------------------------------------------
-function LearnScreen({catKey,catLevel,profile,onBack,onEarn,onStat}){
-  const[mode,setMode]=useState("flashcard");
-  const vocab=catLevel>=2?VOCAB_L2:VOCAB_L1;
-  const cat=vocab[catKey];
-  const allWords=catLevel>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const modes=[{id:"flashcard",label:"?? Cards"},{id:"quiz",label:"?? Quiz"},{id:"match",label:"?? Match"},{id:"speak",label:"?? Speak"}];
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{fontSize:20,color:"white",...DS}}>{cat.icon} {cat.label}</div>
-        <div style={{marginLeft:"auto"}}><StarCount count={profile.stars} color={profile.color}/></div>
-      </div>
-      <div style={{display:"flex",gap:6,padding:"12px 14px",flexWrap:"wrap",justifyContent:"center"}}>
-        {modes.map(m=>(
-          <button key={m.id} onClick={()=>setMode(m.id)} style={{flex:"1 1 80px",maxWidth:100,padding:"9px 0",borderRadius:20,background:mode===m.id?"white":"rgba(255,255,255,.12)",border:"none",color:mode===m.id?cat.color:"rgba(255,255,255,.8)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"inherit",transition:"all .2s",boxShadow:mode===m.id?"0 4px 12px rgba(0,0,0,.2)":"none"}}>
-            {m.label}
-          </button>
-        ))}
-      </div>
-      <div style={{padding:"0 14px 40px",flex:1}}>
-        <div style={{background:"white",borderRadius:28,padding:18,boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
-          <div style={{textAlign:"center",marginBottom:16,fontSize:20,color:cat.color,...DS}}>{cat.icon} {cat.label}</div>
-          {mode==="flashcard"&&<FlashcardMode key={`${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn}/>}
-          {mode==="quiz"     &&<QuizMode key={`q${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat} allWords={allWords}/>}
-          {mode==="match"    &&<MatchMode key={`m${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
-          {mode==="speak"    &&<SpeakMode key={`s${catKey}${catLevel}`} words={cat.words} color={cat.color} onEarn={onEarn} onStat={onStat}/>}
+        <div style={{width:"100%",maxWidth:400,height:6,background:"#E5E7EB",borderRadius:3,marginTop:12}}>
+          <div style={{height:"100%",width:`${100-pos}%`,background:pos>70?"#EF4444":pos>40?"#F59E0B":color,borderRadius:3,transition:"width 0.05s"}}/>
         </div>
       </div>
     </div>
   );
 }
 
-// -- DAILY CHALLENGE -----------------------------------------------------------
-function DailyScreen({profile,onBack,onComplete}){
-  const{words}=getDailyWords(profile.level||1);
-  const pool=(profile.level||1)>=2?ALL_WORDS_L2:ALL_WORDS_L1;
-  const[idx,setIdx]=useState(0);
-  const[opts,setOpts]=useState([]);
-  const[selected,setSelected]=useState(null);
-  const[score,setScore]=useState(0);
-  const[done,setDone]=useState(false);
-  const word=words[idx];
-
-  useEffect(()=>{
-    if(!word)return;
-    const wrong=shuffle(pool.filter(w=>w.en!==word.en)).slice(0,3);
-    setOpts(shuffle([word,...wrong]));setSelected(null);speakEs(word.es);
-  },[idx]);
-
-  const pick=opt=>{
-    if(selected)return;setSelected(opt);
-    if(opt.en===word.en)setScore(s=>s+1);
-    setTimeout(()=>{if(idx<words.length-1)setIdx(i=>i+1);else setDone(true);},1200);
+function MatchingGame({ words, color, title, onComplete, emoji }) {
+  const [selected, setSelected] = useState(null);
+  const [matched, setMatched] = useState([]);
+  const [wrong, setWrong] = useState(null);
+  const esWords = words.map(w=>({id:w.es,text:w.es,type:"es"}));
+  const [enShuffled] = useState(()=>[...words].sort(()=>Math.random()-0.5).map(w=>({id:w.es,text:w.en,type:"en"})));
+  const handleSelect = (item) => {
+    if(matched.includes(item.id)) return;
+    if(!selected){ setSelected(item); speakEs(item.id); return; }
+    if(selected.id===item.id && selected.type!==item.type){
+      const newMatched = [...matched, item.id];
+      setMatched(newMatched); setSelected(null);
+      speakEn(words.find(w=>w.es===item.id)?.en||"");
+      if(newMatched.length>=words.length) setTimeout(onComplete, 900);
+    } else {
+      setWrong(item.id);
+      setTimeout(()=>{ setWrong(null); setSelected(null); },800);
+    }
   };
-
-  if(done)return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <div style={{textAlign:"center",background:"rgba(255,255,255,.1)",backdropFilter:"blur(12px)",borderRadius:28,padding:36,width:"100%",maxWidth:380}}>
-        <div style={{fontSize:72}}>{score===5?"??":score>=3?"??":"??"}</div>
-        <div style={{fontSize:28,color:"white",margin:"8px 0",...DS}}>Daily Complete!</div>
-        <div style={{fontSize:48,fontWeight:900,color:"#FCD34D"}}>{score}/5</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,.7)",marginTop:4,marginBottom:8}}>{score===5?"Flawless! °Perfecto!":score>=3?"Great job!":"Practice makes perfect!"}</div>
-        <div style={{fontSize:14,color:"rgba(255,255,255,.5)",marginBottom:24}}>+{score*3} bonus stars earned!</div>
-        <ActionBtn onClick={()=>onComplete(score)} bg={profile.color} style={{width:"100%",padding:16,fontSize:16}}>Back to Home ??</ActionBtn>
-      </div>
-    </div>
-  );
-
   return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{flex:1}}><div style={{fontSize:18,color:"white",...DS}}>?? Daily Challenge</div><div style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>Same for everyone today!</div></div>
-        <div style={{fontSize:14,color:"#FCD34D",fontWeight:900}}>{idx+1}/5</div>
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Match Spanish to English! {matched.length}/{words.length} matched</div>
       </div>
-      <div style={{flex:1,padding:"20px 14px"}}>
-        <div style={{width:"100%",height:8,background:"rgba(255,255,255,.1)",borderRadius:99,marginBottom:20}}>
-          <div style={{height:"100%",borderRadius:99,background:"#FCD34D",width:`${(idx/5)*100}%`,transition:"width .4s"}}/>
+      <div style={{flex:1,padding:"16px",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{fontSize:11,color:color,fontWeight:800,textAlign:"center",...DS}}>SPANISH üá™üá∏</div>
+          {esWords.map(item=>(
+            <button key={item.id} onClick={()=>handleSelect(item)} style={{padding:"14px 10px",borderRadius:14,border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="es"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,background:matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="es"?`${color}15`:wrong===item.id?"#FEE2E2":"white",cursor:"pointer",fontSize:14,...DS,fontWeight:800,color:matched.includes(item.id)?"#10B981":"#1C1917",textAlign:"center"}}>{matched.includes(item.id)?"‚úÖ":item.text}</button>
+          ))}
         </div>
-        <div style={{background:"white",borderRadius:24,padding:"22px 20px",border:"3px solid #FCD34D",boxShadow:"0 8px 28px rgba(0,0,0,.3)",textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:68}}>{word.emoji}</div>
-          <div style={{fontSize:28,color:"#1F2937",marginTop:4,...DS}}>{word.es}</div>
-          <div style={{display:"flex",justifyContent:"center",marginTop:10,gap:8,alignItems:"center"}}>
-            <SpeakEsBtn text={word.es} color="#F59E0B" size={40}/><span style={{fontSize:13,color:"#9CA3AF"}}>Tap to hear</span>
-          </div>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {opts.map((opt,i)=>{
-            const isC=opt.en===word.en,isCh=selected?.en===opt.en;
-            let bg="white",border="#E5E7EB";
-            if(selected){if(isC){bg="#D1FAE5";border="#10B981";}else if(isCh){bg="#FEE2E2";border="#EF4444";}}
-            return(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",borderRadius:16,background:bg,border:`2px solid ${border}`,transition:"all .2s"}}>
-                <button onClick={()=>pick(opt)} style={{flex:1,background:"none",border:"none",textAlign:"left",fontSize:16,fontWeight:700,cursor:selected?"default":"pointer",color:"#1F2937",fontFamily:"inherit",padding:0}}>{opt.en}</button>
-                <SpeakEnBtn text={opt.en} color={selected&&isC?"#10B981":"#F59E0B"}/>
-              </div>
-            );
-          })}
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <div style={{fontSize:11,color:"#6B7280",fontWeight:800,textAlign:"center",...DS}}>ENGLISH üá∫üá∏</div>
+          {enShuffled.map(item=>(
+            <button key={item.id+"-en"} onClick={()=>handleSelect(item)} style={{padding:"14px 10px",borderRadius:14,border:`2px solid ${matched.includes(item.id)?"#10B981":selected?.id===item.id&&selected?.type==="en"?color:wrong===item.id?"#EF4444":"#E5E7EB"}`,background:matched.includes(item.id)?"#D1FAE5":selected?.id===item.id&&selected?.type==="en"?`${color}15`:wrong===item.id?"#FEE2E2":"white",cursor:"pointer",fontSize:12,...DS,fontWeight:700,color:matched.includes(item.id)?"#10B981":"#1C1917",textAlign:"center"}}>{matched.includes(item.id)?"‚úÖ":item.text}</button>
+          ))}
         </div>
       </div>
     </div>
   );
 }
 
-// -- LEADERBOARD ---------------------------------------------------------------
-function LeaderboardScreen({profiles,onBack}){
-  const sorted=[...profiles].sort((a,b)=>b.stars-a.stars);
-  const medals=["??","??","??"];
+function ShootingGame({ words, allWords, color, title, onComplete, emoji }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx];
+  const getOptions = () => {
+    const correct = word.en;
+    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
+    while(others.length<3) others.push("???");
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+  const [options, setOptions] = useState(()=>getOptions());
+  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const pick = (opt) => {
+    if(selected) return;
+    setSelected(opt);
+    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); setOptions(()=>getOptions()); }
+      else onComplete();
+    },1300);
+  };
   return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{fontSize:20,color:"white",...DS}}>?? Family Leaderboard</div>
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} ‚Äî Shoot the right answer!</div>
       </div>
-      <div style={{padding:"24px 16px",display:"flex",flexDirection:"column",gap:12}}>
-        {sorted.map((p,i)=>(
-          <div key={p.id} style={{background:i===0?"rgba(252,211,77,.12)":"rgba(255,255,255,.06)",border:i===0?"2px solid #FCD34D":"2px solid rgba(255,255,255,.1)",borderRadius:20,padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
-            <div style={{fontSize:28,width:36,textAlign:"center"}}>{medals[i]||String(i+1)}</div>
-            <div style={{width:48,height:48,borderRadius:"50%",background:p.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{p.avatar}</div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:18,color:"white",...DS}}>{p.name}</div>
-              <div style={{display:"flex",gap:8,marginTop:3,flexWrap:"wrap"}}>
-                <span style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>?? {p.streak}d</span>
-                <span style={{fontSize:12,color:"rgba(255,255,255,.6)"}}>?? {(p.badges||[]).length}</span>
-                <span style={{fontSize:11,background:"rgba(255,255,255,.12)",borderRadius:8,padding:"1px 6px",color:"white",fontWeight:700}}>Lv {p.level||1}</span>
-              </div>
+      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
+          <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
+          <div style={{fontSize:34,color,...DS,fontWeight:900,marginBottom:4}}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,...DS}}>üîä Hear it</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{!selected?"üéØ ":opt===word.en?"‚úÖ ":opt===selected?"‚ùå ":""}{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BossChallenge({ words, color, landName, nextLand, onComplete }) {
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [lava, setLava] = useState(0);
+  const [done, setDone] = useState(false);
+  const [shake, setShake] = useState(false);
+  const shuffled = useState(()=>[...words].sort(()=>Math.random()-0.5))[0];
+  const word = shuffled[idx%shuffled.length];
+  const getOptions = () => {
+    const correct = word.en;
+    const others = words.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
+    while(others.length<3) others.push("???");
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+  const [options, setOptions] = useState(()=>getOptions());
+  useEffect(()=>{ if(word) speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const pick = (opt) => {
+    if(selected) return;
+    const correct = opt===word.en;
+    setSelected(opt);
+    if(!correct){ setLava(l=>Math.min(l+25,100)); setShake(true); setTimeout(()=>setShake(false),500); }
+    else speakEs(word.es);
+    setTimeout(()=>{
+      setSelected(null);
+      const next = idx+1;
+      if(next>=words.length){ setDone(true); return; }
+      setIdx(next); setOptions(()=>getOptions());
+    },1300);
+  };
+  if(done) return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
+      {FONT_LINK}
+      <style>{`@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}`}</style>
+      <div style={{fontSize:80,animation:"bounce 0.8s ease infinite",marginBottom:16}}>üéâ</div>
+      <div style={{fontSize:32,color:"#FCD34D",...DS,fontWeight:900,marginBottom:8}}>¬°Felicidades!</div>
+      <div style={{fontSize:18,color:"white",marginBottom:4,...DS}}>You completed {landName}!</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:24,...DS}}>{nextLand} is now unlocked! üó∫Ô∏è</div>
+      <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end"}}>
+        <img src="/characters/grayson.png" style={{height:110}} alt="" onError={e=>e.target.style.display="none"}/>
+        <img src="/characters/peyton.png" style={{height:94}} alt="" onError={e=>e.target.style.display="none"}/>
+      </div>
+      <button onClick={onComplete} style={{padding:"16px 48px",borderRadius:24,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:18,cursor:"pointer",...DS,fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)"}}>Continue to {nextLand} ‚Üí</button>
+    </div>
+  );
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",transform:shake?"translateX(-6px)":"none",transition:"transform 0.1s"}}>
+      {FONT_LINK}
+      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{flex:1,fontSize:18,color:"white",...DS}}>üåã BOSS ‚Äî {landName}</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>{idx+1}/{words.length}</div>
+      </div>
+      <div style={{height:10,background:"rgba(255,255,255,0.1)"}}><div style={{height:"100%",width:`${lava}%`,background:"linear-gradient(90deg,#F97316,#EF4444)",transition:"width 0.6s"}}/></div>
+      <div style={{fontSize:12,color:lava>50?"#EF4444":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,...DS}}>üåã Lava Level: {lava}%</div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:400,textAlign:"center",border:`2px solid ${color}`,marginBottom:16}}>
+          <div style={{fontSize:40,marginBottom:8}}>{word.emoji}</div>
+          <div style={{fontSize:30,color:"white",...DS,fontWeight:900}}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}20`,border:`1px solid ${color}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:"white",fontWeight:700,...DS}}>üîä</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,background:!selected?"rgba(255,255,255,0.1)":opt===word.en?"#D1FAE5":opt===selected?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.05)",border:`2px solid ${!selected?"rgba(255,255,255,0.2)":opt===word.en?"#10B981":opt===selected?"#EF4444":"rgba(255,255,255,0.1)"}`,cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:!selected?"white":opt===word.en?"#10B981":opt===selected?"#FCA5A5":"rgba(255,255,255,0.4)"}}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RewardScreen({ kind, text, color, landName, onContinue }) {
+  useEffect(()=>{ setTimeout(()=>speakEn(text.replace(/\n/g," ")), 400); /* eslint-disable-next-line */ },[]);
+  const isLim = kind === "limerick";
+  const accent = isLim?"#F59E0B":"#10B981";
+  const icon = isLim?"üéµ":"üòÑ";
+  const label = isLim?"REWARD ¬∑ THE LIMERICK":"REWARD ¬∑ THE JOKE";
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${accent}18,#FDF6EC)`,display:"flex",flexDirection:"column",position:"relative",overflow:"hidden"}}>
+      {FONT_LINK}
+      <style>{`@keyframes popIn{0%{transform:scale(0.9);opacity:0}100%{transform:scale(1);opacity:1}}
+        @keyframes bobUp{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+        @keyframes confetti{0%{transform:translateY(-10px) rotate(0deg);opacity:0}20%{opacity:1}100%{transform:translateY(120vh) rotate(720deg);opacity:0}}`}</style>
+      {[...Array(14)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*7+5)%95}%`,top:-20,fontSize:18,animation:`confetti ${3+i%3}s linear ${i*0.2}s infinite`,pointerEvents:"none"}}>{["‚≠ê","‚ú®","üéâ","üí´"][i%4]}</div>))}
+      <div style={{background:accent,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:11,color:"rgba(255,255,255,0.9)",letterSpacing:3,fontWeight:800,...DS}}>{label}</div>
+        <div style={{fontSize:18,color:"white",...DS}}>{landName}</div>
+      </div>
+      <div style={{flex:1,padding:"24px 16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",zIndex:1}}>
+        <div style={{fontSize:64,marginBottom:8,animation:"bobUp 2s ease-in-out infinite"}}>{icon}</div>
+        <div style={{fontSize:13,color:accent,fontWeight:800,letterSpacing:2,marginBottom:10,...DS}}>YOU EARNED IT!</div>
+        <div style={{background:"white",borderRadius:24,padding:"24px 22px",width:"100%",maxWidth:420,boxShadow:`0 12px 32px ${accent}30`,border:`2px solid ${accent}40`,animation:"popIn 0.45s ease",marginBottom:20}}>
+          <div style={{fontSize:15.5,color:"#1C1917",lineHeight:1.75,...DS,whiteSpace:"pre-line"}}>{text}</div>
+          <button onClick={()=>speakEn(text.replace(/\n/g," "))} style={{marginTop:14,background:`${accent}15`,border:`1px solid ${accent}40`,borderRadius:12,padding:"8px 14px",cursor:"pointer",fontSize:13,color:accent,fontWeight:800,...DS}}>üîä Hear it again</button>
+        </div>
+        <button onClick={onContinue} style={{width:"100%",maxWidth:420,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},${accent})`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS,boxShadow:`0 8px 24px ${color}30`}}>Keep Going! ‚Ä∫</button>
+      </div>
+    </div>
+  );
+}
+
+function MyProfileScreen({ profile, familyCode, familyName, onBack }) {
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:20}}>‚Üê</button>
+        <div style={{fontSize:20,color:"white",...DS}}>My Profile</div>
+      </div>
+      <div style={{flex:1,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{width:90,height:90,borderRadius:"50%",background:profile.color||T.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:12,boxShadow:`0 8px 24px ${profile.color||T.purple}50`}}>{profile.avatar||"üåü"}</div>
+        <div style={{fontSize:26,color:"white",...DS,marginBottom:4}}>{profile.name}</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:24}}>Explorer ¬∑ Land {profile.level||1}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,width:"100%",maxWidth:360,marginBottom:24}}>
+          {[{label:"Stars",value:profile.stars||0,icon:"‚≠ê"},{label:"Land",value:profile.level||1,icon:"üó∫Ô∏è"},{label:"Streak",value:profile.streak||0,icon:"üî•"}].map(s=>(
+            <div key={s.label} style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:"14px 10px",textAlign:"center"}}>
+              <div style={{fontSize:24}}>{s.icon}</div><div style={{fontSize:22,color:"white",...DS}}>{s.value}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:700}}>{s.label}</div>
             </div>
-            <div style={{fontSize:22,fontWeight:900,color:"#FCD34D"}}>? {p.stars}</div>
+          ))}
+        </div>
+        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:18,padding:"16px 20px",width:"100%",maxWidth:360,marginBottom:16}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:700,marginBottom:4}}>FAMILY</div>
+          <div style={{fontSize:18,color:"white",...DS}}>{familyName}</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
+            <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"6px 14px",fontSize:18,color:T.goldL,letterSpacing:3,fontWeight:900}}>{familyCode}</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Share this code with your family!</div>
           </div>
-        ))}
-        {profiles.length===0&&<div style={{textAlign:"center",color:"rgba(255,255,255,.4)",padding:40,fontSize:16}}>No explorers yet!</div>}
+        </div>
       </div>
     </div>
   );
 }
 
-// -- MY PROFILE ----------------------------------------------------------------
-function MyProfileScreen({profile,onBack}){
-  const allBadges=Object.entries(BADGE_DEF);
-  const earned=new Set(profile.badges||[]);
-  return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column"}}>
-      <div style={{background:"rgba(255,255,255,.08)",backdropFilter:"blur(12px)",padding:"14px 16px",borderBottom:"1px solid rgba(255,255,255,.1)",display:"flex",alignItems:"center",gap:12}}>
-        <button onClick={onBack} style={{background:"rgba(255,255,255,.12)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",fontSize:20,cursor:"pointer"}}>?</button>
-        <div style={{fontSize:20,color:"white",...DS}}>??? Explorer Card</div>
+
+// ============================================================
+// LandIntroScreen
+// ============================================================
+function LandIntroScreen({ land, onBack, onStartLesson }) {
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${land.color}20,white)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:land.color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:20}}>‚Üê</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",letterSpacing:2,fontWeight:700}}>LAND {land.id}</div>
+          <div style={{fontSize:20,color:"white",...DS}}>{land.emoji} {land.name}</div>
+        </div>
       </div>
-      <div style={{padding:"24px 16px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",paddingBottom:40}}>
-        <div style={{background:`linear-gradient(135deg,${profile.color},${profile.color}99)`,borderRadius:24,padding:24,textAlign:"center"}}>
-          <div style={{fontSize:56}}>{profile.avatar}</div>
-          <div style={{fontSize:26,color:"white",marginTop:8,...DS}}>{profile.name}</div>
-          <div style={{display:"inline-block",background:"rgba(255,255,255,.2)",borderRadius:12,padding:"4px 12px",fontSize:13,color:"white",fontWeight:700,marginTop:4}}>Level {profile.level||1}</div>
-          <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:12}}>
-            <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:900,color:"white"}}>? {profile.stars}</div><div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>Stars</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:900,color:"white"}}>?? {profile.streak}</div><div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>Streak</div></div>
-            <div style={{textAlign:"center"}}><div style={{fontSize:24,fontWeight:900,color:"white"}}>?? {(profile.badges||[]).length}</div><div style={{fontSize:11,color:"rgba(255,255,255,.7)"}}>Badges</div></div>
+      <div style={{flex:1,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{width:100,height:100,borderRadius:28,background:land.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:48,marginBottom:16,boxShadow:`0 8px 32px ${land.color}40`}}>{land.emoji}</div>
+        <div style={{fontSize:28,color:T.text,...DS,marginBottom:4,textAlign:"center"}}>{land.name}</div>
+        <div style={{fontSize:14,color:T.textSoft,marginBottom:24,textAlign:"center"}}>{land.region} ¬∑ {land.level}</div>
+        <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end"}}>
+          <img src="/characters/grayson.png" style={{height:100,filter:`drop-shadow(0 4px 12px ${T.purple}40)`}} alt="" onError={e=>e.target.style.display='none'}/>
+          <img src="/characters/peyton.png" style={{height:86,filter:`drop-shadow(0 4px 12px ${T.blue}40)`}} alt="" onError={e=>e.target.style.display='none'}/>
+        </div>
+        <div style={{background:"white",borderRadius:20,padding:"16px 20px",marginBottom:24,width:"100%",maxWidth:380,boxShadow:`0 4px 20px ${land.color}20`,border:`2px solid ${land.color}20`}}>
+          <div style={{fontSize:13,fontWeight:800,color:land.color,marginBottom:6}}>GRAYSON SAYS:</div>
+          <div style={{fontSize:14,color:T.text,lineHeight:1.6}}>Ready to explore {land.name}? Let's learn some Spanish together! This land has fun games, silly stories, and a boss challenge at the end. ¬°V√°monos!</div>
+        </div>
+        <button onClick={onStartLesson} style={{width:"100%",maxWidth:380,padding:"18px",borderRadius:20,background:`linear-gradient(135deg,${land.color},${land.color}CC)`,border:"none",color:"white",fontSize:18,cursor:"pointer",...DS,boxShadow:`0 8px 24px ${land.color}40`}}>Start Adventure! {land.emoji}</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// StudyHallScreen + Flashcard + RandomQuiz
+// ============================================================
+function StudyHallScreen({ profile, onBack, onOpen }) {
+  const sections = [
+    { id:"flashcards", icon:"üÉè", label:"Flashcard Sets",   desc:"Practice by land or category",     color:"#E8445A", available:true  },
+    { id:"quiz",       icon:"üéØ", label:"Randomized Quiz",  desc:"Mixed review from all your lands", color:"#10B981", available:true  },
+    { id:"bookmarks",  icon:"üîñ", label:"Bookmarks",        desc:"Words you saved for review",       color:"#F97316", available:false },
+    { id:"grammar",    icon:"‚ö°", label:"Verbs and Grammar",desc:"Conjugation, patterns, lessons",   color:"#7C3AED", available:false },
+    { id:"ai",         icon:"ü§ñ", label:"AI Tutor",         desc:"Wander Lingo Plus ‚Äî coming soon!", color:"#F59E0B", available:false },
+  ];
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:20}}>‚Üê</button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",letterSpacing:2,fontWeight:700}}>THE SERIOUS SECTION</div>
+          <div style={{fontSize:20,color:"white",...DS}}>üìö Study Hall</div>
+        </div>
+      </div>
+      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:8}}>
+          <img src="/characters/grayson.png" style={{height:70,filter:"drop-shadow(0 4px 12px rgba(124,58,237,0.4))"}} alt="" onError={e=>e.target.style.display='none'}/>
+          <div style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:"12px 14px",flex:1}}>
+            <div style={{fontSize:13,color:"rgba(255,255,255,0.8)",lineHeight:1.5}}>This is where the serious learning lives. Flashcards, grammar, conjugation ‚Äî all the good stuff. En mi opini√≥n it's worth it.</div>
           </div>
         </div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,.5)",fontWeight:700,letterSpacing:.5}}>ALL BADGES</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {allBadges.map(([key,bd])=>{
-            const got=earned.has(key);
-            return(
-              <div key={key} style={{background:got?"rgba(255,255,255,.1)":"rgba(255,255,255,.03)",border:got?"1px solid rgba(255,255,255,.2)":"1px solid rgba(255,255,255,.07)",borderRadius:16,padding:"12px 14px",opacity:got?1:.35,display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:24}}>{bd.icon}</span>
-                <div><div style={{fontSize:12,fontWeight:800,color:"white"}}>{bd.name}</div><div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>{bd.desc}</div></div>
-              </div>
-            );
+        {sections.map((s,i)=>(
+          <button key={i} onClick={()=>s.available&&onOpen(s.id)} style={{width:"100%",padding:"18px",borderRadius:18,background:s.available?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.04)",border:`2px solid ${s.available?s.color+"40":"rgba(255,255,255,0.1)"}`,cursor:s.available?"pointer":"default",display:"flex",alignItems:"center",gap:14,textAlign:"left",opacity:s.available?1:0.5}}>
+            <div style={{width:48,height:48,borderRadius:14,background:`${s.color}20`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{s.icon}</div>
+            <div style={{flex:1}}><div style={{fontSize:16,color:"white",...DS}}>{s.label}</div><div style={{fontSize:12,color:"rgba(255,255,255,0.4)",marginTop:2}}>{s.desc}</div></div>
+            {s.available && <div style={{fontSize:20,color:s.color}}>‚Ä∫</div>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// FlashcardScreen ‚Äî flips through completed-land vocab
+function FlashcardScreen({ profile, onBack, allLandWords }) {
+  const unlocked = profile.level || 1;
+  const landNumbers = Object.keys(allLandWords).map(Number).filter(n=>n<=unlocked).sort((a,b)=>a-b);
+  const [selectedLand, setSelectedLand] = useState(landNumbers[0]||1);
+  const words = allLandWords[selectedLand] || [];
+  const [idx, setIdx] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const word = words[idx];
+  useEffect(()=>{ setIdx(0); setFlipped(false); },[selectedLand]);
+  useEffect(()=>{ if(word) speakEs(word.es); /* eslint-disable-next-line */ },[idx, selectedLand]);
+  const landMeta = LANDS.find(l=>l.id===selectedLand) || LANDS[0];
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${landMeta.color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <style>{`@keyframes flipIn{from{transform:rotateY(180deg);opacity:0}to{transform:rotateY(0);opacity:1}}`}</style>
+      <div style={{background:landMeta.color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+        <div style={{flex:1,fontSize:18,color:"white",...DS}}>üÉè Flashcards</div>
+      </div>
+      <div style={{padding:"12px 16px",overflowX:"auto",whiteSpace:"nowrap"}}>
+        {landNumbers.map(n=>{
+          const L = LANDS.find(l=>l.id===n);
+          if(!L) return null;
+          return (
+            <button key={n} onClick={()=>setSelectedLand(n)} style={{display:"inline-block",marginRight:8,padding:"8px 14px",borderRadius:12,background:selectedLand===n?L.color:"rgba(0,0,0,0.05)",color:selectedLand===n?"white":"#374151",border:"none",cursor:"pointer",fontSize:13,...DS}}>{L.emoji} {L.name}</button>
+          );
+        })}
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        {!word ? <div style={{color:"#6B7280"}}>No words available for this land.</div> :
+          <>
+            <div onClick={()=>setFlipped(f=>!f)} style={{background:"white",borderRadius:24,padding:"36px 24px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${landMeta.color}30`,border:`3px solid ${landMeta.color}`,cursor:"pointer",animation:"flipIn 0.35s ease",marginBottom:18,minHeight:200,display:"flex",flexDirection:"column",justifyContent:"center"}}>
+              <div style={{fontSize:58,marginBottom:12}}>{word.emoji}</div>
+              <div style={{fontSize:34,color:landMeta.color,...DS,fontWeight:900,marginBottom:8}}>{flipped?word.en:word.es}</div>
+              <div style={{fontSize:13,color:"#9CA3AF",fontWeight:700,...DS}}>Tap card to flip</div>
+            </div>
+            <div style={{display:"flex",gap:10,marginBottom:14}}>
+              <button onClick={()=>{ speakEs(word.es); }} style={{padding:"8px 16px",borderRadius:12,background:`${landMeta.color}15`,border:`1.5px solid ${landMeta.color}40`,color:landMeta.color,cursor:"pointer",fontSize:13,fontWeight:800,...DS}}>üîä {word.es}</button>
+              <button onClick={()=>{ speakEn(word.en); }} style={{padding:"8px 16px",borderRadius:12,background:"#F3F4F6",border:"1.5px solid #E5E7EB",color:"#6B7280",cursor:"pointer",fontSize:13,fontWeight:800,...DS}}>üîä {word.en}</button>
+            </div>
+            {(word.hook||word.speakHook) && <div style={{background:`${landMeta.color}10`,borderRadius:14,padding:"12px 14px",fontSize:13,color:"#1C1917",lineHeight:1.5,maxWidth:400,marginBottom:14,...DS}}><b style={{color:landMeta.color}}>Memory Hook: </b>{word.hook||word.speakHook}</div>}
+            <div style={{display:"flex",gap:10,width:"100%",maxWidth:400}}>
+              <button onClick={()=>{ setIdx(i=>(i-1+words.length)%words.length); setFlipped(false); }} style={{flex:1,padding:14,borderRadius:14,background:"rgba(0,0,0,0.05)",border:"none",fontSize:15,cursor:"pointer",fontWeight:800,...DS}}>‚Üê Previous</button>
+              <button onClick={()=>{ setIdx(i=>(i+1)%words.length); setFlipped(false); }} style={{flex:1,padding:14,borderRadius:14,background:landMeta.color,color:"white",border:"none",fontSize:15,cursor:"pointer",fontWeight:800,...DS}}>Next ‚Üí</button>
+            </div>
+            <div style={{fontSize:12,color:"#6B7280",marginTop:10}}>{idx+1} / {words.length}</div>
+          </>
+        }
+      </div>
+    </div>
+  );
+}
+
+// RandomQuizScreen ‚Äî mixed quiz from unlocked land vocab
+function RandomQuizScreen({ profile, onBack, allLandWords }) {
+  const unlocked = profile.level || 1;
+  const pool = useMemo(()=>{
+    const arr = [];
+    Object.keys(allLandWords).map(Number).filter(n=>n<=unlocked).forEach(n=>{ (allLandWords[n]||[]).forEach(w=>arr.push(w)); });
+    return arr.sort(()=>Math.random()-0.5).slice(0,10);
+  // eslint-disable-next-line
+  },[]);
+  const allWords = useMemo(()=>{
+    const arr = [];
+    Object.values(allLandWords).forEach(list=>list.forEach(w=>arr.push(w)));
+    return arr;
+  },[allLandWords]);
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+  const word = pool[idx];
+  const options = useMemo(()=>{
+    if(!word) return [];
+    const wrongs = allWords.filter(w=>w.en!==word.en).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.en);
+    return [word.en, ...wrongs].sort(()=>Math.random()-0.5);
+  // eslint-disable-next-line
+  },[idx]);
+  useEffect(()=>{ if(word) speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt);
+    if(opt===word.en) setScore(s=>s+1);
+    setTimeout(()=>{
+      if(idx<pool.length-1){ setIdx(i=>i+1); setSelected(null); }
+      else setDone(true);
+    },1200);
+  };
+  if(!word) return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+      {FONT_LINK}
+      <div style={{fontSize:20,color:T.text,...DS,marginBottom:12}}>No vocabulary unlocked yet ‚Äî complete a land first!</div>
+      <button onClick={onBack} style={{padding:"12px 24px",borderRadius:14,background:T.purple,color:"white",border:"none",cursor:"pointer",fontSize:15,...DS}}>‚Üê Back</button>
+    </div>
+  );
+  if(done) return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
+      {FONT_LINK}
+      <div style={{fontSize:64,marginBottom:8}}>üéâ</div>
+      <div style={{fontSize:28,color:T.goldL,...DS,fontWeight:900,marginBottom:8}}>Quiz Complete!</div>
+      <div style={{fontSize:18,color:"white",marginBottom:24}}>You got {score} / {pool.length} correct</div>
+      <button onClick={onBack} style={{padding:"14px 32px",borderRadius:16,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:16,cursor:"pointer",...DS}}>Back to Study Hall</button>
+    </div>
+  );
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${T.purple}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:T.purple,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+        <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+        <div style={{flex:1,fontSize:18,color:"white",...DS}}>üéØ Randomized Quiz</div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>Score {score} ¬∑ {idx+1}/{pool.length}</div>
+      </div>
+      <div style={{flex:1,padding:"24px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${T.purple}25`,border:`3px solid ${T.purple}`,marginBottom:20}}>
+          <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
+          <div style={{fontSize:34,color:T.purple,...DS,fontWeight:900}}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${T.purple}15`,border:`1px solid ${T.purple}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:T.purple,fontWeight:700,...DS}}>üîä Hear it</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?T.purple:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// LAND 1 SCREEN (with corrected content flow)
+// ============================================================
+function Land1Screen({ profile, onBack, onComplete }) {
+  const [phase, setPhase] = useState("story");
+  const [storyIdx, setStoryIdx] = useState(0);
+  const [wordIdx, setWordIdx] = useState(0);
+  const color = "#E8445A";
+  const LAND1_LIMERICK = "A traveler arrived in Cuenca one day,\nAnd tried to say Hola the very wrong way,\nHe said 'Holla' like money,\nWhich the locals found funny,\nNow they call him DJ Dollar to this day. üéµ";
+  const LAND1_JOKE = "A tourist walks into a shop and says 'Hola!' perfectly. The shopkeeper responds with a long enthusiastic greeting in rapid Spanish. The tourist stares blankly. Finally says '...that's the only word I know.' The shopkeeper nods slowly. 'Me too. I was just hoping you knew more.' üòÑ";
+  const storySlides = [
+    "You just stepped off a plane in Cuenca, Ecuador. The sun is shining and the mountains are gorgeous!",
+    "A friendly man named Carlos waves at you from across the street. You wave back.",
+    "He walks over, smiles, and says something in Spanish. You have absolutely no idea what he said.",
+    "You smile and nod anyway. He keeps talking. You keep nodding. Twenty minutes later...",
+    "...you realize you just agreed to help him move furniture on Saturday. üõãÔ∏è",
+    "This is why we learn to say hello first. ¬°V√°monos!",
+  ];
+  useEffect(()=>{
+    if(phase==="story"){
+      const slide = storySlides[storyIdx];
+      if(slide) setTimeout(()=>speakEn(slide), 300);
+    }
+    // eslint-disable-next-line
+  },[storyIdx, phase]);
+  useEffect(()=>{
+    if(["lesson1","lesson2","lesson3"].includes(phase)){
+      const start = phase==="lesson1"?0:phase==="lesson2"?4:8;
+      const word = LAND1_WORDS[start+wordIdx];
+      if(word){
+        setTimeout(()=>speakEs(word.es), 300);
+        setTimeout(()=>speakEn(word.en), 1400);
+        setTimeout(()=>speakEn(word.speakHook||""), 2800);
+      }
+    }
+  },[phase, wordIdx]);
+
+  if(phase==="story"){
+    const slide = storySlides[storyIdx];
+    return (
+      <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+        {FONT_LINK}
+        <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
+        <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+          <div style={{fontSize:18,color:"white",...DS}}>üëã Land 1 ‚Äî Greetings</div>
+        </div>
+        <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>
+            <img src="/characters/grayson.png" style={{height:110}} alt="" onError={e=>e.target.style.display="none"}/>
+            <img src="/characters/peyton.png" style={{height:90}} alt="" onError={e=>e.target.style.display="none"}/>
+          </div>
+          <div style={{background:"white",borderRadius:20,padding:"20px",width:"100%",maxWidth:400,boxShadow:`0 4px 20px ${color}20`,marginBottom:16,animation:"fadeIn 0.4s ease",border:`2px solid ${color}20`}}>
+            <div style={{fontSize:12,color,fontWeight:800,marginBottom:8,...DS}}>THE STORY</div>
+            <div style={{fontSize:15,color:"#1C1917",lineHeight:1.7,...DS}}>{slide}</div>
+            <button onClick={()=>speakEn(slide)} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,...DS}}>üîä Hear this</button>
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:16}}>
+            {storySlides.map((_,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=storyIdx?color:"#E5E7EB"}}/>)}
+          </div>
+          {storyIdx<storySlides.length-1 ?
+            <button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Next ‚Ä∫</button> :
+            <button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Start Learning! üëã</button>
+          }
+        </div>
+      </div>
+    );
+  }
+
+  const lessonNum = phase==="lesson1"?1:phase==="lesson2"?2:3;
+  const lessonStart = lessonNum===1?0:lessonNum===2?4:8;
+  const lessonWords = LAND1_WORDS.slice(lessonStart, lessonStart+4);
+  const nextPhase = phase==="lesson1"?"game1":phase==="lesson2"?"game2":"game3";
+
+  if(["lesson1","lesson2","lesson3"].includes(phase)){
+    const word = lessonWords[wordIdx];
+    return (
+      <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+        {FONT_LINK}
+        <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+          <div style={{flex:1,fontSize:16,color:"white",...DS}}>Lesson {lessonNum} of 3</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>{wordIdx+1} / 4</div>
+        </div>
+        <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:16}}>
+            <div style={{fontSize:52,marginBottom:8}}>{word.emoji}</div>
+            <div style={{fontSize:38,color,...DS,fontWeight:900,marginBottom:4}}>{word.es}</div>
+            <div style={{fontSize:22,color:"#6B7280",marginBottom:16,...DS}}>{word.en}</div>
+            <div style={{background:`${color}10`,borderRadius:14,padding:"12px 16px",fontSize:14,color:"#1C1917",lineHeight:1.6,textAlign:"left",marginBottom:12,...DS}}><span style={{color,fontWeight:800}}>Memory Hook: </span>{word.hook}</div>
+            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+              <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1.5px solid ${color}40`,borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color,fontWeight:700,...DS}}>üîä {word.es}</button>
+              <button onClick={()=>speakEn(word.en)} style={{background:"#F3F4F6",border:"1.5px solid #E5E7EB",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color:"#6B7280",fontWeight:700,...DS}}>üîä {word.en}</button>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:16}}>
+            {lessonWords.map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<=wordIdx?color:"#E5E7EB"}}/>)}
+          </div>
+          {wordIdx<3 ?
+            <button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Next Word ‚Ä∫</button> :
+            <button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Let's Play! üéÆ</button>
+          }
+        </div>
+      </div>
+    );
+  }
+
+  if(phase==="game1")    return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street ‚Äî Match the Greetings!" onComplete={()=>setPhase("limerick")} emoji="üó∫Ô∏è"/>;
+  if(phase==="limerick") return <RewardScreen kind="limerick" text={LAND1_LIMERICK} color={color} landName="Greetings" onContinue={()=>{setPhase("lesson2");setWordIdx(0);}}/>;
+  if(phase==="game2")    return <ShootingGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>setPhase("joke")} emoji="üéØ"/>;
+  if(phase==="joke")     return <RewardScreen kind="joke" text={LAND1_JOKE} color={color} landName="Greetings" onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
+  if(phase==="game3")    return <FallingWordsGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="‚¨áÔ∏è"/>;
+  if(phase==="boss")     return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete}/>;
+  return null;
+}
+
+
+// ============================================================
+// LAND 2-25 WORDS + CONTENT
+// ============================================================
+const LAND2_WORDS = [
+  { es:"A la derecha",  en:"To the right",    emoji:"‚û°Ô∏è", speakHook:"Think right, think derecha!" },
+  { es:"A la izquierda",en:"To the left",     emoji:"‚¨ÖÔ∏è", speakHook:"Izquierda is quirky and goes left!" },
+  { es:"Todo recto",    en:"Straight ahead",  emoji:"‚¨ÜÔ∏è", speakHook:"Todo recto, totally straight ahead!" },
+  { es:"Dobla",         en:"Turn",            emoji:"‚Ü©Ô∏è", speakHook:"Dobla ‚Äî like a door swinging!" },
+  { es:"El bano",       en:"The bathroom",    emoji:"üöΩ", speakHook:"The most important word ever!" },
+  { es:"La tienda",     en:"The store",       emoji:"üè™", speakHook:"La tienda ‚Äî where you spend money!" },
+  { es:"El mercado",    en:"The market",      emoji:"üõí", speakHook:"El mercado, the market!" },
+  { es:"La plaza",      en:"The plaza",       emoji:"üèõÔ∏è", speakHook:"La plaza, the heart of the city!" },
+  { es:"Disculpe",      en:"Excuse me",       emoji:"üôã", speakHook:"Disculpe ‚Äî be cool and excuse me!" },
+  { es:"Cerca",         en:"Near",            emoji:"üìç", speakHook:"Cerca sounds like search nearby!" },
+  { es:"Lejos",         en:"Far",             emoji:"üó∫Ô∏è", speakHook:"Lejos, far away!" },
+  { es:"Ayuda",         en:"Help",            emoji:"üÜò", speakHook:"Ayuda ‚Äî you-da need help!" },
+];
+const LAND2_CONTENT = {
+  story:["You need to find a bathroom in Cuenca. Urgently.","You spot a local and ask for directions in perfect Spanish.","She points left, says many words, waves twice, points right, says something about a fountain, walks away smiling.","You go left. You find a bakery. The bathroom is not here. The bread is excellent though.","This land exists so that never happens to you again."],
+  limerick:"A tourist who needed the bathroom one day,\nAsked directions in Spanish the very wrong way.\nHe went left at the plaza,\nFound a whole new piazza,\nHe now lives there. His name is Jose.",
+  joke:"A family asks where the bathroom is in perfect Spanish. The local gives detailed directions at full speed. The family nods confidently and walks into a shoe store. They bought three pairs. Still needed the bathroom.",
+};
+const LAND3_WORDS = [
+  { es:"Mama",      en:"Mom",     emoji:"üë©", speakHook:"Mama is the same everywhere!" },
+  { es:"Papa",      en:"Dad",     emoji:"üë®", speakHook:"Papa sounds like dad!" },
+  { es:"Hermana",   en:"Sister",  emoji:"üëß", speakHook:"Hermana ‚Äî the one who borrows your stuff!" },
+  { es:"Hermano",   en:"Brother", emoji:"üë¶", speakHook:"Hermano ‚Äî brother version!" },
+  { es:"Abuela",    en:"Grandma", emoji:"üëµ", speakHook:"Abuela ‚Äî sneezing on a propeller!" },
+  { es:"Abuelo",    en:"Grandpa", emoji:"üë¥", speakHook:"Abuelo ‚Äî same sneeze, dignified!" },
+  { es:"Bebe",      en:"Baby",    emoji:"üë∂", speakHook:"Babies say bebe ‚Äî they already know Spanish!" },
+  { es:"Familia",   en:"Family",  emoji:"üë®‚Äçüë©‚Äçüëß‚Äçüë¶", speakHook:"Familia sounds just like family!" },
+  { es:"Tia",       en:"Aunt",    emoji:"üë©", speakHook:"Tia brings the best food!" },
+  { es:"Tio",       en:"Uncle",   emoji:"üë®", speakHook:"Tio ‚Äî cool tio energy!" },
+  { es:"Prima",     en:"Cousin (girl)", emoji:"üëß", speakHook:"Prima ‚Äî primary cousin friend!" },
+  { es:"Primo",     en:"Cousin (boy)",  emoji:"üë¶", speakHook:"Primo ‚Äî prime cousin!" },
+];
+const LAND3_CONTENT = {
+  story:["Spanish family words sound like something completely different in English.","Your grandmother is your Abuela ‚Äî like sneezing while saying propeller.","Your grandfather is your Abuelo ‚Äî same sneeze, dignified.","Your baby sibling is your Bebe ‚Äî what babies say anyway.","By the end you'll sound like you've known these your whole life. Your abuela will be impressed and probably feed you."],
+  limerick:"A girl tried to say grandma in Spanish one day.\nAbuela she shouted ‚Äî her grandma said Ay!\nShe clapped and said Bueno!\nThen called for Abuelo.\nNow both of them follow her around every day.",
+  joke:"A kid learns hermano means brother. She walks to her older sister and says you are NOT my hermano. Her sister says I know, I am your hermana. The kid thinks for a long time. Then says so there's a whole separate word just for you being annoying?",
+};
+const LAND4_WORDS = [
+  { es:"El pollo",      en:"Chicken",         emoji:"üçó", speakHook:"Pollo sounds like poyo ‚Äî chicken!" },
+  { es:"El arroz",      en:"Rice",            emoji:"üçö", speakHook:"El arroz ‚Äî always there for you!" },
+  { es:"La fruta",      en:"Fruit",           emoji:"üçé", speakHook:"La fruta sounds like fruit!" },
+  { es:"El pan",        en:"Bread",           emoji:"üçû", speakHook:"El pan ‚Äî pan you bake bread in!" },
+  { es:"La leche",      en:"Milk",            emoji:"ü•õ", speakHook:"La leche ‚Äî stretchy like milk pouring!" },
+  { es:"El agua",       en:"Water",           emoji:"üíß", speakHook:"El agua ‚Äî refreshing!" },
+  { es:"El jugo",       en:"Juice",           emoji:"üßÉ", speakHook:"El jugo ‚Äî Hugo loves his juice!" },
+  { es:"El cafe",       en:"Coffee",          emoji:"‚òï", speakHook:"El cafe ‚Äî just like cafe!" },
+  { es:"Tengo hambre",  en:"I am hungry",     emoji:"üòã", speakHook:"I have hunger ‚Äî most useful phrase!" },
+  { es:"Tengo sed",     en:"I am thirsty",    emoji:"ü•§", speakHook:"I have thirst ‚Äî sed like said!" },
+  { es:"La cuenta",     en:"The bill",        emoji:"üßæ", speakHook:"La cuenta ‚Äî time to pay!" },
+  { es:"Buen provecho", en:"Enjoy your meal", emoji:"üçΩÔ∏è", speakHook:"Said before every Spanish meal!" },
+];
+const LAND4_CONTENT = {
+  story:["Spanish food words are critical to learn and here's why.","Order something you don't mean and the waiter brings it with a smile.","Ecuadorian food is delicious so stakes are low.","But point at the menu wrong and you might end up with cuy.","Look it up. Actually ‚Äî learn the food words first, THEN look it up."],
+  limerick:"A traveler sat down at a Cuenca cafe,\nAnd pointed at something he hoped was fillet.\nThe waiter said Bueno!\nBrought soup, bread, and cuy-no,\nHe smiled, took a bite, and just had a great day.",
+  joke:"A kid learns pollo means chicken. Confidently orders pollo perfectly. The waiter brings a plate. She looks down. Looks up. Says this is definitely chicken. Her dad says yes you did it. She thinks and says I'd also like to learn the word for mayonnaise immediately.",
+};
+const LAND5_WORDS = [
+  { es:"Feliz",         en:"Happy",      emoji:"üòä", speakHook:"Feliz ‚Äî like felicitations!" },
+  { es:"Triste",        en:"Sad",        emoji:"üò¢", speakHook:"Triste ‚Äî sad like a sad tree!" },
+  { es:"Enojado",       en:"Angry",      emoji:"üò†", speakHook:"Enojado ‚Äî annoyed angry!" },
+  { es:"Cansado",       en:"Tired",      emoji:"üò¥", speakHook:"Cansado ‚Äî too tired to be happy!" },
+  { es:"Asustado",      en:"Scared",     emoji:"üò®", speakHook:"Ghost says BOO and you're scared-ado!" },
+  { es:"Emocionado",    en:"Excited",    emoji:"ü§©", speakHook:"Emocionado ‚Äî emotional excitement!" },
+  { es:"Aburrido",      en:"Bored",      emoji:"üòë", speakHook:"Aburrido ‚Äî boring burrito!" },
+  { es:"Sorprendido",   en:"Surprised",  emoji:"üò≤", speakHook:"Surprised with extra drama!" },
+  { es:"Bien",          en:"Good",       emoji:"‚úÖ", speakHook:"Bien ‚Äî been good!" },
+  { es:"Mal",           en:"Bad",        emoji:"üòï", speakHook:"Mal ‚Äî malfunction!" },
+  { es:"Mas o menos",   en:"So so",      emoji:"ü§∑", speakHook:"More or less ‚Äî the universal shrug!" },
+  { es:"Estoy bien",    en:"I am fine",  emoji:"üëç", speakHook:"The answer to everything!" },
+];
+const LAND5_CONTENT = {
+  story:["Feelings in Spanish are dramatic. Not because Spanish is dramatic, just a little.","Once you know how to say how you feel, you say it constantly.","You walk into a room and announce that you're happy. You dramatically inform strangers you are tired.","You tell your family you're hungry every twenty minutes ‚Äî which you were doing in English already.","Feelings are a superpower. Let's learn yours."],
+  limerick:"A boy learned estoy triste meant sad,\nAnd used it whenever things went a bit bad.\nLost a game? Estoy triste!\nHis sister got misty.\nNow she does his chores. Best word he ever had.",
+  joke:"A kid learns feliz means happy. She announces Estoy feliz! Her little sister immediately says Estoy feliz tambien! Mom tears up. The older sister whispers ‚Äî I told her we were happy so she'd stop asking us to clean. It worked. Remember this.",
+};
+const LAND6_WORDS = [
+  { es:"El",    en:"The (masc.)",  emoji:"üî§", speakHook:"El ‚Äî masculine the!" },
+  { es:"La",    en:"The (fem.)",   emoji:"üî§", speakHook:"La ‚Äî feminine the!" },
+  { es:"De",    en:"Of / From",    emoji:"üìç", speakHook:"Soy de Cuenca ‚Äî I'm from!" },
+  { es:"Y",     en:"And",          emoji:"‚ûï", speakHook:"Y ‚Äî just one letter for and!" },
+  { es:"En",    en:"In / On",      emoji:"üì¶", speakHook:"En ‚Äî sounds like in!" },
+  { es:"Un",    en:"A (masc.)",    emoji:"1Ô∏è‚É£", speakHook:"Un ‚Äî like one!" },
+  { es:"Que",   en:"That / What",  emoji:"‚ùì", speakHook:"Que ‚Äî what did you say?" },
+  { es:"No",    en:"No",           emoji:"üö´", speakHook:"No ‚Äî same word, easy!" },
+  { es:"Si",    en:"Yes / If",     emoji:"‚úÖ", speakHook:"Si ‚Äî see what we did!" },
+  { es:"Con",   en:"With",         emoji:"ü§ù", speakHook:"Con ‚Äî together with!" },
+  { es:"Es",    en:"Is",           emoji:"üìå", speakHook:"Es ‚Äî Es facil!" },
+  { es:"Muy",   en:"Very",         emoji:"üíØ", speakHook:"Muy ‚Äî very useful!" },
+];
+const LAND6_CONTENT = {
+  story:["Welcome to the Core Words checkpoint. These tiny words hold Spanish together.","El, la, de, y, en ‚Äî small but in every sentence.","Master these and Spanish stops sounding like noise.","Carlos the furniture mover is back. He still wants help on Saturday.","Boss fight is upgraded. ¬°V√°monos!"],
+  limerick:"A traveler learned el and la one day,\nAnd shouted them out in the most confident way,\nLa perro! El gato!\nA local said no-no,\nThe genders are switched. You'll get there. Okay.",
+  joke:"A kid learns si means yes. Mom asks if she cleaned her room. Si! Did she do homework? Si! Did she eat veggies? Si! Did she just learn one Spanish word? Long pause. Si.",
+};
+const LAND7_WORDS = [
+  { es:"La clase",      en:"The class",     emoji:"üè´", speakHook:"La clase ‚Äî like a class!" },
+  { es:"El libro",      en:"The book",      emoji:"üìö", speakHook:"El libro ‚Äî sounds like library!" },
+  { es:"La tarea",      en:"The homework",  emoji:"üìù", speakHook:"La tarea ‚Äî the dreaded tarea!" },
+  { es:"El lapiz",      en:"The pencil",    emoji:"‚úèÔ∏è", speakHook:"El lapiz ‚Äî always disappears!" },
+  { es:"El maestro",    en:"The teacher",   emoji:"üë®‚Äçüè´", speakHook:"El maestro ‚Äî conductor of learning!" },
+  { es:"La escuela",    en:"The school",    emoji:"üè´", speakHook:"La escuela!" },
+  { es:"El examen",     en:"The test",      emoji:"üìã", speakHook:"El examen ‚Äî like exam!" },
+  { es:"El escritorio", en:"The desk",      emoji:"ü™ë", speakHook:"Escritorio ‚Äî where you write!" },
+  { es:"No entiendo",   en:"I do not understand", emoji:"ü§î", speakHook:"No entiendo ‚Äî I do not tend to understand!" },
+  { es:"La mochila",    en:"The backpack",  emoji:"üéí", speakHook:"Mochila ‚Äî carries everything!" },
+  { es:"El recreo",     en:"The recess",    emoji:"‚öΩ", speakHook:"El recreo ‚Äî the best time!" },
+  { es:"El bano",       en:"The bathroom",  emoji:"üöΩ", speakHook:"Most important question in school!" },
+];
+const LAND7_CONTENT = {
+  story:["School words in Spanish are extremely useful.","When you move to a new country and everyone speaks Spanish at full speed, you have two choices.","Smile and nod like a bobblehead for the entire year.","OR know enough school words to find your pencil, understand homework due dates, and politely tell your teacher you did the assignment.","Your teachers will appreciate it. Your pencil will too."],
+  limerick:"A boy learned that libro meant book right away,\nAnd carried one proudly to school every day.\nHis teacher said Bueno!\nHis backpack said no-no.\nHe had seventeen books. Someone take some away.",
+  joke:"A kid learns lapiz means pencil. She loses hers. She asks her teacher donde esta mi lapiz perfectly. Her teacher walks to the lost and found and hands her back four pencils. She didn't know she'd lost that many.",
+};
+const LAND8_WORDS = [
+  { es:"Uno",    en:"One",       emoji:"1Ô∏è‚É£", speakHook:"Uno ‚Äî the card game!" },
+  { es:"Dos",    en:"Two",       emoji:"2Ô∏è‚É£", speakHook:"Dos ‚Äî like dose, take two!" },
+  { es:"Tres",   en:"Three",     emoji:"3Ô∏è‚É£", speakHook:"Tres ‚Äî like tres leches, three milks!" },
+  { es:"Cuatro", en:"Four",      emoji:"4Ô∏è‚É£", speakHook:"Cuatro ‚Äî four strings on a cuatro guitar!" },
+  { es:"Cinco",  en:"Five",      emoji:"5Ô∏è‚É£", speakHook:"Cinco ‚Äî like Cinco de Mayo!" },
+  { es:"Seis",   en:"Six",       emoji:"6Ô∏è‚É£", speakHook:"Seis ‚Äî say six in Spanish!" },
+  { es:"Siete",  en:"Seven",     emoji:"7Ô∏è‚É£", speakHook:"Siete ‚Äî seven is siete!" },
+  { es:"Ocho",   en:"Eight",     emoji:"8Ô∏è‚É£", speakHook:"Ocho ‚Äî eight tentacles on an ocho-pus!" },
+  { es:"Nueve",  en:"Nine",      emoji:"9Ô∏è‚É£", speakHook:"Nueve ‚Äî almost new, nueve!" },
+  { es:"Diez",   en:"Ten",       emoji:"üîü", speakHook:"Diez ‚Äî ten fingers, diez dedos!" },
+  { es:"Veinte", en:"Twenty",    emoji:"2Ô∏è‚É£0Ô∏è‚É£", speakHook:"Veinte ‚Äî twenty!" },
+  { es:"Cien",   en:"One hundred", emoji:"üíØ", speakHook:"Cien ‚Äî one hundred percent!" },
+];
+const LAND8_CONTENT = {
+  story:["Numbers in Spanish follow the same rules as English ‚Äî great news.","Bad news: people use them at full speed and string them together into prices, addresses, phone numbers.","A vendor in Cuenca's market once told a tourist her bag cost cincuenta y dos dollars.","The tourist heard five words, understood zero, handed over a hundred and said keep the change because she panicked.","We're going to make sure that never happens to you. Your wallet will thank us."],
+  limerick:"A boy counted uno dos tres every day,\nBy cuatro and cinco he felt pretty okay.\nAt seis he got cocky,\nAt siete got rocky,\nBy ocho he had forgotten uno. Anyway.",
+  joke:"A kid learns to count to ten perfectly. Her dad quizzes her. How do you say ten? Diez. How do you say two? Dos. How do you say eight? Long pause. Diez minus dos? Dad stares. Kid shrugs. I'm still learning the middle ones.",
+};
+const LAND9_WORDS = [
+  { es:"Rojo",      en:"Red",      emoji:"üî¥", speakHook:"Rojo ‚Äî rouge in French!" },
+  { es:"Azul",      en:"Blue",     emoji:"üîµ", speakHook:"Azul ‚Äî mysterious blue!" },
+  { es:"Verde",     en:"Green",    emoji:"üü¢", speakHook:"Verde ‚Äî verdant green!" },
+  { es:"Amarillo",  en:"Yellow",   emoji:"üü°", speakHook:"Amarillo ‚Äî a yellow armadillo!" },
+  { es:"Morado",    en:"Purple",   emoji:"üü£", speakHook:"Morado ‚Äî magnificent color!" },
+  { es:"Rosado",    en:"Pink",     emoji:"üå∏", speakHook:"Rosado ‚Äî a pink rose!" },
+  { es:"Naranja",   en:"Orange",   emoji:"üü†", speakHook:"Naranja ‚Äî the fruit AND the color!" },
+  { es:"Blanco",    en:"White",    emoji:"‚¨ú", speakHook:"Blanco ‚Äî blanc in French!" },
+  { es:"Negro",     en:"Black",    emoji:"‚¨õ", speakHook:"Negro ‚Äî like a dark night!" },
+  { es:"Gris",      en:"Gray",     emoji:"ü©∂", speakHook:"Gris ‚Äî gray and slippery!" },
+  { es:"Cafe",      en:"Brown",    emoji:"ü§é", speakHook:"Cafe means brown AND coffee!" },
+  { es:"Multicolor",en:"Colorful", emoji:"üåà", speakHook:"Multicolor ‚Äî rainbow!" },
+];
+const LAND9_CONTENT = {
+  story:["Colors are secretly everywhere in Spanish.","You'll walk Cuenca and think that door is rojo, that wall is azul, that flower is amarillo.","You'll do this out loud. Strangers will nod approvingly.","Only amarillo will trouble you ‚Äî it means yellow and sounds like nothing in English.","We have a memory hook for it. You're welcome."],
+  limerick:"A painter in Cuenca mixed rojo and blue,\nAnd ended up with a magnificent hue.\nHe said that is morado!\nWhich means purple. Bravo-do.\nHe painted his house that color. Wouldn't you?",
+  joke:"Knock knock. Who's there? Amarillo. Amarillo who? Amarillo nice person once you know me, but right now I need you to remember I mean YELLOW and not an armadillo.",
+};
+const LAND10_WORDS = [
+  { es:"El perro",   en:"The dog",        emoji:"üêï", speakHook:"El perro ‚Äî rolls like a dog rolling over!" },
+  { es:"El gato",    en:"The cat",        emoji:"üê±", speakHook:"El gato ‚Äî fancy Italian cheese energy!" },
+  { es:"El pajaro",  en:"The bird",       emoji:"üê¶", speakHook:"El pajaro ‚Äî birds go pa ha!" },
+  { es:"El pez",     en:"The fish",       emoji:"üêü", speakHook:"El pez ‚Äî Pez candy is fish shaped!" },
+  { es:"El caballo", en:"The horse",      emoji:"üêé", speakHook:"El caballo ‚Äî riding to a cab!" },
+  { es:"La vaca",    en:"The cow",        emoji:"üêÑ", speakHook:"La vaca goes moo!" },
+  { es:"El cerdo",   en:"The pig",        emoji:"üê∑", speakHook:"El cerdo ‚Äî certain pigs!" },
+  { es:"El mono",    en:"The monkey",     emoji:"üêí", speakHook:"El mono ‚Äî one funny monkey!" },
+  { es:"El oso",     en:"The bear",       emoji:"üêª", speakHook:"El oso ‚Äî oh so big!" },
+  { es:"La serpiente",en:"The snake",     emoji:"üêç", speakHook:"La serpiente ‚Äî serpent slithering!" },
+  { es:"El cuy",     en:"The guinea pig", emoji:"üêπ", speakHook:"El cuy ‚Äî most important in Ecuador!" },
+  { es:"El pollo",   en:"The chicken",    emoji:"üçó", speakHook:"El pollo ‚Äî you know this!" },
+];
+const LAND10_CONTENT = {
+  story:["Animals in Spanish are wonderful and occasionally alarming.","A dog is a perro ‚Äî sounds like asking a question. A cat is a gato ‚Äî fancy Italian cheese.","A fish is a pez, just like the candy, and the Pez candy inventor clearly knew Spanish.","The most important animal here is cuy.","You may remember cuy from Land 4. A cuy is a delicious traditional Ecuadorian guinea pig. Your class hamster is not safe in Cuenca. We said what we said."],
+  limerick:"A girl saw a perro and said Hola dog!\nThe perro just stared like a bump on a log.\nShe said Perro I mean it!\nThe dog finally seen it.\nNow follows her home through the fog every jog.",
+  joke:"Knock knock. Who's there? Gato. Gato who? Gato be honest ‚Äî I'm a cat, I don't knock, I just stare until you open the door. This joke was a mistake.",
+};
+const LAND11_WORDS = [
+  { es:"Pero",     en:"But",         emoji:"‚Ü™Ô∏è", speakHook:"Pero ‚Äî pear-oh!" },
+  { es:"Porque",   en:"Because",     emoji:"üí°", speakHook:"Porque ‚Äî that is why!" },
+  { es:"Tambien",  en:"Also / Too",  emoji:"‚ûï", speakHook:"Tambien ‚Äî me too!" },
+  { es:"Cuando",   en:"When",        emoji:"‚è∞", speakHook:"Cuando ‚Äî when when when?" },
+  { es:"Donde",    en:"Where",       emoji:"üìç", speakHook:"Donde ‚Äî where is the bathroom!" },
+  { es:"Como",     en:"How / Like",  emoji:"‚ùì", speakHook:"Como ‚Äî como estas?" },
+  { es:"Siempre",  en:"Always",      emoji:"‚ôæÔ∏è", speakHook:"Siempre ‚Äî always remember!" },
+  { es:"Nunca",    en:"Never",       emoji:"üö´", speakHook:"Nunca ‚Äî none-ever!" },
+  { es:"Todo",     en:"Everything",  emoji:"üåê", speakHook:"Todo ‚Äî toto-ally everything!" },
+  { es:"Nada",     en:"Nothing",     emoji:"‚≠ï", speakHook:"Nada ‚Äî nothing at all!" },
+  { es:"Mucho",    en:"A lot",       emoji:"üìà", speakHook:"Mucho mucho!" },
+  { es:"Ahora",    en:"Now",         emoji:"‚è≥", speakHook:"Ahora ‚Äî right now!" },
+];
+const LAND11_CONTENT = {
+  story:["Checkpoint two. You know enough Spanish for real conversations now.","Real conversations need connector words ‚Äî pero, porque, tambien, cuando.","Without these you sound like a robot listing nouns.","The tambien sister returns. She still says tambien to literally everything.","Last boss before intermediate."],
+  limerick:"A traveler said tambien with such pride,\nWhenever a Spaniard agreed by his side,\nThe locals said si-si!\nHe said tambien three-three!\nNow he says tambien even when he has lied.",
+  joke:"A kid learns nunca means never. Her brother asks did you take my snack? Nunca! Did you read my journal? Nunca! Did you just learn one Spanish word? Long pause. Nunca.",
+};
+
+const LAND12_WORDS = [
+  { es:"Ir",      en:"To go",        emoji:"üö∂", speakHook:"Ir ‚Äî two letters to go anywhere!" },
+  { es:"Ser",     en:"To be (always)",emoji:"ü™®",speakHook:"Ser ‚Äî for who you ARE!" },
+  { es:"Estar",   en:"To be (now)",  emoji:"üí≠", speakHook:"Estar ‚Äî how you ARE right now!" },
+  { es:"Tener",   en:"To have",      emoji:"ü§≤", speakHook:"Tener ‚Äî like tenure!" },
+  { es:"Hacer",   en:"To do/make",   emoji:"üõ†Ô∏è", speakHook:"Hacer ‚Äî to do or make!" },
+  { es:"Ver",     en:"To see",       emoji:"üëÄ", speakHook:"Ver ‚Äî sounds like view!" },
+  { es:"Dar",     en:"To give",      emoji:"üéÅ", speakHook:"Dar ‚Äî give it a dar!" },
+  { es:"Querer",  en:"To want/love", emoji:"‚ù§Ô∏è", speakHook:"Querer ‚Äî to want or to love!" },
+  { es:"Poder",   en:"To be able to",emoji:"üí™", speakHook:"Poder ‚Äî like power!" },
+  { es:"Decir",   en:"To say",       emoji:"üí¨", speakHook:"Decir ‚Äî what you say!" },
+  { es:"Hablar",  en:"To speak",     emoji:"üó£Ô∏è", speakHook:"Hablar ‚Äî sounds like blahblah!" },
+  { es:"Comer",   en:"To eat",       emoji:"üç¥", speakHook:"Comer ‚Äî come on let's eat!" },
+];
+const LAND12_CONTENT = {
+  story:["Welcome to intermediate. Things are about to get verby.","Verbs are the action heroes. Without them you can name everything but DO nothing.","Spanish verbs change endings depending on who's doing the action.","Don't panic. We start with the base form and build from there.","Carlos says ayudar means to help. He's still hoping you remembered Saturday."],
+  limerick:"A learner discovered ser and estar,\nAnd asked why on earth there are two so-far,\nOne is for forever,\nOne for whatever,\nHe still gets them wrong but he's gotten this far.",
+  joke:"A kid learns querer means to want AND to love. She tells her mom te quiero. Mom melts. The kid says I want a snack. Mom narrows her eyes. The kid says te quiero MUCHO. Mom hands over the snack.",
+};
+const LAND13_WORDS = [
+  { es:"Hora",       en:"Hour",        emoji:"‚è∞", speakHook:"Hora ‚Äî what hora is it?" },
+  { es:"Dia",        en:"Day",         emoji:"üåû", speakHook:"Dia ‚Äî every good day!" },
+  { es:"Semana",     en:"Week",        emoji:"üìÖ", speakHook:"Semana ‚Äî a seven-day semana!" },
+  { es:"Mes",        en:"Month",       emoji:"üóìÔ∏è", speakHook:"Mes ‚Äî a mes for every month!" },
+  { es:"A√±o",        en:"Year",        emoji:"üéâ", speakHook:"A√±o ‚Äî a whole a√±o!" },
+  { es:"Hoy",        en:"Today",       emoji:"üìç", speakHook:"Hoy ‚Äî hoy is today!" },
+  { es:"Ma√±ana",     en:"Tomorrow",    emoji:"‚û°Ô∏è", speakHook:"Ma√±ana ‚Äî tomorrow‚Ä¶ probably!" },
+  { es:"Ayer",       en:"Yesterday",   emoji:"‚¨ÖÔ∏è", speakHook:"Ayer ‚Äî yesterday is over!" },
+  { es:"Lunes",      en:"Monday",      emoji:"üò¥", speakHook:"Lunes ‚Äî moon-day!" },
+  { es:"Martes",     en:"Tuesday",     emoji:"üõ°Ô∏è", speakHook:"Martes ‚Äî Mars day!" },
+  { es:"Mi√©rcoles",  en:"Wednesday",   emoji:"‚òÑÔ∏è", speakHook:"Mi√©rcoles ‚Äî midweek!" },
+  { es:"Viernes",    en:"Friday",      emoji:"üéâ", speakHook:"Viernes ‚Äî best day!" },
+];
+const LAND13_CONTENT = {
+  story:["Time words are useful because every conversation asks que hora es?","Every plan asks cuando? Both unavoidable.","Without time words you can only meet at vague unknowable moments.","We start with hora, dia, mes, a√±o then days of week.","By the end you can make plans and keep them."],
+  limerick:"A traveler said ma√±ana with pride,\nFor every plan he was asked to provide,\nMa√±ana for cleaning!\nMa√±ana for meaning!\nMa√±ana eventually means 'never', he sighed.",
+  joke:"A kid learns hoy means today and ayer means yesterday. Dad asks when did you do homework? Ayer! When? AYER! Today? Hoy I did NOT because I already did it AYER.",
+};
+const LAND14_WORDS = [
+  { es:"La cabeza",  en:"The head",     emoji:"üß†", speakHook:"Cabeza ‚Äî holds your brain!" },
+  { es:"El ojo",     en:"The eye",      emoji:"üëÅÔ∏è", speakHook:"Ojo ‚Äî sees everything!" },
+  { es:"La oreja",   en:"The ear",      emoji:"üëÇ", speakHook:"Oreja ‚Äî hears!" },
+  { es:"La nariz",   en:"The nose",     emoji:"üëÉ", speakHook:"Nariz ‚Äî smells stuff!" },
+  { es:"La boca",    en:"The mouth",    emoji:"üëÑ", speakHook:"Boca ‚Äî talks too much!" },
+  { es:"La mano",    en:"The hand",     emoji:"‚úã", speakHook:"Mano ‚Äî give me a hand!" },
+  { es:"El pie",     en:"The foot",     emoji:"ü¶∂", speakHook:"Pie ‚Äî your foot!" },
+  { es:"El brazo",   en:"The arm",      emoji:"üí™", speakHook:"Brazo ‚Äî flexes!" },
+  { es:"La pierna",  en:"The leg",      emoji:"ü¶µ", speakHook:"Pierna ‚Äî walks!" },
+  { es:"El coraz√≥n", en:"The heart",    emoji:"‚ù§Ô∏è", speakHook:"Mi coraz√≥n!" },
+  { es:"El dedo",    en:"The finger",   emoji:"üëÜ", speakHook:"Dedo ‚Äî points!" },
+  { es:"La espalda", en:"The back",     emoji:"üîô", speakHook:"Espalda ‚Äî your back!" },
+];
+const LAND14_CONTENT = {
+  story:["Body words are useful and awkward.","Useful because a doctor will ask where it hurts.","Awkward because you'll practice in front of a mirror.","Everyone learning a language has done this.","By the end you can survive a doctor visit and describe a stubbed toe."],
+  limerick:"A patient said pierna at the clinic one day,\nThe doctor said s√≠, what's the trouble I pray?\nThe patient said hmm,\nIt's right here on my arm,\nIt's brazo not pierna. They laughed anyway.",
+  joke:"A kid learns nariz means nose. She tells abuela your nariz is grande! Abuela narrows her eyes. Kid says I mean your nariz is bonita. Abuela hands her a cookie.",
+};
+const LAND15_WORDS = [
+  { es:"Grande",   en:"Big",     emoji:"ü¶£", speakHook:"Grande ‚Äî a grande coffee is HUGE!" },
+  { es:"Peque√±o",  en:"Small",   emoji:"üêú", speakHook:"Peque√±o ‚Äî tiny!" },
+  { es:"Alto",     en:"Tall",    emoji:"ü¶í", speakHook:"Alto ‚Äî like alt, tall!" },
+  { es:"Bajo",     en:"Short",   emoji:"üê¢", speakHook:"Bajo ‚Äî low and short!" },
+  { es:"Bonito",   en:"Pretty",  emoji:"üå∏", speakHook:"Bonito ‚Äî pretty!" },
+  { es:"Feo",      en:"Ugly",    emoji:"üëπ", speakHook:"Feo ‚Äî not so cute!" },
+  { es:"Nuevo",    en:"New",     emoji:"‚ú®", speakHook:"Nuevo ‚Äî like new!" },
+  { es:"Viejo",    en:"Old",     emoji:"üë¥", speakHook:"Viejo ‚Äî old and wise!" },
+  { es:"R√°pido",   en:"Fast",    emoji:"‚ö°", speakHook:"R√°pido ‚Äî just like rapid!" },
+  { es:"Lento",    en:"Slow",    emoji:"üêå", speakHook:"Lento ‚Äî slow and lent-o!" },
+  { es:"F√°cil",    en:"Easy",    emoji:"üòé", speakHook:"F√°cil ‚Äî facile, easy!" },
+  { es:"Dif√≠cil",  en:"Hard",    emoji:"üò§", speakHook:"Dif√≠cil ‚Äî difficult!" },
+];
+const LAND15_CONTENT = {
+  story:["Adjectives in Spanish change to match what they describe.","A big dog is un perro grande. Big dogs are perros grandes.","A pretty girl is una ni√±a bonita. Adjective got an A.","Forget all this and people still understand.","Carlos says his couch is muy grande, muy pesado, y muy dif√≠cil. You can finally agree."],
+  limerick:"A learner said bonita with pride,\nTo describe her car parked outside,\nIt was actually feo,\nDented and slow,\nNow bonita means 'wrong' in her ride.",
+  joke:"A kid learns viejo means old. She tells abuelo eres muy viejo. He nods proudly. She continues ‚Äî y muy bonito! He melts. She adds ‚Äî y un poco lento. He squints. The cookie remains uneaten.",
+};
+const LAND16_WORDS = [
+  { es:"La tienda",  en:"The store",    emoji:"üè™", speakHook:"Tienda ‚Äî your favorite!" },
+  { es:"El dinero",  en:"Money",        emoji:"üíµ", speakHook:"Dinero ‚Äî keep it close!" },
+  { es:"Comprar",    en:"To buy",       emoji:"üõí", speakHook:"Comprar ‚Äî like compare, then buy!" },
+  { es:"Vender",     en:"To sell",      emoji:"ü§ù", speakHook:"Vender ‚Äî like a vending machine!" },
+  { es:"Caro",       en:"Expensive",    emoji:"üíé", speakHook:"Caro ‚Äî careful, expensive!" },
+  { es:"Barato",     en:"Cheap",        emoji:"üí∞", speakHook:"Barato ‚Äî a bargain!" },
+  { es:"El precio",  en:"The price",    emoji:"üè∑Ô∏è", speakHook:"Precio ‚Äî like price!" },
+  { es:"El cambio",  en:"Change",       emoji:"ü™ô", speakHook:"Cambio ‚Äî exchange!" },
+  { es:"La tarjeta", en:"Card",         emoji:"üí≥", speakHook:"Tarjeta ‚Äî your card!" },
+  { es:"Efectivo",   en:"Cash",         emoji:"üíµ", speakHook:"Effective ‚Äî cash is effective!" },
+  { es:"¬øCu√°nto?",   en:"How much?",    emoji:"‚ùì", speakHook:"Cu√°nto ‚Äî how much?" },
+  { es:"Una bolsa",  en:"A bag",        emoji:"üëú", speakHook:"Bolsa ‚Äî your bag!" },
+];
+const LAND16_CONTENT = {
+  story:["Shopping in Cuenca is its own sport.","The artisan markets are full of beautiful things and very good sellers.","Don't know cu√°nto cuesta and you'll buy a hand-woven hammock by accident.","Don't know cambio and you'll hand over a twenty for a two-dollar empanada.","We'll make sure that never happens."],
+  limerick:"A shopper walked into a Cuenca shop spry,\nAnd asked cu√°nto cuesta with a confident eye,\nThe vendor said veinte,\nThe shopper paid plenty,\nVeinte means twenty. Not five. Don't ask why.",
+  joke:"A kid learns barato means cheap. She holds the most expensive toy and says mira mama, es muy barato! Mom looks at the price. Kid adds ‚Äî para ti!",
+};
+const LAND17_WORDS = [
+  { es:"El sol",      en:"The sun",   emoji:"‚òÄÔ∏è", speakHook:"Sol ‚Äî shines all day!" },
+  { es:"La lluvia",   en:"Rain",      emoji:"üåßÔ∏è", speakHook:"Lluvia ‚Äî falls from clouds!" },
+  { es:"La nieve",    en:"Snow",      emoji:"‚ùÑÔ∏è", speakHook:"Nieve ‚Äî like neve!" },
+  { es:"El viento",   en:"Wind",      emoji:"üí®", speakHook:"Viento ‚Äî ventilation!" },
+  { es:"La nube",     en:"Cloud",     emoji:"‚òÅÔ∏è", speakHook:"Nube ‚Äî newbie cloud!" },
+  { es:"Fr√≠o",        en:"Cold",      emoji:"ü•∂", speakHook:"Fr√≠o ‚Äî freeze!" },
+  { es:"Calor",       en:"Heat",      emoji:"ü•µ", speakHook:"Calor ‚Äî calorie hot!" },
+  { es:"Hace sol",    en:"It's sunny",emoji:"üòé", speakHook:"It makes sun!" },
+  { es:"Hace fr√≠o",   en:"It's cold", emoji:"üß•", speakHook:"It makes cold, brrr!" },
+  { es:"La tormenta", en:"Storm",     emoji:"‚õàÔ∏è", speakHook:"Tormenta ‚Äî tormented!" },
+  { es:"La niebla",   en:"Fog",       emoji:"üå´Ô∏è", speakHook:"Niebla ‚Äî foggy!" },
+  { es:"El arco√≠ris", en:"Rainbow",   emoji:"üåà", speakHook:"Arco√≠ris ‚Äî arc of iris!" },
+];
+const LAND17_CONTENT = {
+  story:["Cuenca's weather is famously unpredictable. Four seasons in an afternoon.","If you can't talk about weather in Spanish, you can't make small talk.","Hace sol! Hace fr√≠o! Est√° lloviendo! These are bus stop greetings.","Good news, only a handful of words.","By the end you can comment on la lluvia, complain about el viento, and impress strangers with meteorological vocabulary."],
+  limerick:"A traveler walked Cuenca one day,\nHace sol! she announced with hooray,\nThen niebla, then lluvia,\nThen sun once again-ya,\nFour seasons before lunch. Que disarray.",
+  joke:"A kid learns calor means heat. On a 90-degree day she shouts MUCHO CALOR! Mom hands water. Goes outside, comes in, shouts MUCHO CALOR! Mom hands more water.",
+};
+const LAND18_WORDS = [
+  { es:"Aqu√≠",     en:"Here",        emoji:"üìç", speakHook:"Aqu√≠ ‚Äî right here!" },
+  { es:"All√≠",     en:"There",       emoji:"üìå", speakHook:"All√≠ ‚Äî way over there!" },
+  { es:"Este",     en:"This",        emoji:"üëá", speakHook:"Este ‚Äî this one!" },
+  { es:"Ese",      en:"That",        emoji:"üëâ", speakHook:"Ese ‚Äî that one!" },
+  { es:"Mi",       en:"My",          emoji:"üôã", speakHook:"Mi ‚Äî my backpack!" },
+  { es:"Tu",       en:"Your",        emoji:"üëà", speakHook:"Tu ‚Äî your stuff!" },
+  { es:"Su",       en:"His/Her",     emoji:"üë§", speakHook:"Su ‚Äî his or her!" },
+  { es:"Nuestro",  en:"Our",         emoji:"ü§ù", speakHook:"Nuestro ‚Äî ours!" },
+  { es:"Hacer",    en:"To make/do",  emoji:"üõ†Ô∏è", speakHook:"Hacer ‚Äî make and do!" },
+  { es:"Dar",      en:"To give",     emoji:"üéÅ", speakHook:"Dar ‚Äî give it!" },
+  { es:"Poner",    en:"To put",      emoji:"üì¶", speakHook:"Poner ‚Äî put it down!" },
+  { es:"Traer",    en:"To bring",    emoji:"üì•", speakHook:"Traer ‚Äî bring it!" },
+];
+const LAND18_CONTENT = {
+  story:["Checkpoint three. You've learned hundreds of words.","This checkpoint is about precision.","Aqu√≠, all√≠, este, ese ‚Äî point at things without picking them up.","Possessives ‚Äî mi, tu, su, nuestro ‚Äî claim things without writing your name.","Carlos has stopped asking about Saturday. He moved the couch himself."],
+  limerick:"A learner said aqu√≠ with a smirk,\nAnd all√≠ with a confident jerk,\nShe pointed at both,\nThen forgot which was which-loath,\nNow she just shrugs and says 'ah√≠'. That works.",
+  joke:"A kid learns mi means my. She points at sister's snack and says mi snack. Sister says NO. Kid says SU snack? Sister says SI. Kid pauses. Pero quiero mi snack. Sister hands it over.",
+};
+const LAND19_WORDS = [
+  { es:"Bueno",   en:"Good",       emoji:"üëç", speakHook:"Bueno ‚Äî all good!" },
+  { es:"Malo",    en:"Bad",        emoji:"üëé", speakHook:"Malo ‚Äî no good!" },
+  { es:"Otro",    en:"Another",    emoji:"üîÅ", speakHook:"Otro ‚Äî give me another!" },
+  { es:"Mismo",   en:"Same",       emoji:"üü∞", speakHook:"Mismo ‚Äî the same!" },
+  { es:"Gente",   en:"People",     emoji:"üë•", speakHook:"Gente ‚Äî the people!" },
+  { es:"Hombre",  en:"Man",        emoji:"üë®", speakHook:"Hombre ‚Äî the man!" },
+  { es:"Mujer",   en:"Woman",      emoji:"üë©", speakHook:"Mujer ‚Äî the woman!" },
+  { es:"Ni√±o",    en:"Boy",        emoji:"üë¶", speakHook:"Ni√±o ‚Äî a child!" },
+  { es:"Parte",   en:"Part",       emoji:"üß©", speakHook:"Parte ‚Äî a part!" },
+  { es:"Lado",    en:"Side",       emoji:"‚ÜîÔ∏è", speakHook:"Lado ‚Äî on this side!" },
+  { es:"Lugar",   en:"Place",      emoji:"üó∫Ô∏è", speakHook:"Lugar ‚Äî what a place!" },
+  { es:"Cosa",    en:"Thing",      emoji:"üì¶", speakHook:"Cosa ‚Äî that cosa!" },
+];
+const LAND19_CONTENT = {
+  story:["Final checkpoint before advanced.","Gente, hombre, mujer, ni√±o ‚Äî everyday people words.","Bueno and malo ‚Äî the two most opinionated words.","Cosa ‚Äî the greatest fallback word. Forget what something is? Say la cosa.","Past this you're a Spanish-speaker. Congrats in advance."],
+  limerick:"A traveler said cosa one day,\nFor every word she forgot on the way,\nLa cosa for table,\nLa cosa for label,\nNow her vocab is cosa. Okay.",
+  joke:"A kid learns bueno means good. Teacher asks how her test went. Bueno! Did she study? Bueno! Actual score? Long pause. M√°s o menos bueno.",
+};
+const LAND20_WORDS = [
+  { es:"Creo",            en:"I believe",       emoji:"ü§î", speakHook:"Creo ‚Äî I believe!" },
+  { es:"Pienso",          en:"I think",         emoji:"üí≠", speakHook:"Pienso ‚Äî pensive!" },
+  { es:"Me gusta",        en:"I like it",       emoji:"üëç", speakHook:"I dig it!" },
+  { es:"No me gusta",     en:"I don't like it", emoji:"üëé", speakHook:"Flip the gusto!" },
+  { es:"Prefiero",        en:"I prefer",        emoji:"‚≠ê", speakHook:"Prefiero ‚Äî prefer!" },
+  { es:"Opino",           en:"In my view",      emoji:"üí¨", speakHook:"Opino ‚Äî opinion!" },
+  { es:"De acuerdo",      en:"Agreed",          emoji:"ü§ù", speakHook:"Accordingly!" },
+  { es:"En mi opini√≥n",   en:"In my opinion",   emoji:"üé§", speakHook:"Make it official!" },
+  { es:"Claro",           en:"Of course",       emoji:"‚úÖ", speakHook:"Clearly!" },
+  { es:"Exacto",          en:"Exactly",         emoji:"üéØ", speakHook:"Exact-o!" },
+  { es:"Depende",         en:"It depends",      emoji:"‚öñÔ∏è", speakHook:"Depende!" },
+  { es:"Tal vez",         en:"Maybe",           emoji:"ü§∑", speakHook:"Tal vez ‚Äî maybe such time!" },
+];
+const LAND20_CONTENT = {
+  story:["Welcome to advanced. Now you talk about how you FEEL about things.","Spanish-speakers love a good debate. Loud, fast, everyone interrupting.","Without opinion words you're stuck nodding like furniture.","Claro and exacto are the two most useful agreement words. Sprinkle them.","Tal vez is the universal escape hatch."],
+  limerick:"A traveler said claro one day,\nTo everything spoken her way,\nClaro, claro, claro!\nThey thought she was cleared-o,\nNow she owes her opinion. Hooray.",
+  joke:"A kid learns me gusta means I like it. Mom asks what for dinner. Me gusta el pollo! Mom serves chicken. Kid pushes plate. Mom narrows eyes. Kid says ‚Äî me gusta el pollo‚Ä¶ en general.",
+};
+const LAND21_WORDS = [
+  { es:"El avi√≥n",       en:"Airplane",      emoji:"‚úàÔ∏è", speakHook:"Aviation in the air!" },
+  { es:"El aeropuerto",  en:"Airport",       emoji:"üõ´", speakHook:"Port for planes!" },
+  { es:"El pasaporte",   en:"Passport",      emoji:"üìî", speakHook:"Pass-a-port, don't lose it!" },
+  { es:"La maleta",      en:"Suitcase",      emoji:"üß≥", speakHook:"Heavy maleta!" },
+  { es:"El boleto",      en:"Ticket",        emoji:"üé´", speakHook:"The magic boleto!" },
+  { es:"El hotel",       en:"Hotel",         emoji:"üè®", speakHook:"Same word, easy!" },
+  { es:"La habitaci√≥n",  en:"Room",          emoji:"üõèÔ∏è", speakHook:"Where you stay!" },
+  { es:"La reserva",     en:"Reservation",   emoji:"üìÖ", speakHook:"Like reserve!" },
+  { es:"El taxi",        en:"Taxi",          emoji:"üöï", speakHook:"Same everywhere!" },
+  { es:"La frontera",    en:"Border",        emoji:"üõÇ", speakHook:"Like frontier!" },
+  { es:"Llegar",         en:"To arrive",     emoji:"üìç", speakHook:"Llegar ‚Äî to arrive!" },
+  { es:"Salir",          en:"To leave",      emoji:"üö™", speakHook:"Salir ‚Äî to leave!" },
+];
+const LAND21_CONTENT = {
+  story:["Travel Spanish is its own language.","Don't know pasaporte and you hand your library card to border patrol.","Don't know reserva and you arrive at a hotel without one.","Aeropuerto, maleta, boleto ‚Äî survival words.","By the end you can travel anywhere without panic-pointing. Cuy still optional."],
+  limerick:"A traveler arrived without reservation one night,\nThe clerk said lo siento, your room is now light,\nThe traveler said claro,\nI'll sleep in the carro,\nThe clerk gave her a room. Out of fright.",
+  joke:"A kid learns maleta means suitcase. She packs it full of snacks. Mom asks where are your clothes? Kid says la cuenta says snacks first. Mom translates 'la cuenta' as 'the bill'. Kid says exactly.",
+};
+const LAND22_WORDS = [
+  { es:"El doctor",    en:"Doctor",        emoji:"ü©∫", speakHook:"Same as English!" },
+  { es:"El hospital",  en:"Hospital",      emoji:"üè•", speakHook:"Same word!" },
+  { es:"La medicina",  en:"Medicine",      emoji:"üíä", speakHook:"Sounds like medicine!" },
+  { es:"La receta",    en:"Prescription",  emoji:"üìù", speakHook:"Doctor's recipe!" },
+  { es:"La fiebre",    en:"Fever",         emoji:"üå°Ô∏è", speakHook:"Feverish!" },
+  { es:"El dolor",     en:"Pain",          emoji:"üò£", speakHook:"Dolores knows pain!" },
+  { es:"Sano",         en:"Healthy",       emoji:"üí™", speakHook:"Same as sane!" },
+  { es:"Enfermo",      en:"Sick",          emoji:"ü§í", speakHook:"Like infirm!" },
+  { es:"La cita",      en:"Appointment",   emoji:"üìÖ", speakHook:"Your meeting!" },
+  { es:"La farmacia",  en:"Pharmacy",      emoji:"üíä", speakHook:"Pharmacy!" },
+  { es:"La pastilla",  en:"Pill",          emoji:"üíä", speakHook:"Tiny pill!" },
+  { es:"Me duele",     en:"It hurts me",   emoji:"üòñ", speakHook:"It hurts me!" },
+];
+const LAND22_CONTENT = {
+  story:["Health Spanish is critical and hopefully rarely needed.","When you need it, you really need it.","Me duele plus body part ‚Äî me duele la cabeza ‚Äî is the most useful pattern.","Farmacia in Ecuador is your friend.","By the end you can survive minor medical situations. Major ones need a doctor and a translator."],
+  limerick:"A traveler said me duele one day,\nFor everything on the way,\nMe duele la pierna,\nMe duele la cabeza,\nMe duele tomorrow. The doctor said pay.",
+  joke:"A kid learns me duele means it hurts. Mom asks her to do chores. Me duele la pierna! Walk to sink anyway. Me duele el brazo! Mom hands a dishtowel. Me duele EVERYTHING. Mom says ten minutes to feel better. Kid is cured.",
+};
+const LAND23_WORDS = [
+  { es:"La fiesta",     en:"Party",        emoji:"üéâ", speakHook:"Same in English!" },
+  { es:"Los amigos",    en:"Friends",      emoji:"üë´", speakHook:"Same word!" },
+  { es:"Bailar",        en:"To dance",     emoji:"üíÉ", speakHook:"Bye-LAR ‚Äî bailar!" },
+  { es:"Cantar",        en:"To sing",      emoji:"üé§", speakHook:"Like chant!" },
+  { es:"La m√∫sica",     en:"Music",        emoji:"üé∂", speakHook:"Same word!" },
+  { es:"El cumplea√±os", en:"Birthday",     emoji:"üéÇ", speakHook:"Completing years!" },
+  { es:"El regalo",     en:"Gift",         emoji:"üéÅ", speakHook:"Royal gift!" },
+  { es:"Brindar",       en:"To toast",     emoji:"ü•Ç", speakHook:"Raise the glass!" },
+  { es:"Divertido",     en:"Fun",          emoji:"üòÑ", speakHook:"Diverting fun!" },
+  { es:"Juntos",        en:"Together",     emoji:"ü§ù", speakHook:"Joined together!" },
+  { es:"Conocer",       en:"To meet/know", emoji:"ü§ù", speakHook:"To know a person!" },
+  { es:"Celebrar",      en:"To celebrate", emoji:"ü•≥", speakHook:"Same root!" },
+];
+const LAND23_CONTENT = {
+  story:["Social Spanish is the most fun to learn because using it means socializing.","Ecuadorian fiestas are next-level. Food fantastic, music loud, bailar until dawn.","Can't say los amigos or feliz cumplea√±os and you'll have a quiet time.","Cumplea√±os deserves special attention. It's the law.","The cuy may or may not be served. We're still not telling. Tal vez."],
+  limerick:"A guest at a fiesta one night,\nSaid bailar with all of her might,\nShe danced till the dawn,\nThen kept dancing on,\nHer abuela said mija, sleep tight.",
+  joke:"A kid learns regalo means gift. She tells brother ‚Äî soy un regalo. He says you are NOT. She says soy un regalo a mama. Mom hears and hands them BOTH a regalo.",
+};
+const LAND24_WORDS = [
+  { es:"El tel√©fono",    en:"Phone",        emoji:"üì±", speakHook:"Same word!" },
+  { es:"La computadora", en:"Computer",     emoji:"üíª", speakHook:"Same word again!" },
+  { es:"El internet",    en:"Internet",     emoji:"üåê", speakHook:"Universal!" },
+  { es:"El wifi",        en:"WiFi",         emoji:"üì∂", speakHook:"WEE-fee!" },
+  { es:"La pantalla",    en:"Screen",       emoji:"üñ•Ô∏è", speakHook:"The screen!" },
+  { es:"La contrase√±a",  en:"Password",     emoji:"üîí", speakHook:"Contra-secret!" },
+  { es:"El correo",      en:"Email",        emoji:"üìß", speakHook:"Like courier!" },
+  { es:"La foto",        en:"Photo",        emoji:"üì∑", speakHook:"Same!" },
+  { es:"El video",       en:"Video",        emoji:"üé•", speakHook:"Same!" },
+  { es:"Descargar",      en:"To download",  emoji:"‚¨áÔ∏è", speakHook:"Discharge!" },
+  { es:"Conectar",       en:"To connect",   emoji:"üîå", speakHook:"Connect!" },
+  { es:"El cargador",    en:"Charger",      emoji:"üîã", speakHook:"Charges the phone!" },
+];
+const LAND24_CONTENT = {
+  story:["Tech Spanish is mostly easy ‚Äî most words are from English.","Internet is internet. Wifi is wifi ‚Äî say WEE-fee not WHY-fie.","Tricky ones: contrase√±a for password, pantalla for screen, cargador for charger.","Cuenca has caf√©s with WiFi gratis on every corner.","By the end you ask for the contrase√±a without charades. The barista thanks you."],
+  limerick:"A traveler walked into a caf√©,\nAnd asked for the wifi to play,\nThe barista said claro,\nLa contrase√±a‚Ä¶ mira,\nIt's written on the wall. Look away.",
+  joke:"A kid asks parents for wifi contrase√±a. They give it. Doesn't work. La contrase√±a no funciona. Mom says oh, we changed it. Kid stares. Mom says ‚Äî we needed peace.",
+};
+const LAND25_WORDS = [
+  { es:"La vida",     en:"Life",       emoji:"üå±", speakHook:"La vida es bella!" },
+  { es:"El amor",     en:"Love",       emoji:"‚ù§Ô∏è", speakHook:"Universal, amor!" },
+  { es:"El mundo",    en:"World",      emoji:"üåç", speakHook:"The whole mundo!" },
+  { es:"El tiempo",   en:"Time",       emoji:"‚è≥", speakHook:"Time, the tiempo!" },
+  { es:"El trabajo",  en:"Work/Job",   emoji:"üíº", speakHook:"The trabajo!" },
+  { es:"La casa",     en:"Home",       emoji:"üè†", speakHook:"Home sweet casa!" },
+  { es:"El camino",   en:"Path/Road",  emoji:"üõ§Ô∏è", speakHook:"Buen camino!" },
+  { es:"La verdad",   en:"Truth",      emoji:"‚úÖ", speakHook:"The verdad!" },
+  { es:"Caminar",     en:"To walk",    emoji:"üö∂", speakHook:"Walk the camino!" },
+  { es:"Volver",      en:"To return",  emoji:"‚Ü©Ô∏è", speakHook:"To return!" },
+  { es:"Aprender",    en:"To learn",   emoji:"üìö", speakHook:"To apprehend!" },
+  { es:"Vivir",       en:"To live",    emoji:"‚ú®", speakHook:"To live, vivir!" },
+];
+const LAND25_CONTENT = {
+  story:["This is it. La Gran Final. The last land.","Look how far you've come. Twenty-four lands ago you said Hola for the first time.","Now you converse, order food, give opinions, describe pain, dance at fiestas.","This land is about the big words. La vida, el amor, el mundo.","One more boss. Then the celebration is yours forever. ¬°V√°monos!"],
+  limerick:"A learner began with just Hola,\nAnd marched through the lands solo-la,\nThrough numbers and colors,\nThrough abuelas and brothers,\nNow speaks Spanish like a Cuencana. ¬°Ol√©!",
+  joke:"A graduating student stands before her teacher. She has finished every land. What have you learned? She thinks. She says todo. And nada. Y mucho mucho. The teacher hands her a diploma. And a guinea pig.",
+};
+
+// Collect all word arrays for Study Hall access
+const ALL_LAND_WORDS = {
+  1:LAND1_WORDS, 2:LAND2_WORDS, 3:LAND3_WORDS, 4:LAND4_WORDS, 5:LAND5_WORDS,
+  6:LAND6_WORDS, 7:LAND7_WORDS, 8:LAND8_WORDS, 9:LAND9_WORDS, 10:LAND10_WORDS,
+  11:LAND11_WORDS, 12:LAND12_WORDS, 13:LAND13_WORDS, 14:LAND14_WORDS, 15:LAND15_WORDS,
+  16:LAND16_WORDS, 17:LAND17_WORDS, 18:LAND18_WORDS, 19:LAND19_WORDS, 20:LAND20_WORDS,
+  21:LAND21_WORDS, 22:LAND22_WORDS, 23:LAND23_WORDS, 24:LAND24_WORDS, 25:LAND25_WORDS,
+};
+
+// ============================================================
+// LandScreen Template + QuizGame + Extra Game Components
+// ============================================================
+function LandScreen({ landNum, words, color, landName, nextLand, story, limerick, joke, onBack, onComplete, games }) {
+  const G1 = (games && games[0]) || MatchingGame;
+  const G2 = (games && games[1]) || QuizGame;
+  const G3 = (games && games[2]) || FallingWordsGame;
+  const [phase, setPhase] = useState("story");
+  const [storyIdx, setStoryIdx] = useState(0);
+  const [wordIdx, setWordIdx] = useState(0);
+  const storySlides = story.map(t=>({text:t}));
+  useEffect(()=>{
+    if(phase==="story"){ const slide=storySlides[storyIdx]; if(slide) setTimeout(()=>speakEn(slide.text),400); }
+    // eslint-disable-next-line
+  },[storyIdx, phase]);
+  useEffect(()=>{
+    if(["lesson1","lesson2","lesson3"].includes(phase)){
+      const start = phase==="lesson1"?0:phase==="lesson2"?4:8;
+      const word = words[start+wordIdx];
+      if(word){ setTimeout(()=>speakEs(word.es),300); setTimeout(()=>speakEn(word.en),1400); setTimeout(()=>speakEn(word.speakHook||word.en),2800); }
+    }
+    // eslint-disable-next-line
+  },[phase, wordIdx]);
+  if(phase==="story"){
+    const slide = storySlides[storyIdx];
+    return (
+      <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+        {FONT_LINK}
+        <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+          <div style={{fontSize:18,color:"white",...DS}}>Land {landNum} ‚Äî {landName}</div>
+        </div>
+        <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{display:"flex",gap:12,marginBottom:16,alignItems:"flex-end"}}>
+            <img src="/characters/grayson.png" style={{height:110}} alt="" onError={e=>e.target.style.display="none"}/>
+            <img src="/characters/peyton.png" style={{height:90}} alt="" onError={e=>e.target.style.display="none"}/>
+          </div>
+          <div style={{background:"white",borderRadius:20,padding:"20px",width:"100%",maxWidth:400,boxShadow:`0 4px 20px ${color}20`,marginBottom:16,border:`2px solid ${color}20`}}>
+            <div style={{fontSize:12,color,fontWeight:800,marginBottom:8,...DS}}>THE STORY</div>
+            <div style={{fontSize:15,color:"#1C1917",lineHeight:1.7,...DS}}>{slide?.text}</div>
+            <button onClick={()=>speakEn(slide?.text||"")} style={{marginTop:10,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,...DS}}>üîä Hear this</button>
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:16}}>{storySlides.map((_,i)=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<=storyIdx?color:"#E5E7EB"}}/>)}</div>
+          {storyIdx<storySlides.length-1 ?
+            <button onClick={()=>setStoryIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Next ‚Ä∫</button> :
+            <button onClick={()=>{setPhase("lesson1");setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Start Learning!</button>
+          }
+        </div>
+      </div>
+    );
+  }
+  const lessonNum = phase==="lesson1"?1:phase==="lesson2"?2:3;
+  const lessonStart = lessonNum===1?0:lessonNum===2?4:8;
+  const lessonWords = words.slice(lessonStart, lessonStart+4);
+  const nextPhase = phase==="lesson1"?"game1":phase==="lesson2"?"game2":"game3";
+  if(["lesson1","lesson2","lesson3"].includes(phase)){
+    const word = lessonWords[wordIdx];
+    return (
+      <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+        {FONT_LINK}
+        <div style={{background:color,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:18}}>‚Üê</button>
+          <div style={{flex:1,fontSize:16,color:"white",...DS}}>Lesson {lessonNum} of 3</div>
+          <div style={{fontSize:13,color:"rgba(255,255,255,0.7)"}}>{wordIdx+1}/4</div>
+        </div>
+        <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:16}}>
+            <div style={{fontSize:52,marginBottom:8}}>{word.emoji}</div>
+            <div style={{fontSize:38,color,...DS,fontWeight:900,marginBottom:4}}>{word.es}</div>
+            <div style={{fontSize:22,color:"#6B7280",marginBottom:16,...DS}}>{word.en}</div>
+            <div style={{background:`${color}10`,borderRadius:14,padding:"12px 16px",fontSize:14,color:"#1C1917",lineHeight:1.6,textAlign:"left",marginBottom:12,...DS}}><span style={{color,fontWeight:800}}>Memory Hook: </span>{word.hook||word.speakHook}</div>
+            <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+              <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1.5px solid ${color}40`,borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color,fontWeight:700,...DS}}>üîä {word.es}</button>
+              <button onClick={()=>speakEn(word.en)} style={{background:"#F3F4F6",border:"1.5px solid #E5E7EB",borderRadius:12,padding:"8px 16px",cursor:"pointer",fontSize:14,color:"#6B7280",fontWeight:700,...DS}}>üîä {word.en}</button>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,marginBottom:16}}>{lessonWords.map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<=wordIdx?color:"#E5E7EB"}}/>)}</div>
+          {wordIdx<3 ?
+            <button onClick={()=>setWordIdx(i=>i+1)} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:color,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Next Word ‚Ä∫</button> :
+            <button onClick={()=>{setPhase(nextPhase);setWordIdx(0);}} style={{width:"100%",maxWidth:400,padding:16,borderRadius:18,background:`linear-gradient(135deg,${color},#F97316)`,border:"none",color:"white",fontSize:17,cursor:"pointer",...DS}}>Play Game! üéÆ</button>
+          }
+        </div>
+      </div>
+    );
+  }
+  if(phase==="game1")    return <G1 words={words.slice(0,4)}  allWords={words} color={color} title={`${landName} ‚Äî Round 1!`} onComplete={()=>setPhase("limerick")} emoji="üó∫Ô∏è"/>;
+  if(phase==="limerick") return <RewardScreen kind="limerick" text={limerick} color={color} landName={landName} onContinue={()=>{setPhase("lesson2");setWordIdx(0);}}/>;
+  if(phase==="game2")    return <G2 words={words.slice(4,8)}  allWords={words} color={color} title={`${landName} ‚Äî Round 2!`} onComplete={()=>setPhase("joke")} emoji="üéØ"/>;
+  if(phase==="joke")     return <RewardScreen kind="joke" text={joke} color={color} landName={landName} onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
+  if(phase==="game3")    return <G3 words={words.slice(8,12)} allWords={words} color={color} title={`${landName} ‚Äî Round 3!`} onComplete={()=>setPhase("boss")} emoji="‚¨áÔ∏è"/>;
+  if(phase==="boss")     return <BossChallenge words={words} color={color} landName={landName} nextLand={nextLand} onComplete={onComplete}/>;
+  return null;
+}
+
+function QuizGame({ words, allWords, color, title, onComplete, emoji }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx];
+  const makeOptions = (w)=>{
+    const correct = w.en;
+    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
+    while(others.length<3) others.push("???");
+    return [correct,...others].sort(()=>Math.random()-0.5);
+  };
+  const [options, setOptions] = useState(()=>makeOptions(word));
+  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt);
+    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      if(idx<words.length-1){ const next=idx+1; setIdx(next); setOptions(makeOptions(words[next])); setSelected(null); }
+      else onComplete();
+    },1300);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length}</div>
+      </div>
+      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
+          <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
+          <div style={{fontSize:34,color,...DS,fontWeight:900}}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,...DS}}>üîä Hear it</button>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{!selected?"üéØ ":opt===word.en?"‚úÖ ":opt===selected?"‚ùå ":""}{opt}</button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WheelOfFortuneGame({ words, color, title, onComplete, emoji }) {
+  const [idx, setIdx] = useState(0);
+  const word = words[idx];
+  const target = (word.es||"").toUpperCase();
+  const norm = (c)=>c.replace(/[√Å√Ñ√Ç]/g,"A").replace(/[√â√ä√ã]/g,"E").replace(/[√ç√è√é]/g,"I").replace(/[√ì√ñ√î]/g,"O").replace(/[√ö√ú√õ]/g,"U");
+  const isLetter = (c)=>/[A-Z√ë]/.test(norm(c));
+  const [revealed, setRevealed] = useState(()=>new Set());
+  const [wrong, setWrong] = useState(0);
+  const [done, setDone] = useState(false);
+  const [score, setScore] = useState(0);
+  useEffect(()=>{ speakEn(word.en); /* eslint-disable-next-line */ },[idx]);
+  const remaining = [...target].filter(c=>isLetter(c)&&!revealed.has(norm(c)));
+  useEffect(()=>{
+    if(!done && remaining.length===0){
+      setDone(true); setScore(s=>s+1); speakEs(word.es);
+      setTimeout(()=>{
+        if(idx<words.length-1){ setIdx(i=>i+1); setRevealed(new Set()); setWrong(0); setDone(false); }
+        else onComplete();
+      },1600);
+    }
+  });
+  const guess = (letter)=>{
+    if(done||revealed.has(letter)) return;
+    if([...target].some(c=>norm(c)===letter)) setRevealed(prev=>new Set([...prev,letter]));
+    else { setWrong(w=>w+1); setRevealed(prev=>new Set([...prev,letter])); }
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>üé° Guess the letters! Word {idx+1}/{words.length} ¬∑ Score {score}</div>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:18,padding:"16px",width:"100%",maxWidth:420,boxShadow:`0 4px 20px ${color}20`,border:`2px solid ${color}30`,marginBottom:14,textAlign:"center"}}>
+          <div style={{fontSize:13,color,fontWeight:800,letterSpacing:2,marginBottom:4}}>MEANS:</div>
+          <div style={{fontSize:22,color:"#1C1917",...DS,marginBottom:6}}>{word.emoji} {word.en}</div>
+          <button onClick={()=>speakEn(word.en)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"4px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,...DS}}>üîä Hear it</button>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center",marginBottom:16,minHeight:60}}>
+          {[...target].map((c,i)=>{
+            const show = !isLetter(c)||revealed.has(norm(c))||done;
+            return(<div key={i} style={{width:32,height:42,background:show?color:"white",border:`2px solid ${color}`,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,...DS,fontWeight:900,color:show?"white":"transparent"}}>{isLetter(c)?c:" "}</div>);
+          })}
+        </div>
+        <div style={{fontSize:13,color:wrong>5?"#EF4444":"#6B7280",marginBottom:10,fontWeight:700,...DS}}>Wrong guesses: {wrong} {wrong>4?"üòÖ":""}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(9, 1fr)",gap:4,width:"100%",maxWidth:420}}>
+          {"ABCDEFGHIJKLMN√ëOPQRSTUVWXYZ".split("").map(L=>{
+            const used = revealed.has(L);
+            const correct = used && [...target].some(c=>norm(c)===L);
+            return(<button key={L} onClick={()=>guess(L)} disabled={used||done} style={{padding:"8px 0",borderRadius:8,fontSize:14,...DS,fontWeight:800,cursor:used?"default":"pointer",border:`2px solid ${used?(correct?"#10B981":"#EF4444"):color+"40"}`,background:used?(correct?"#D1FAE5":"#FEE2E2"):"white",color:used?(correct?"#065F46":"#991B1B"):"#1C1917",opacity:done&&!used?0.4:1}}>{L}</button>);
           })}
         </div>
       </div>
@@ -1395,127 +1569,291 @@ function MyProfileScreen({profile,onBack}){
   );
 }
 
-// -- MAIN APP ------------------------------------------------------------------
-export default function App(){
-  const[profiles,setProfiles]=useState([]);
-  const[loading,setLoading]=useState(true);
-  const[screen,setScreen]=useState("select");
-  const[activeId,setActiveId]=useState(null);
-  const[learnCat,setLearnCat]=useState("greetings");
-  const[learnCatLv,setLearnCatLv]=useState(1);
-  const[activeStory,setActiveStory]=useState(null);
-  const[familyReady,setFamilyReady]=useState(!!getFamilyId());
-  const profile=profiles.find(p=>p.id===activeId)||null;
+function DealOrNoDealGame({ words, allWords, color, title, onComplete, emoji }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [opened, setOpened] = useState({});
+  const [picked, setPicked] = useState(null);
+  const [score, setScore] = useState(0);
+  const word = words[idx];
+  const briefcases = useMemo(()=>{
+    const correct = word.en;
+    const wrongs = pool.filter(w=>w.en!==correct).sort(()=>Math.random()-0.5).slice(0,5).map(w=>w.en);
+    while(wrongs.length<5) wrongs.push("???");
+    const all = [correct, ...wrongs].sort(()=>Math.random()-0.5);
+    return all.map((en,i)=>({en, isCorrect:en===correct, num:i+1}));
+  // eslint-disable-next-line
+  },[idx]);
+  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const tap = (b)=>{
+    if(picked||opened[b.num]) return;
+    if(b.isCorrect){
+      setPicked(b.num); setScore(s=>s+1); speakEs(word.es);
+      setOpened(prev=>({...prev,[b.num]:b.en}));
+      setTimeout(()=>{
+        if(idx<words.length-1){ setIdx(i=>i+1); setOpened({}); setPicked(null); }
+        else onComplete();
+      },1400);
+    } else setOpened(prev=>({...prev,[b.num]:b.en}));
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <style>{`@keyframes shakeOpen{0%,100%{transform:scale(1)}50%{transform:scale(1.05) rotate(2deg)}}`}</style>
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>üíº Pick the right meaning! Score {score}/{words.length}</div>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:18,padding:"18px",width:"100%",maxWidth:420,boxShadow:`0 4px 20px ${color}20`,border:`2px solid ${color}40`,marginBottom:18,textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:4}}>{word.emoji}</div>
+          <div style={{fontSize:30,color,...DS,fontWeight:900,marginBottom:4}}>{word.es}</div>
+          <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"4px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,...DS}}>üîä Hear it</button>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:10,width:"100%",maxWidth:420}}>
+          {briefcases.map(b=>{
+            const isOpened = opened[b.num]!==undefined;
+            const isWinner = picked===b.num;
+            return(<button key={b.num} onClick={()=>tap(b)} disabled={isOpened||picked!=null} style={{aspectRatio:"1/1",borderRadius:14,border:`3px solid ${isWinner?"#10B981":isOpened?"#9CA3AF":color}`,background:isWinner?"linear-gradient(135deg,#10B981,#34D399)":isOpened?"#F3F4F6":`linear-gradient(135deg,${color},${color}CC)`,cursor:isOpened?"default":"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",...DS,fontWeight:900,color:"white",padding:6,animation:isWinner?"shakeOpen 0.4s ease":"none",opacity:isOpened&&!isWinner?0.55:1}}>
+              <div style={{fontSize:32}}>{isOpened?(isWinner?"üèÜ":"‚ùå"):"üíº"}</div>
+              <div style={{fontSize:13,marginTop:4,color:isOpened?(isWinner?"white":"#374151"):"white"}}>{isOpened?b.en:`#${b.num}`}</div>
+            </button>);
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LightningRoundGame({ words, allWords, color, title, onComplete, emoji }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [time, setTime] = useState(5);
+  const word = words[idx];
+  const opts = useMemo(()=>{
+    const correct = word.en;
+    const wrongs = pool.filter(w=>w.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(w=>w.en);
+    return [correct,...wrongs].sort(()=>Math.random()-0.5);
+  // eslint-disable-next-line
+  },[idx]);
+  useEffect(()=>{ speakEs(word.es); setTime(5); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    if(selected) return;
+    if(time<=0){ pick(null); return; }
+    const t = setTimeout(()=>setTime(x=>x-0.1), 100);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line
+  },[time, selected]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt||"timeout");
+    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); }
+      else onComplete();
+    },900);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <style>{`@keyframes flash{0%,100%{background:white}50%{background:#FEE2E2}}`}</style>
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>‚ö° {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score {score} ¬∑ Round {idx+1}/{words.length}</div>
+      </div>
+      <div style={{height:8,background:"rgba(0,0,0,0.06)"}}>
+        <div style={{height:"100%",width:`${(time/5)*100}%`,background:time<2?"#EF4444":time<3?"#F59E0B":color,transition:"width 0.1s linear,background 0.3s"}}/>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{background:"white",borderRadius:18,padding:"20px",width:"100%",maxWidth:420,boxShadow:`0 4px 20px ${color}20`,border:`2px solid ${color}40`,marginBottom:18,textAlign:"center",animation:time<2&&!selected?"flash 0.4s ease infinite":"none"}}>
+          <div style={{fontSize:44,marginBottom:4}}>{word.emoji}</div>
+          <div style={{fontSize:32,color,...DS,fontWeight:900}}>{word.es}</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,width:"100%",maxWidth:420}}>
+          {opts.map(o=>(<button key={o} onClick={()=>pick(o)} style={{padding:"14px 10px",borderRadius:14,border:`2px solid ${!selected?color:o===word.en?"#10B981":o===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":o===word.en?"#D1FAE5":o===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:14,...DS,fontWeight:700,color:"#1C1917"}}>{o}</button>))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MemoryFlipGame({ words, color, title, onComplete, emoji }) {
+  const pairs = words.slice(0,4);
+  const [deck] = useState(()=>{
+    const d = [];
+    pairs.forEach((w,i)=>{
+      d.push({id:`${i}-es`, key:i, text:w.es, side:"es", emoji:w.emoji});
+      d.push({id:`${i}-en`, key:i, text:w.en, side:"en"});
+    });
+    return d.sort(()=>Math.random()-0.5);
+  });
+  const [flipped, setFlipped] = useState([]);
+  const [matched, setMatched] = useState(new Set());
+  const [tries, setTries] = useState(0);
+  useEffect(()=>{ if(matched.size===pairs.length) setTimeout(onComplete,800); /* eslint-disable-next-line */ },[matched]);
+  useEffect(()=>{
+    if(flipped.length===2){
+      const [a,b] = flipped;
+      if(a.key===b.key && a.side!==b.side){
+        const word = pairs[a.key]; speakEs(word.es);
+        setTimeout(()=>{ setMatched(prev=>new Set([...prev,a.key])); setFlipped([]); },600);
+      } else setTimeout(()=>setFlipped([]),900);
+      setTries(t=>t+1);
+    }
+    // eslint-disable-next-line
+  },[flipped]);
+  const flip = (c)=>{
+    if(matched.has(c.key)||flipped.length>=2||flipped.some(f=>f.id===c.id)) return;
+    setFlipped(prev=>[...prev,c]);
+  };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+      {FONT_LINK}
+      <style>{`@keyframes flip{from{transform:rotateY(180deg)}to{transform:rotateY(0)}}`}</style>
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>üÉè {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Pairs found: {matched.size}/{pairs.length} ¬∑ Tries: {tries}</div>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8,width:"100%",maxWidth:420}}>
+          {deck.map(c=>{
+            const shown = flipped.some(f=>f.id===c.id)||matched.has(c.key);
+            return(<button key={c.id} onClick={()=>flip(c)} style={{aspectRatio:"3/4",borderRadius:12,border:`2.5px solid ${shown?(matched.has(c.key)?"#10B981":color):color+"40"}`,background:shown?(matched.has(c.key)?"#D1FAE5":"white"):`linear-gradient(135deg,${color},${color}CC)`,cursor:matched.has(c.key)?"default":"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",...DS,fontWeight:800,padding:6,animation:shown?"flip 0.35s ease":"none"}}>
+              {shown ? <>{c.emoji&&c.side==="es"&&<div style={{fontSize:22,marginBottom:2}}>{c.emoji}</div>}<div style={{fontSize:c.text.length>10?11:13,color:c.side==="es"?color:"#1C1917",textAlign:"center",lineHeight:1.15}}>{c.text}</div></> : <div style={{fontSize:28,color:"white"}}>?</div>}
+            </button>);
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Land 2-25 Screen Functions
+// ============================================================
+function Land2Screen({ onBack, onComplete })  { return <LandScreen landNum={2}  words={LAND2_WORDS}  color="#F97316" landName="Around Town" nextLand="Family"  story={LAND2_CONTENT.story}  limerick={LAND2_CONTENT.limerick}  joke={LAND2_CONTENT.joke}  onBack={onBack} onComplete={onComplete}/>; }
+function Land3Screen({ onBack, onComplete })  { return <LandScreen landNum={3}  words={LAND3_WORDS}  color="#F59E0B" landName="Family"      nextLand="Food"    story={LAND3_CONTENT.story}  limerick={LAND3_CONTENT.limerick}  joke={LAND3_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, QuizGame]}/>; }
+function Land4Screen({ onBack, onComplete })  { return <LandScreen landNum={4}  words={LAND4_WORDS}  color="#10B981" landName="Food"        nextLand="Feelings" story={LAND4_CONTENT.story}  limerick={LAND4_CONTENT.limerick}  joke={LAND4_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, DealOrNoDealGame]}/>; }
+function Land5Screen({ onBack, onComplete })  { return <LandScreen landNum={5}  words={LAND5_WORDS}  color="#3B82F6" landName="Feelings"    nextLand="Core Words 1" story={LAND5_CONTENT.story}  limerick={LAND5_CONTENT.limerick}  joke={LAND5_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[WheelOfFortuneGame, FallingWordsGame, QuizGame]}/>; }
+function Land6Screen({ onBack, onComplete })  { return <LandScreen landNum={6}  words={LAND6_WORDS}  color="#7C3AED" landName="Core Words 1" nextLand="School"  story={LAND6_CONTENT.story}  limerick={LAND6_CONTENT.limerick}  joke={LAND6_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, WheelOfFortuneGame]}/>; }
+function Land7Screen({ onBack, onComplete })  { return <LandScreen landNum={7}  words={LAND7_WORDS}  color="#E8445A" landName="School"      nextLand="Numbers" story={LAND7_CONTENT.story}  limerick={LAND7_CONTENT.limerick}  joke={LAND7_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, QuizGame, DealOrNoDealGame]}/>; }
+function Land8Screen({ onBack, onComplete })  { return <LandScreen landNum={8}  words={LAND8_WORDS}  color="#F97316" landName="Numbers"     nextLand="Colors"  story={LAND8_CONTENT.story}  limerick={LAND8_CONTENT.limerick}  joke={LAND8_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, QuizGame, WheelOfFortuneGame]}/>; }
+function Land9Screen({ onBack, onComplete })  { return <LandScreen landNum={9}  words={LAND9_WORDS}  color="#8B5CF6" landName="Colors"      nextLand="Animals" story={LAND9_CONTENT.story}  limerick={LAND9_CONTENT.limerick}  joke={LAND9_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
+function Land10Screen({ onBack, onComplete }) { return <LandScreen landNum={10} words={LAND10_WORDS} color="#10B981" landName="Animals"     nextLand="Core Words 2" story={LAND10_CONTENT.story} limerick={LAND10_CONTENT.limerick} joke={LAND10_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ShootingGame, FallingWordsGame, MatchingGame]}/>; }
+function Land11Screen({ onBack, onComplete }) { return <LandScreen landNum={11} words={LAND11_WORDS} color="#7C3AED" landName="Core Words 2" nextLand="Verbs"  story={LAND11_CONTENT.story} limerick={LAND11_CONTENT.limerick} joke={LAND11_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, DealOrNoDealGame, WheelOfFortuneGame]}/>; }
+function Land12Screen({ onBack, onComplete }) { return <LandScreen landNum={12} words={LAND12_WORDS} color="#F59E0B" landName="Verbs"        nextLand="Time"   story={LAND12_CONTENT.story} limerick={LAND12_CONTENT.limerick} joke={LAND12_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, LightningRoundGame]}/>; }
+function Land13Screen({ onBack, onComplete }) { return <LandScreen landNum={13} words={LAND13_WORDS} color="#3B82F6" landName="Time"         nextLand="Body"   story={LAND13_CONTENT.story} limerick={LAND13_CONTENT.limerick} joke={LAND13_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
+function Land14Screen({ onBack, onComplete }) { return <LandScreen landNum={14} words={LAND14_WORDS} color="#E8445A" landName="Body"         nextLand="Descriptions" story={LAND14_CONTENT.story} limerick={LAND14_CONTENT.limerick} joke={LAND14_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, FallingWordsGame]}/>; }
+function Land15Screen({ onBack, onComplete }) { return <LandScreen landNum={15} words={LAND15_WORDS} color="#8B5CF6" landName="Descriptions" nextLand="Shopping" story={LAND15_CONTENT.story} limerick={LAND15_CONTENT.limerick} joke={LAND15_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, FallingWordsGame]}/>; }
+function Land16Screen({ onBack, onComplete }) { return <LandScreen landNum={16} words={LAND16_WORDS} color="#10B981" landName="Shopping"     nextLand="Weather"  story={LAND16_CONTENT.story} limerick={LAND16_CONTENT.limerick} joke={LAND16_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[DealOrNoDealGame, QuizGame, LightningRoundGame]}/>; }
+function Land17Screen({ onBack, onComplete }) { return <LandScreen landNum={17} words={LAND17_WORDS} color="#F97316" landName="Weather"      nextLand="Core Words 3" story={LAND17_CONTENT.story} limerick={LAND17_CONTENT.limerick} joke={LAND17_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
+function Land18Screen({ onBack, onComplete }) { return <LandScreen landNum={18} words={LAND18_WORDS} color="#7C3AED" landName="Core Words 3" nextLand="Core Words 4" story={LAND18_CONTENT.story} limerick={LAND18_CONTENT.limerick} joke={LAND18_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, WheelOfFortuneGame, DealOrNoDealGame]}/>; }
+function Land19Screen({ onBack, onComplete }) { return <LandScreen landNum={19} words={LAND19_WORDS} color="#7C3AED" landName="Core Words 4" nextLand="Opinions" story={LAND19_CONTENT.story} limerick={LAND19_CONTENT.limerick} joke={LAND19_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]}/>; }
+function Land20Screen({ onBack, onComplete }) { return <LandScreen landNum={20} words={LAND20_WORDS} color="#E8445A" landName="Opinions"     nextLand="Travel"   story={LAND20_CONTENT.story} limerick={LAND20_CONTENT.limerick} joke={LAND20_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, LightningRoundGame, FallingWordsGame]}/>; }
+function Land21Screen({ onBack, onComplete }) { return <LandScreen landNum={21} words={LAND21_WORDS} color="#3B82F6" landName="Travel"       nextLand="Health"   story={LAND21_CONTENT.story} limerick={LAND21_CONTENT.limerick} joke={LAND21_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[DealOrNoDealGame, QuizGame, FallingWordsGame]}/>; }
+function Land22Screen({ onBack, onComplete }) { return <LandScreen landNum={22} words={LAND22_WORDS} color="#10B981" landName="Health"       nextLand="Social Life" story={LAND22_CONTENT.story} limerick={LAND22_CONTENT.limerick} joke={LAND22_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, WheelOfFortuneGame]}/>; }
+function Land23Screen({ onBack, onComplete }) { return <LandScreen landNum={23} words={LAND23_WORDS} color="#F59E0B" landName="Social Life"  nextLand="Technology" story={LAND23_CONTENT.story} limerick={LAND23_CONTENT.limerick} joke={LAND23_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, LightningRoundGame]}/>; }
+function Land24Screen({ onBack, onComplete }) { return <LandScreen landNum={24} words={LAND24_WORDS} color="#8B5CF6" landName="Technology"   nextLand="The Grand Final" story={LAND24_CONTENT.story} limerick={LAND24_CONTENT.limerick} joke={LAND24_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, DealOrNoDealGame, WheelOfFortuneGame]}/>; }
+function Land25Screen({ onBack, onComplete }) { return <LandScreen landNum={25} words={LAND25_WORDS} color="#7C3AED" landName="The Grand Final" nextLand="Mastery" story={LAND25_CONTENT.story} limerick={LAND25_CONTENT.limerick} joke={LAND25_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]}/>; }
+
+const LAND_SCREENS = {
+  1:Land1Screen, 2:Land2Screen, 3:Land3Screen, 4:Land4Screen, 5:Land5Screen,
+  6:Land6Screen, 7:Land7Screen, 8:Land8Screen, 9:Land9Screen, 10:Land10Screen,
+  11:Land11Screen, 12:Land12Screen, 13:Land13Screen, 14:Land14Screen, 15:Land15Screen,
+  16:Land16Screen, 17:Land17Screen, 18:Land18Screen, 19:Land19Screen, 20:Land20Screen,
+  21:Land21Screen, 22:Land22Screen, 23:Land23Screen, 24:Land24Screen, 25:Land25Screen,
+};
+
+// ============================================================
+// MAIN APP
+// ============================================================
+export default function App() {
+  const [screen, setScreen] = useState("opening");
+  const [familyId, setFamilyId] = useState(null);
+  const [familyCode, setFamilyCode] = useState(null);
+  const [familyName, setFamilyName] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [selectedLand, setSelectedLand] = useState(null);
 
   useEffect(()=>{
-    const link=document.createElement("link");
-    link.href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap";
-    link.rel="stylesheet";document.head.appendChild(link);
-    const style=document.createElement("style");
-    style.textContent="*{box-sizing:border-box}button:active{opacity:.88}::-webkit-scrollbar{display:none}input:focus{outline:none}";
-    document.head.appendChild(style);
-    findVoices();
-    if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=findVoices;[300,1000,2500].forEach(ms=>setTimeout(findVoices,ms));}
-    loadProfiles().then(ps=>{setProfiles(ps);setLoading(false);});
+    const saved = localStorage.getItem("wl_family");
+    if(saved){
+      try {
+        const { id, code, name } = JSON.parse(saved);
+        setFamilyId(id); setFamilyCode(code); setFamilyName(name);
+        loadProfiles(id);
+        setScreen("profiles");
+      } catch(e){}
+    }
   },[]);
 
-  const persist = async (updated) => {
-    setProfiles(updated);
-    for (const p of updated) { await saveProfile(p); }
+  const loadProfiles = async (fid)=>{
+    const { data } = await sb.from("players").select("*").eq("family_id", fid).order("updated_at",{ascending:false});
+    setProfiles(data||[]);
   };
-  const updateProfile = async (id, changes) => {
-    const updated = profiles.map(p => {
-      if (p.id !== id) return p;
-      const merged = { ...p, ...changes };
-      merged.badges = calcBadges(merged);
-      return merged;
-    });
-    setProfiles(updated);
-    const changed = updated.find(p => p.id === id);
-    if (changed) await saveProfile(changed);
+  const handleFamilyDone = (id, code, name)=>{
+    setFamilyId(id); setFamilyCode(code); setFamilyName(name);
+    localStorage.setItem("wl_family", JSON.stringify({id, code, name}));
+    loadProfiles(id);
+    setScreen("profiles");
   };
-
-  const handleSelect=async p=>{
-    const d=todayStr(),yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
-    let streak=p.streak||0;
-    if(p.lastDate===d){}else if(p.lastDate===yesterday){streak+=1;}else{streak=1;}
-    const longestStreak=Math.max(p.longestStreak||0,streak);
-    const updated={...p,streak,longestStreak,lastDate:d,badges:calcBadges({...p,streak})};
-    await persist(profiles.map(x=>x.id===p.id?updated:x));
-    setActiveId(p.id);setScreen("home");
+  const handleCreateProfile = async (name, avatar, color, username)=>{
+    const { data } = await sb.from("players").insert({
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2,6),
+      family_id: familyId, name, avatar, color, stars:0, streak:0, level:1,
+      username: (username||"").trim() || null,
+      last_date: new Date().toISOString().split("T")[0],
+    }).select().single();
+    if(data){ await loadProfiles(familyId); setScreen("profiles"); }
   };
-
-  const handleCreate=async(name,avatar,color)=>{
-    const p=createProfile(name,avatar,color);
-    await persist([...profiles,p]);setActiveId(p.id);setScreen("home");
+  const handleSelectLand = (land)=>{
+    setSelectedLand(land);
+    setScreen("landIntro");
+  };
+  const startLand = (id)=>{
+    setScreen(`land${id}`);
   };
 
-  const handleEarn=async amount=>{
-    if(!activeId||!profile)return;
-    await updateProfile(activeId,{stars:profile.stars+amount});
+  // Complete a land ‚Äî update stars, level, streak in DB and local state
+  const completeLand = async (landId)=>{
+    const isCheckpoint = LANDS.find(l=>l.id===landId)?.level === "Checkpoint";
+    const isFinalBoss = LANDS.find(l=>l.id===landId)?.level === "Final Boss";
+    const stars = isFinalBoss ? 10 : isCheckpoint ? 5 : 3;
+    const newLevel = Math.max(profile.level||1, landId+1);
+    const newStars = (profile.stars||0) + stars;
+    const today = new Date().toISOString().split("T")[0];
+    const lastDate = profile.last_date;
+    let newStreak = profile.streak || 0;
+    if(lastDate !== today){
+      const y = new Date(); y.setDate(y.getDate()-1);
+      const yesterday = y.toISOString().split("T")[0];
+      newStreak = (lastDate === yesterday) ? newStreak+1 : 1;
+    }
+    await sb.from("players").update({ level:newLevel, stars:newStars, streak:newStreak, last_date:today }).eq("id", profile.id);
+    setProfile(p=>({...p, level:newLevel, stars:newStars, streak:newStreak, last_date:today}));
+    setScreen("map");
   };
 
-  const handleStat=async type=>{
-    if(!activeId||!profile)return;
-    const changes={};
-    if(type==="quiz")changes.quizCorrect=(profile.quizCorrect||0)+1;
-    if(type==="speak")changes.speakAttempts=(profile.speakAttempts||0)+1;
-    if(type==="match")changes.matchWins=(profile.matchWins||0)+1;
-    await updateProfile(activeId,changes);
-  };
+  if(screen === "opening")        return <OpeningScreen onEnter={()=>setScreen(familyId?"profiles":"family")} onReturning={()=>setScreen("usernameLogin")}/>;
+  if(screen === "usernameLogin")  return <UsernameLoginScreen onFound={(p)=>{setProfile(p);setFamilyId(p.family_id);setFamilyCode(p.families?.code);setFamilyName(p.families?.name);localStorage.setItem("wl_family",JSON.stringify({id:p.family_id,code:p.families?.code,name:p.families?.name}));setScreen("map");}} onBack={()=>setScreen("opening")}/>;
+  if(screen === "family")         return <FamilySetupScreen onDone={handleFamilyDone}/>;
+  if(screen === "profiles")       return <ProfileSelectScreen profiles={profiles} familyName={familyName} familyCode={familyCode} onSelect={(p)=>{setProfile(p);setScreen("map");}} onCreate={()=>setScreen("createProfile")}/>;
+  if(screen === "createProfile")  return <CreateProfileScreen onDone={handleCreateProfile} onBack={()=>setScreen("profiles")}/>;
+  if(screen === "map")            return <AdventureMap profile={profile} onSelectLand={handleSelectLand} onStudyHall={()=>setScreen("studyHall")} onMyProfile={()=>setScreen("myProfile")}/>;
+  if(screen === "landIntro")      return <LandIntroScreen land={selectedLand} onBack={()=>setScreen("map")} onStartLesson={()=>startLand(selectedLand.id)}/>;
+  if(screen === "studyHall")      return <StudyHallScreen profile={profile} onBack={()=>setScreen("map")} onOpen={(id)=>setScreen("study_"+id)}/>;
+  if(screen === "study_flashcards") return <FlashcardScreen profile={profile} onBack={()=>setScreen("studyHall")} allLandWords={ALL_LAND_WORDS}/>;
+  if(screen === "study_quiz")     return <RandomQuizScreen profile={profile} onBack={()=>setScreen("studyHall")} allLandWords={ALL_LAND_WORDS}/>;
+  if(screen === "myProfile")      return <MyProfileScreen profile={profile} familyCode={familyCode} familyName={familyName} onBack={()=>setScreen("map")}/>;
 
-  const handleLearn=async(catKey,catLevel)=>{
-    if(!profile)return;
-    const cats=[...new Set([...(profile.catsPlayed||[]),`${catLevel}_${catKey}`])];
-    await updateProfile(activeId,{catsPlayed:cats});
-    setLearnCat(catKey);setLearnCatLv(catLevel);setScreen("learn");
-  };
-
-  const handleLevelChange=async lv=>{
-    if(!activeId||!profile)return;
-    await updateProfile(activeId,{level:lv});
-  };
-
-  const handleDailyComplete=async score=>{
-    if(!profile)return;
-    const d=todayStr();
-    const dailyScores={...(profile.dailyScores||{}),[d]:score};
-    await updateProfile(activeId,{stars:profile.stars+(score*3),dailyDone:(profile.dailyDone||0)+1,dailyScores});
-    setScreen("home");
-  };
-
-  const handleStoryComplete=async()=>{
-    if(!profile)return;
-    await updateProfile(activeId,{storiesRead:(profile.storiesRead||0)+1,stars:profile.stars+5});
-    setScreen("stories");
-  };
-
-  if(loading)return(
-    <div style={{minHeight:"100vh",background:BG,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"'Nunito',sans-serif"}}>
-      <div style={{fontSize:64}}>??</div>
-      <div style={{fontSize:30,color:"white",marginTop:12,...DS}}>Wander Lingo</div>
-      <div style={{fontSize:14,color:"rgba(255,255,255,.5)",marginTop:8}}>Loading your adventure...</div>
-    </div>
-  );
-
-  const dailyDone=profile?(profile.dailyScores||{})[todayStr()]!==undefined:false;
-
-  return(
-    <div style={{fontFamily:"'Nunito',sans-serif"}}>
-      {!familyReady&&<FamilySetupScreen onDone={()=>{
-        setFamilyReady(true);
-        loadProfiles().then(ps=>setProfiles(ps));
-      }}/>}
-      {familyReady&&screen==="select"    &&<ProfileSelectScreen profiles={profiles} onSelect={handleSelect} onCreate={()=>setScreen("create")}/>}
-      {familyReady&&screen==="create"    &&<CreateProfileScreen onDone={handleCreate} onBack={()=>setScreen("select")}/>}
-      {familyReady&&screen==="home"      &&profile&&<HomeScreen profile={profile} onLearn={handleLearn} onDaily={()=>setScreen("daily")} onBoard={()=>setScreen("board")} onMyProfile={()=>setScreen("myprofile")} onSwitch={()=>setScreen("select")} onLevelChange={handleLevelChange} onStories={()=>setScreen("stories")} dailyDone={dailyDone}/>}
-      {familyReady&&screen==="learn"     &&profile&&<LearnScreen catKey={learnCat} catLevel={learnCatLv} profile={profile} onBack={()=>setScreen("home")} onEarn={handleEarn} onStat={handleStat}/>}
-      {familyReady&&screen==="daily"     &&profile&&<DailyScreen profile={profile} onBack={()=>setScreen("home")} onComplete={handleDailyComplete}/>}
-      {familyReady&&screen==="board"     &&<LeaderboardScreen profiles={profiles} onBack={()=>setScreen("home")}/>}
-      {familyReady&&screen==="myprofile" &&profile&&<MyProfileScreen profile={profile} onBack={()=>setScreen("home")}/>}
-      {familyReady&&screen==="stories"   &&<StoryListScreen onBack={()=>setScreen("home")} onStory={s=>{setActiveStory(s);setScreen("story");}} profile={profile}/>}
-      {familyReady&&screen==="story"     &&activeStory&&<StoryScreen story={activeStory} onBack={()=>setScreen("stories")} onComplete={handleStoryComplete}/>}
-    </div>
-  );
+  for(let i=1; i<=25; i++){
+    if(screen === `land${i}`){
+      const Comp = LAND_SCREENS[i];
+      return <Comp profile={profile} onBack={()=>setScreen("map")} onComplete={()=>completeLand(i)}/>;
+    }
+  }
+  return null;
 }
-
