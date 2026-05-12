@@ -81,7 +81,7 @@ function OpeningScreen({ onEnter, onReturning }) {
   const [show, setShow] = useState(false);
   useEffect(()=>{ setTimeout(()=>setShow(true),300); },[]);
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A 0%,#2D1B69 40%,#1A3A6B 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflow:"hidden",position:"relative"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A 0%,#2D1B69 40%,#1A3A6B 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:20,overflow:"hidden",position:"relative"}}><OpeningMusic/>
       {[...Array(20)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${Math.random()*100}%`,top:`${Math.random()*100}%`,width:i%3===0?4:2,height:i%3===0?4:2,borderRadius:"50%",background:"white",opacity:0.3+Math.random()*0.5,animation:`twinkle ${2+Math.random()*3}s ease-in-out infinite`,animationDelay:`${Math.random()*3}s`}}/>))}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');
         @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.8}}
@@ -300,68 +300,163 @@ const LAND1_WORDS = [
   { es:"Hasta luego",   en:"See you later",    emoji:"👋", hook:"AHS-ta loo-EH-go — friendlier hasta la vista!", speakHook:"Hasta la vista's friendlier cousin!" },
 ];
 
-function FallingWordsGame({ words, allWords, color, title, onComplete, emoji }) {
+// ============================================================
+// SHARED HELPERS: makeOptions / CuencaBg / CuyOverlay / OpeningMusic
+// ============================================================
+function makeOptions(word, pool, n=4) {
+  const correct = word.en;
+  const safePool = (pool || []).filter(x => x && x.en && x.en !== correct);
+  const seen = new Set([correct]);
+  const others = [];
+  for (const cand of safePool.sort(() => Math.random()-0.5)) {
+    if (!seen.has(cand.en)) { others.push(cand.en); seen.add(cand.en); }
+    if (others.length >= n-1) break;
+  }
+  while (others.length < n-1) others.push(["Hello","Goodbye","Please","Thank you","Maybe","Yes","No","More"][others.length]);
+  return [correct, ...others].sort(() => Math.random()-0.5);
+}
+
+function CuencaBg({ color, children, dark }) {
+  return (
+    <div style={{minHeight:"100vh",background:dark?"linear-gradient(160deg,#1C0A4A,#2D1B69)":`linear-gradient(170deg,${color}10 0%,#FDF6EC 50%,#F5E9D0 100%)`,position:"relative",overflow:"hidden",display:"flex",flexDirection:"column"}}>
+      <svg viewBox="0 0 800 120" preserveAspectRatio="xMidYMax slice" style={{position:"absolute",bottom:0,left:0,right:0,width:"100%",height:90,opacity:0.16,pointerEvents:"none"}}>
+        <path d="M0,120 L0,80 L40,80 L40,60 L80,60 L80,75 L120,75 L120,50 L160,50 L160,68 L200,68 L200,55 L240,55 L240,72 L280,72 L280,45 L320,45 L320,65 L360,65 L360,55 L400,55 L400,72 L440,72 L440,50 L480,50 L480,68 L520,68 L520,55 L560,55 L560,75 L600,75 L600,60 L640,60 L640,72 L680,72 L680,55 L720,55 L720,68 L760,68 L760,78 L800,78 L800,120 Z" fill={dark?"#7C3AED":color}/>
+        <circle cx="180" cy="50" r="12" fill={dark?"#7C3AED":color}/>
+        <rect x="178" y="50" width="4" height="14" fill={dark?"#7C3AED":color}/>
+        <circle cx="480" cy="50" r="14" fill={dark?"#7C3AED":color}/>
+        <rect x="478" y="50" width="4" height="14" fill={dark?"#7C3AED":color}/>
+        <rect x="300" y="20" width="8" height="25" fill={dark?"#7C3AED":color}/>
+        <rect x="640" y="35" width="8" height="25" fill={dark?"#7C3AED":color}/>
+      </svg>
+      {children}
+    </div>
+  );
+}
+
+function CuyOverlay({ visible, landId=1 }) {
+  if (!visible) return null;
+  const outfits = ["🎩","🧣","👒","🕶️","🎒","👑","🎀","🥽","🧢","🦺","🧤","🌺"];
+  const outfit = outfits[landId % outfits.length];
+  const top = 18 + ((landId * 13) % 55);
+  const dur = 18 + (landId % 5) * 2;
+  return (
+    <>
+      <style>{`@keyframes cuyWalk${landId}{0%{left:-90px;transform:scaleX(1)}48%{left:50%;transform:scaleX(1)}50%{left:50%;transform:scaleX(-1)}98%{left:110%;transform:scaleX(-1)}100%{left:110%;transform:scaleX(-1)}}`}</style>
+      <div style={{position:"absolute",top:`${top}%`,left:-90,fontSize:32,animation:`cuyWalk${landId} ${dur}s linear infinite`,zIndex:5,pointerEvents:"none",filter:"drop-shadow(0 3px 4px rgba(0,0,0,0.18))"}}>
+        <span style={{display:"inline-block"}}>🐹</span>
+        <span style={{position:"absolute",top:-12,left:6,fontSize:20,transform:"rotate(-12deg)"}}>{outfit}</span>
+      </div>
+    </>
+  );
+}
+
+let _wlAudioCtx = null;
+let _wlMusicTimer = null;
+function startOpeningMusic() {
+  try {
+    if (!_wlAudioCtx) _wlAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _wlAudioCtx;
+    if (ctx.state === "suspended") ctx.resume();
+    if (_wlMusicTimer) return;
+    const melody = [
+      [392,0.18],[523,0.18],[659,0.18],[784,0.36],
+      [659,0.18],[784,0.18],[880,0.55],
+      [784,0.18],[659,0.18],[523,0.18],[659,0.55],
+      [392,0.45]
+    ];
+    const playOnce = () => {
+      let t = ctx.currentTime + 0.05;
+      melody.forEach(([f,d])=>{
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.045, t+0.015);
+        gain.gain.linearRampToValueAtTime(0, t+d);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t); osc.stop(t+d+0.02);
+        t += d;
+      });
+      return t - ctx.currentTime;
+    };
+    const loop = () => {
+      const dur = playOnce();
+      _wlMusicTimer = setTimeout(loop, (dur+0.6)*1000);
+    };
+    loop();
+  } catch(e) {}
+}
+function stopOpeningMusic() {
+  if (_wlMusicTimer) { clearTimeout(_wlMusicTimer); _wlMusicTimer = null; }
+}
+function OpeningMusic() {
+  useEffect(() => {
+    const handler = () => { startOpeningMusic(); document.removeEventListener("pointerdown", handler); };
+    document.addEventListener("pointerdown", handler, { once:true });
+    return () => { document.removeEventListener("pointerdown", handler); stopOpeningMusic(); };
+  }, []);
+  return null;
+}
+
+function FallingWordsGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
   const pool = allWords || words;
   const [idx, setIdx] = useState(0);
   const [pos, setPos] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
+  const [sway, setSway] = useState(0);
   const word = words[idx % words.length];
-  const getOptions = () => {
-    const correct = word.en;
-    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
-    while(others.length<3) others.push("???");
-    return [correct,...others].sort(()=>Math.random()-0.5);
-  };
-  const [options, setOptions] = useState(()=>getOptions());
-  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  const options = useMemo(()=>makeOptions(word, pool, 4), [idx]);
+  useEffect(()=>{ speakEs(word.es); setPos(0); /* eslint-disable-next-line */ },[idx]);
   useEffect(()=>{
     if(selected) return;
-    const t = setInterval(()=>setPos(p=>{ if(p>=100){ handlePick(null); return 0; } return p+0.8; }),50);
+    const t = setInterval(()=>{ setPos(p=>{ if(p>=100){ handlePick(null); return 0; } return p+0.9; }); setSway(s=>(s+8)%360); }, 50);
     return ()=>clearInterval(t);
     // eslint-disable-next-line
-  },[idx,selected]);
-  const handlePick = (opt) => {
+  },[idx, selected]);
+  const handlePick = (opt)=>{
     if(selected) return;
     const correct = opt===word.en;
     setSelected(opt||"timeout");
     if(correct){ setScore(s=>s+1); speakEs(word.es); }
     setTimeout(()=>{
-      setSelected(null); setPos(0);
       if(idx>=words.length-1){ onComplete(); return; }
-      setIdx(i=>i+1);
-      setOptions(()=>getOptions());
-    },1200);
+      setIdx(i=>i+1); setSelected(null); setPos(0);
+    }, 1200);
   };
-  return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+  return (
+    <CuencaBg color={color}>
       {FONT_LINK}
-      <div style={{background:color,padding:"14px 16px"}}>
+      <style>{`@keyframes shimmerBar{0%,100%{filter:brightness(1)}50%{filter:brightness(1.25)}}@keyframes wiggle{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
         <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Tap the correct meaning! Score: {score}/{words.length}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Tap the correct meaning! Score: {score}/{words.length}</div>
       </div>
-      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-        <div style={{width:"100%",maxWidth:400,height:180,position:"relative",background:"white",borderRadius:20,border:`3px solid ${color}`,overflow:"hidden",marginBottom:16,boxShadow:`0 4px 20px ${color}20`}}>
-          <div style={{position:"absolute",left:"50%",transform:"translateX(-50%)",top:`${pos}%`,transition:"top 0.05s linear",textAlign:"center"}}>
-            <div style={{fontSize:36}}>{word.emoji}</div>
-            <div style={{fontSize:28,color,...DS,fontWeight:900}}>{word.es}</div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1}}>
+        <div style={{width:"100%",maxWidth:420,height:200,position:"relative",background:"linear-gradient(180deg, #FFF7E8, #FCE7C0)",borderRadius:24,border:`3px solid ${color}`,overflow:"hidden",marginBottom:14,boxShadow:`0 6px 24px ${color}33`}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:36,background:`linear-gradient(180deg, ${color}30, transparent)`}}/>
+          <div style={{position:"absolute",left:"50%",top:`${pos}%`,transform:`translateX(-50%) translateX(${Math.sin(sway*Math.PI/180)*10}px) rotate(${Math.sin(sway*Math.PI/180)*4}deg)`,transition:"top 0.05s linear,transform 0.05s linear",textAlign:"center"}}>
+            <div style={{fontSize:40,marginBottom:2,animation:"wiggle 0.5s ease-in-out infinite"}}>{word.emoji}</div>
+            <div style={{fontSize:28,color,...DS,fontWeight:900,background:"white",padding:"4px 14px",borderRadius:14,boxShadow:`0 4px 14px ${color}40`,border:`2px solid ${color}`}}>{word.es}</div>
           </div>
-          <div style={{position:"absolute",bottom:0,left:0,right:0,height:8,background:`${color}30`}}/>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:12,background:`linear-gradient(0deg, ${color}AA, ${color}40)`,borderTop:`2px dashed ${color}`}}/>
         </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:420,marginBottom:12}}>
           {options.map(opt=>(
-            <button key={opt} onClick={()=>handlePick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{opt}</button>
+            <button key={opt} onClick={()=>handlePick(opt)} style={{padding:"15px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{opt}</button>
           ))}
         </div>
-        <div style={{width:"100%",maxWidth:400,height:6,background:"#E5E7EB",borderRadius:3,marginTop:12}}>
-          <div style={{height:"100%",width:`${100-pos}%`,background:pos>70?"#EF4444":pos>40?"#F59E0B":color,borderRadius:3,transition:"width 0.05s"}}/>
+        <div style={{width:"100%",maxWidth:420,height:10,background:"#E5E7EB",borderRadius:5,overflow:"hidden"}}>
+          <div style={{height:"100%",width:`${100-pos}%`,background:pos>75?"linear-gradient(90deg,#EF4444,#F97316)":pos>45?"linear-gradient(90deg,#F59E0B,#FCD34D)":`linear-gradient(90deg,${color},${color}CC)`,transition:"width 0.05s",animation:pos>75?"shimmerBar 0.4s ease-in-out infinite":"none"}}/>
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function MatchingGame({ words, color, title, onComplete, emoji }) {
+function MatchingGame({ words, color, title, onComplete, emoji, isReplay, landId }) {
   const [selected, setSelected] = useState(null);
   const [matched, setMatched] = useState([]);
   const [wrong, setWrong] = useState(null);
@@ -381,7 +476,8 @@ function MatchingGame({ words, color, title, onComplete, emoji }) {
     }
   };
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+    <CuencaBg color={color}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
       {FONT_LINK}
       <div style={{background:color,padding:"14px 16px"}}>
         <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
@@ -401,120 +497,180 @@ function MatchingGame({ words, color, title, onComplete, emoji }) {
           ))}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function ShootingGame({ words, allWords, color, title, onComplete, emoji }) {
+function ShootingGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
   const pool = allWords || words;
   const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
+  const [misses, setMisses] = useState(0);
+  const [feedback, setFeedback] = useState(null); // "hit"|"miss"|null
+  const [tick, setTick] = useState(0);
   const word = words[idx];
-  const getOptions = () => {
-    const correct = word.en;
-    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
-    while(others.length<3) others.push("???");
-    return [correct,...others].sort(()=>Math.random()-0.5);
-  };
-  const [options, setOptions] = useState(()=>getOptions());
-  useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
-  const pick = (opt) => {
-    if(selected) return;
-    setSelected(opt);
-    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+  // Generate moving targets, refresh per word
+  const targets = useMemo(()=>{
+    const opts = makeOptions(word, pool, 4);
+    return opts.map((en, i) => ({
+      en,
+      isCorrect: en === word.en,
+      lane: i, // 0..3 vertical lane
+      startTime: i * 700 + Math.random()*300, // ms after question start
+      direction: i % 2 === 0 ? 1 : -1, // some right→left, some left→right
+      speed: 0.9 + Math.random()*0.4, // px per ms multiplier
+      id: `${idx}-${i}-${en}`,
+    }));
+  // eslint-disable-next-line
+  },[idx]);
+  const [questionStart, setQuestionStart] = useState(()=>Date.now());
+  useEffect(()=>{ speakEs(word.es); setQuestionStart(Date.now()); setFeedback(null); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    const t = setInterval(()=>setTick(x=>x+1), 40);
+    return ()=>clearInterval(t);
+  },[]);
+  // Compute target screen positions
+  const arenaW = 360;
+  const elapsed = Date.now() - questionStart;
+  // Question times out after ~7s if no answer
+  useEffect(()=>{
+    if(feedback) return;
+    if(elapsed > 7500){ shoot(null); }
+    // eslint-disable-next-line
+  },[tick]);
+  const shoot = (target) => {
+    if(feedback) return;
+    if(target && target.isCorrect){
+      setFeedback("hit"); setScore(s=>s+1); speakEs(word.es);
+    } else {
+      setFeedback("miss"); setMisses(m=>m+1);
+    }
     setTimeout(()=>{
-      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); setOptions(()=>getOptions()); }
+      if(idx<words.length-1) setIdx(i=>i+1);
       else onComplete();
-    },1300);
+    }, 1100);
   };
-  return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+  return (
+    <CuencaBg color={color}>
       {FONT_LINK}
-      <div style={{background:color,padding:"14px 16px"}}>
-        <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length} — Shoot the right answer!</div>
+      <style>{`@keyframes targetSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}@keyframes hitFlash{0%{transform:scale(1)}50%{transform:scale(1.6);filter:brightness(1.4)}100%{transform:scale(0);opacity:0}}@keyframes missFlash{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🎯 {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Hits {score}/{words.length} · Misses {misses}</div>
       </div>
-      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-        <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
-          <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
-          <div style={{fontSize:34,color,...DS,fontWeight:900,marginBottom:4}}>{word.es}</div>
-          <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,...DS}}>🔊 Hear it</button>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
-          {options.map(opt=>(
-            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:"#1C1917"}}>{!selected?"🎯 ":opt===word.en?"✅ ":opt===selected?"❌ ":""}{opt}</button>
-          ))}
+      <div style={{padding:"14px 16px",position:"relative",zIndex:1}}>
+        <div style={{background:"white",borderRadius:18,padding:"16px 20px",textAlign:"center",boxShadow:`0 4px 20px ${color}30`,border:`3px solid ${color}`,marginBottom:8}}>
+          <div style={{fontSize:11,color,fontWeight:800,letterSpacing:2,marginBottom:2}}>SHOOT THE MEANING OF:</div>
+          <div style={{fontSize:36,marginBottom:0}}>{word.emoji}</div>
+          <div style={{fontSize:32,color,...DS,fontWeight:900}}>{word.es}</div>
         </div>
       </div>
-    </div>
+      <div style={{flex:1,position:"relative",zIndex:1,overflow:"hidden",margin:"0 12px",borderRadius:16,border:`2px solid ${color}40`,background:"linear-gradient(180deg, #FEF3C7 0%, #FDE68A 100%)",animation:feedback==="miss"?"missFlash 0.4s ease":"none"}}>
+        {targets.map(t=>{
+          const tElapsed = Math.max(0, elapsed - t.startTime);
+          const travel = (tElapsed * 0.10 * t.speed); // px from start
+          const x = t.direction>0 ? -120 + travel : (arenaW+40) - travel;
+          const offscreen = x < -130 || x > arenaW+60;
+          const visible = tElapsed > 0 && !offscreen && !feedback;
+          const y = 30 + t.lane*70;
+          return visible ? (
+            <button key={t.id} onClick={()=>shoot(t)} style={{position:"absolute",left:x,top:y,padding:"10px 16px",borderRadius:20,background:`linear-gradient(135deg, ${color}, ${color}CC)`,border:"3px solid white",color:"white",cursor:"pointer",fontSize:14,...DS,fontWeight:800,boxShadow:`0 4px 12px ${color}55`,minWidth:90,whiteSpace:"nowrap"}}>
+              🎯 {t.en}
+            </button>
+          ) : null;
+        })}
+        {feedback==="hit" && <div style={{position:"absolute",left:"50%",top:"40%",transform:"translateX(-50%)",fontSize:80,animation:"hitFlash 0.8s ease forwards"}}>💥</div>}
+        {feedback==="miss" && <div style={{position:"absolute",left:"50%",top:"40%",transform:"translateX(-50%)",fontSize:60,...DS,color:"#EF4444",fontWeight:900,textShadow:"0 2px 6px rgba(0,0,0,0.2)"}}>MISS!</div>}
+        <div style={{position:"absolute",bottom:6,left:0,right:0,textAlign:"center",fontSize:11,color:"#92400E",fontWeight:700,...DS}}>Targets fly past — tap fast!</div>
+      </div>
+      <div style={{padding:"10px 16px",position:"relative",zIndex:1,textAlign:"center"}}>
+        <button onClick={()=>speakEs(word.es)} style={{background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color,fontWeight:700,...DS}}>🔊 Repeat</button>
+      </div>
+    </CuencaBg>
   );
 }
 
-function BossChallenge({ words, color, landName, nextLand, onComplete }) {
+function BossChallenge({ words, color, landName, nextLand, onComplete, isReplay, landId }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [lava, setLava] = useState(0);
   const [done, setDone] = useState(false);
   const [shake, setShake] = useState(false);
+  const [reaction, setReaction] = useState(null); // "happy"|"shocked"
   const shuffled = useState(()=>[...words].sort(()=>Math.random()-0.5))[0];
-  const word = shuffled[idx%shuffled.length];
-  const getOptions = () => {
-    const correct = word.en;
-    const others = words.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
-    while(others.length<3) others.push("???");
-    return [correct,...others].sort(()=>Math.random()-0.5);
-  };
-  const [options, setOptions] = useState(()=>getOptions());
-  useEffect(()=>{ if(word) speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
-  const pick = (opt) => {
+  const word = shuffled[idx % shuffled.length];
+  const options = useMemo(()=>makeOptions(word, words, 4), [idx]);
+  useEffect(()=>{ if(word) speakEs(word.es); setReaction(null); /* eslint-disable-next-line */ },[idx]);
+  const pick = (opt)=>{
     if(selected) return;
     const correct = opt===word.en;
     setSelected(opt);
-    if(!correct){ setLava(l=>Math.min(l+25,100)); setShake(true); setTimeout(()=>setShake(false),500); }
-    else speakEs(word.es);
+    if(!correct){
+      setLava(l=>Math.min(l+22, 100));
+      setShake(true); setReaction("shocked");
+      setTimeout(()=>setShake(false), 500);
+    } else { speakEs(word.es); setReaction("happy"); }
     setTimeout(()=>{
       setSelected(null);
       const next = idx+1;
       if(next>=words.length){ setDone(true); return; }
-      setIdx(next); setOptions(()=>getOptions());
-    },1300);
+      setIdx(next);
+    }, 1300);
   };
-  if(done) return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center"}}>
+  if(done) return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
       {FONT_LINK}
-      <style>{`@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}`}</style>
-      <div style={{fontSize:80,animation:"bounce 0.8s ease infinite",marginBottom:16}}>🎉</div>
-      <div style={{fontSize:32,color:"#FCD34D",...DS,fontWeight:900,marginBottom:8}}>¡Felicidades!</div>
-      <div style={{fontSize:18,color:"white",marginBottom:4,...DS}}>You completed {landName}!</div>
-      <div style={{fontSize:14,color:"rgba(255,255,255,0.6)",marginBottom:24,...DS}}>{nextLand} is now unlocked! 🗺️</div>
-      <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end"}}>
-        <img src="/characters/grayson.png" style={{height:110}} alt="" onError={e=>e.target.style.display="none"}/>
-        <img src="/characters/peyton.png" style={{height:94}} alt="" onError={e=>e.target.style.display="none"}/>
+      <style>{`@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}`}</style>
+      {[...Array(20)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*7)%95}%`,top:-30,fontSize:20+(i%3)*6,animation:`confettiDrop ${3+i%4}s linear ${i*0.15}s infinite`,pointerEvents:"none"}}>{["⭐","✨","🎉","💛","🎊"][i%5]}</div>))}
+      <div style={{fontSize:84,animation:"bounce 0.7s ease infinite",marginBottom:16,position:"relative",zIndex:2}}>🎉</div>
+      <div style={{fontSize:34,color:"#FCD34D",...DS,fontWeight:900,marginBottom:8,zIndex:2}}>¡Felicidades!</div>
+      <div style={{fontSize:18,color:"white",marginBottom:4,...DS,zIndex:2}}>You completed {landName}!</div>
+      <div style={{fontSize:14,color:"rgba(255,255,255,0.7)",marginBottom:24,...DS,zIndex:2}}>{nextLand} is now unlocked! 🗺️</div>
+      <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end",zIndex:2}}>
+        <img src="/characters/grayson.png" style={{height:120}} alt="" onError={e=>e.target.style.display="none"}/>
+        <img src="/characters/peyton.png" style={{height:104}} alt="" onError={e=>e.target.style.display="none"}/>
       </div>
-      <button onClick={onComplete} style={{padding:"16px 48px",borderRadius:24,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:18,cursor:"pointer",...DS,fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)"}}>Continue to {nextLand} →</button>
+      <button onClick={onComplete} style={{padding:"16px 48px",borderRadius:24,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:18,cursor:"pointer",...DS,fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)",zIndex:2}}>Continue to {nextLand} →</button>
     </div>
   );
-  return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",transform:shake?"translateX(-6px)":"none",transition:"transform 0.1s"}}>
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A 0%,#2D1B69 50%,#3D1B0E 100%)",display:"flex",flexDirection:"column",transform:shake?"translateX(-8px)":"none",transition:"transform 0.1s",position:"relative",overflow:"hidden"}}>
       {FONT_LINK}
-      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+      <style>{`@keyframes lavaWobble{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3px) scaleY(1.04)}}@keyframes bubble{0%{transform:translateY(0);opacity:0}30%{opacity:.8}100%{transform:translateY(-60px);opacity:0}}@keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.6)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0)}}@keyframes charBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes charShock{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,position:"relative",zIndex:3}}>
         <div style={{flex:1,fontSize:18,color:"white",...DS}}>🌋 BOSS — {landName}</div>
         <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>{idx+1}/{words.length}</div>
       </div>
-      <div style={{height:10,background:"rgba(255,255,255,0.1)"}}><div style={{height:"100%",width:`${lava}%`,background:"linear-gradient(90deg,#F97316,#EF4444)",transition:"width 0.6s"}}/></div>
-      <div style={{fontSize:12,color:lava>50?"#EF4444":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,...DS}}>🌋 Lava Level: {lava}%</div>
-      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
-        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:400,textAlign:"center",border:`2px solid ${color}`,marginBottom:16}}>
+      <div style={{height:10,background:"rgba(255,255,255,0.1)",position:"relative",zIndex:3}}>
+        <div style={{height:"100%",width:`${lava}%`,background:"linear-gradient(90deg,#F97316,#EF4444)",transition:"width 0.5s"}}/>
+      </div>
+      <div style={{fontSize:12,color:lava>50?"#FCA5A5":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,...DS,position:"relative",zIndex:3}}>🌋 Lava Level: {Math.round(lava)}%</div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:2}}>
+        <div style={{display:"flex",gap:14,marginBottom:12,alignItems:"flex-end"}}>
+          <img src="/characters/grayson.png" style={{height:80,filter:"drop-shadow(0 4px 12px rgba(124,58,237,0.6))",animation:reaction==="shocked"?"charShock 0.4s ease":"charBounce 1.6s ease-in-out infinite"}} alt="" onError={e=>e.target.style.display="none"}/>
+          <img src="/characters/peyton.png"  style={{height:68,filter:"drop-shadow(0 4px 12px rgba(37,99,235,0.6))",animation:reaction==="shocked"?"charShock 0.4s ease 0.05s":"charBounce 1.6s ease-in-out infinite 0.3s"}} alt="" onError={e=>e.target.style.display="none"}/>
+          {reaction && <div style={{fontSize:34,marginBottom:30}}>{reaction==="happy"?"🌟":"😱"}</div>}
+        </div>
+        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:400,textAlign:"center",border:`2px solid ${color}`,marginBottom:16,boxShadow:`0 4px 24px ${color}40`}}>
           <div style={{fontSize:40,marginBottom:8}}>{word.emoji}</div>
           <div style={{fontSize:30,color:"white",...DS,fontWeight:900}}>{word.es}</div>
           <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}20`,border:`1px solid ${color}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:"white",fontWeight:700,...DS}}>🔊</button>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
           {options.map(opt=>(
-            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,background:!selected?"rgba(255,255,255,0.1)":opt===word.en?"#D1FAE5":opt===selected?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.05)",border:`2px solid ${!selected?"rgba(255,255,255,0.2)":opt===word.en?"#10B981":opt===selected?"#EF4444":"rgba(255,255,255,0.1)"}`,cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:!selected?"white":opt===word.en?"#10B981":opt===selected?"#FCA5A5":"rgba(255,255,255,0.4)"}}>{opt}</button>
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,background:!selected?"rgba(255,255,255,0.1)":opt===word.en?"#D1FAE5":opt===selected?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.05)",border:`2px solid ${!selected?"rgba(255,255,255,0.25)":opt===word.en?"#10B981":opt===selected?"#EF4444":"rgba(255,255,255,0.1)"}`,cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:!selected?"white":opt===word.en?"#10B981":opt===selected?"#FCA5A5":"rgba(255,255,255,0.4)"}}>{opt}</button>
           ))}
         </div>
+      </div>
+      {/* Animated lava floor */}
+      <div style={{position:"absolute",left:0,right:0,bottom:0,height:`${Math.max(8, lava*0.7)}vh`,pointerEvents:"none",zIndex:1,animation:lava>0?"lavaWobble 1.2s ease-in-out infinite":"none"}}>
+        <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(239,68,68,0) 0%,#F97316 30%,#EF4444 60%,#7F1D1D 100%)"}}/>
+        <svg viewBox="0 0 400 40" preserveAspectRatio="none" style={{position:"absolute",top:-12,left:0,width:"100%",height:24}}>
+          <path d="M0,40 Q20,5 40,20 T80,20 T120,15 T160,25 T200,10 T240,22 T280,15 T320,28 T360,12 T400,20 L400,40 Z" fill="#F97316"/>
+        </svg>
+        {[...Array(6)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*16+5)%95}%`,bottom:0,fontSize:14,color:"#FCD34D",animation:`bubble ${1.2+i*0.2}s ease-in ${i*0.3}s infinite`}}>•</div>))}
       </div>
     </div>
   );
@@ -787,7 +943,7 @@ function RandomQuizScreen({ profile, onBack, allLandWords }) {
 // ============================================================
 // LAND 1 SCREEN (with corrected content flow)
 // ============================================================
-function Land1Screen({ profile, onBack, onComplete }) {
+function Land1Screen({ profile, onBack, onComplete, isReplay }) {
   const [phase, setPhase] = useState("story");
   const [storyIdx, setStoryIdx] = useState(0);
   const [wordIdx, setWordIdx] = useState(0);
@@ -891,12 +1047,12 @@ function Land1Screen({ profile, onBack, onComplete }) {
     );
   }
 
-  if(phase==="game1")    return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street — Match the Greetings!" onComplete={()=>setPhase("limerick")} emoji="🗺️"/>;
+  if(phase==="game1")    return <MatchingGame words={LAND1_WORDS.slice(0,4)} color={color} title="Cuenca Street — Match the Greetings!" onComplete={()=>setPhase("limerick")} emoji="🗺️" isReplay={isReplay} landId={1}/>;
   if(phase==="limerick") return <RewardScreen kind="limerick" text={LAND1_LIMERICK} color={color} landName="Greetings" onContinue={()=>{setPhase("lesson2");setWordIdx(0);}}/>;
-  if(phase==="game2")    return <ShootingGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>setPhase("joke")} emoji="🎯"/>;
+  if(phase==="game2")    return <ShootingGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>setPhase("joke")} emoji="🎯" isReplay={isReplay} landId={1}/>;
   if(phase==="joke")     return <RewardScreen kind="joke" text={LAND1_JOKE} color={color} landName="Greetings" onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
-  if(phase==="game3")    return <FallingWordsGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="⬇️"/>;
-  if(phase==="boss")     return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete}/>;
+  if(phase==="game3")    return <FallingWordsGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="⬇️" isReplay={isReplay} landId={1}/>;
+  if(phase==="boss")     return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} isReplay={isReplay} landId={1}/>;
   return null;
 }
 
@@ -1374,7 +1530,7 @@ const ALL_LAND_WORDS = {
 // ============================================================
 // LandScreen Template + QuizGame + Extra Game Components
 // ============================================================
-function LandScreen({ landNum, words, color, landName, nextLand, story, limerick, joke, onBack, onComplete, games }) {
+function LandScreen({ landNum, words, color, landName, nextLand, story, limerick, joke, onBack, onComplete, games, isReplay }) {
   const G1 = (games && games[0]) || MatchingGame;
   const G2 = (games && games[1]) || QuizGame;
   const G3 = (games && games[2]) || FallingWordsGame;
@@ -1456,46 +1612,41 @@ function LandScreen({ landNum, words, color, landName, nextLand, story, limerick
       </div>
     );
   }
-  if(phase==="game1")    return <G1 words={words.slice(0,4)}  allWords={words} color={color} title={`${landName} — Round 1!`} onComplete={()=>setPhase("limerick")} emoji="🗺️"/>;
+  if(phase==="game1")    return <G1 words={words.slice(0,4)}  allWords={words} color={color} title={`${landName} — Round 1!`} onComplete={()=>setPhase("limerick")} emoji="🗺️" isReplay={isReplay} landId={landNum}/>;
   if(phase==="limerick") return <RewardScreen kind="limerick" text={limerick} color={color} landName={landName} onContinue={()=>{setPhase("lesson2");setWordIdx(0);}}/>;
-  if(phase==="game2")    return <G2 words={words.slice(4,8)}  allWords={words} color={color} title={`${landName} — Round 2!`} onComplete={()=>setPhase("joke")} emoji="🎯"/>;
+  if(phase==="game2")    return <G2 words={words.slice(4,8)}  allWords={words} color={color} title={`${landName} — Round 2!`} onComplete={()=>setPhase("joke")} emoji="🎯" isReplay={isReplay} landId={landNum}/>;
   if(phase==="joke")     return <RewardScreen kind="joke" text={joke} color={color} landName={landName} onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
-  if(phase==="game3")    return <G3 words={words.slice(8,12)} allWords={words} color={color} title={`${landName} — Round 3!`} onComplete={()=>setPhase("boss")} emoji="⬇️"/>;
-  if(phase==="boss")     return <BossChallenge words={words} color={color} landName={landName} nextLand={nextLand} onComplete={onComplete}/>;
+  if(phase==="game3")    return <G3 words={words.slice(8,12)} allWords={words} color={color} title={`${landName} — Round 3!`} onComplete={()=>setPhase("boss")} emoji="⬇️" isReplay={isReplay} landId={landNum}/>;
+  if(phase==="boss")     return <BossChallenge words={words} color={color} landName={landName} nextLand={nextLand} onComplete={onComplete} isReplay={isReplay} landId={landNum}/>;
   return null;
 }
 
-function QuizGame({ words, allWords, color, title, onComplete, emoji }) {
+function QuizGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
   const pool = allWords || words;
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const word = words[idx];
-  const makeOptions = (w)=>{
-    const correct = w.en;
-    const others = pool.filter(x=>x.en!==correct).sort(()=>Math.random()-0.5).slice(0,3).map(x=>x.en);
-    while(others.length<3) others.push("???");
-    return [correct,...others].sort(()=>Math.random()-0.5);
-  };
-  const [options, setOptions] = useState(()=>makeOptions(word));
+  const options = useMemo(()=>makeOptions(word, pool, 4),[idx]);
   useEffect(()=>{ speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
   const pick = (opt)=>{
     if(selected) return;
     setSelected(opt);
     if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
     setTimeout(()=>{
-      if(idx<words.length-1){ const next=idx+1; setIdx(next); setOptions(makeOptions(words[next])); setSelected(null); }
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); }
       else onComplete();
-    },1300);
+    }, 1300);
   };
-  return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+  return (
+    <CuencaBg color={color}>
       {FONT_LINK}
-      <div style={{background:color,padding:"14px 16px"}}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
         <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Score: {score}/{words.length}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Score: {score}/{words.length}</div>
       </div>
-      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <div style={{flex:1,padding:"20px 16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1}}>
         <div style={{background:"white",borderRadius:24,padding:"28px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 8px 32px ${color}25`,border:`3px solid ${color}`,marginBottom:20}}>
           <div style={{fontSize:48,marginBottom:8}}>{word.emoji}</div>
           <div style={{fontSize:34,color,...DS,fontWeight:900}}>{word.es}</div>
@@ -1507,11 +1658,11 @@ function QuizGame({ words, allWords, color, title, onComplete, emoji }) {
           ))}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function WheelOfFortuneGame({ words, color, title, onComplete, emoji }) {
+function WheelOfFortuneGame({ words, color, title, onComplete, emoji, isReplay, landId }) {
   const [idx, setIdx] = useState(0);
   const word = words[idx];
   const target = (word.es||"").toUpperCase();
@@ -1538,7 +1689,8 @@ function WheelOfFortuneGame({ words, color, title, onComplete, emoji }) {
     else { setWrong(w=>w+1); setRevealed(prev=>new Set([...prev,letter])); }
   };
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+    <CuencaBg color={color}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
       {FONT_LINK}
       <div style={{background:color,padding:"14px 16px"}}>
         <div style={{fontSize:16,color:"white",...DS}}>{emoji} {title}</div>
@@ -1565,11 +1717,11 @@ function WheelOfFortuneGame({ words, color, title, onComplete, emoji }) {
           })}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function DealOrNoDealGame({ words, allWords, color, title, onComplete, emoji }) {
+function DealOrNoDealGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
   const pool = allWords || words;
   const [idx, setIdx] = useState(0);
   const [opened, setOpened] = useState({});
@@ -1597,7 +1749,8 @@ function DealOrNoDealGame({ words, allWords, color, title, onComplete, emoji }) 
     } else setOpened(prev=>({...prev,[b.num]:b.en}));
   };
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+    <CuencaBg color={color}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
       {FONT_LINK}
       <style>{`@keyframes shakeOpen{0%,100%{transform:scale(1)}50%{transform:scale(1.05) rotate(2deg)}}`}</style>
       <div style={{background:color,padding:"14px 16px"}}>
@@ -1621,11 +1774,11 @@ function DealOrNoDealGame({ words, allWords, color, title, onComplete, emoji }) 
           })}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function LightningRoundGame({ words, allWords, color, title, onComplete, emoji }) {
+function LightningRoundGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
   const pool = allWords || words;
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -1656,7 +1809,8 @@ function LightningRoundGame({ words, allWords, color, title, onComplete, emoji }
     },900);
   };
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+    <CuencaBg color={color}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
       {FONT_LINK}
       <style>{`@keyframes flash{0%,100%{background:white}50%{background:#FEE2E2}}`}</style>
       <div style={{background:color,padding:"14px 16px"}}>
@@ -1675,11 +1829,11 @@ function LightningRoundGame({ words, allWords, color, title, onComplete, emoji }
           {opts.map(o=>(<button key={o} onClick={()=>pick(o)} style={{padding:"14px 10px",borderRadius:14,border:`2px solid ${!selected?color:o===word.en?"#10B981":o===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":o===word.en?"#D1FAE5":o===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:14,...DS,fontWeight:700,color:"#1C1917"}}>{o}</button>))}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
-function MemoryFlipGame({ words, color, title, onComplete, emoji }) {
+function MemoryFlipGame({ words, color, title, onComplete, emoji, isReplay, landId }) {
   const pairs = words.slice(0,4);
   const [deck] = useState(()=>{
     const d = [];
@@ -1709,7 +1863,8 @@ function MemoryFlipGame({ words, color, title, onComplete, emoji }) {
     setFlipped(prev=>[...prev,c]);
   };
   return(
-    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${color}15,#FDF6EC)`,display:"flex",flexDirection:"column"}}>
+    <CuencaBg color={color}>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
       {FONT_LINK}
       <style>{`@keyframes flip{from{transform:rotateY(180deg)}to{transform:rotateY(0)}}`}</style>
       <div style={{background:color,padding:"14px 16px"}}>
@@ -1726,37 +1881,437 @@ function MemoryFlipGame({ words, color, title, onComplete, emoji }) {
           })}
         </div>
       </div>
-    </div>
+    </CuencaBg>
   );
 }
 
 // ============================================================
 // Land 2-25 Screen Functions
 // ============================================================
-function Land2Screen({ onBack, onComplete })  { return <LandScreen landNum={2}  words={LAND2_WORDS}  color="#F97316" landName="Around Town" nextLand="Family"  story={LAND2_CONTENT.story}  limerick={LAND2_CONTENT.limerick}  joke={LAND2_CONTENT.joke}  onBack={onBack} onComplete={onComplete}/>; }
-function Land3Screen({ onBack, onComplete })  { return <LandScreen landNum={3}  words={LAND3_WORDS}  color="#F59E0B" landName="Family"      nextLand="Food"    story={LAND3_CONTENT.story}  limerick={LAND3_CONTENT.limerick}  joke={LAND3_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, QuizGame]}/>; }
-function Land4Screen({ onBack, onComplete })  { return <LandScreen landNum={4}  words={LAND4_WORDS}  color="#10B981" landName="Food"        nextLand="Feelings" story={LAND4_CONTENT.story}  limerick={LAND4_CONTENT.limerick}  joke={LAND4_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, DealOrNoDealGame]}/>; }
-function Land5Screen({ onBack, onComplete })  { return <LandScreen landNum={5}  words={LAND5_WORDS}  color="#3B82F6" landName="Feelings"    nextLand="Core Words 1" story={LAND5_CONTENT.story}  limerick={LAND5_CONTENT.limerick}  joke={LAND5_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[WheelOfFortuneGame, FallingWordsGame, QuizGame]}/>; }
-function Land6Screen({ onBack, onComplete })  { return <LandScreen landNum={6}  words={LAND6_WORDS}  color="#7C3AED" landName="Core Words 1" nextLand="School"  story={LAND6_CONTENT.story}  limerick={LAND6_CONTENT.limerick}  joke={LAND6_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, WheelOfFortuneGame]}/>; }
-function Land7Screen({ onBack, onComplete })  { return <LandScreen landNum={7}  words={LAND7_WORDS}  color="#E8445A" landName="School"      nextLand="Numbers" story={LAND7_CONTENT.story}  limerick={LAND7_CONTENT.limerick}  joke={LAND7_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, QuizGame, DealOrNoDealGame]}/>; }
-function Land8Screen({ onBack, onComplete })  { return <LandScreen landNum={8}  words={LAND8_WORDS}  color="#F97316" landName="Numbers"     nextLand="Colors"  story={LAND8_CONTENT.story}  limerick={LAND8_CONTENT.limerick}  joke={LAND8_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, QuizGame, WheelOfFortuneGame]}/>; }
-function Land9Screen({ onBack, onComplete })  { return <LandScreen landNum={9}  words={LAND9_WORDS}  color="#8B5CF6" landName="Colors"      nextLand="Animals" story={LAND9_CONTENT.story}  limerick={LAND9_CONTENT.limerick}  joke={LAND9_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
-function Land10Screen({ onBack, onComplete }) { return <LandScreen landNum={10} words={LAND10_WORDS} color="#10B981" landName="Animals"     nextLand="Core Words 2" story={LAND10_CONTENT.story} limerick={LAND10_CONTENT.limerick} joke={LAND10_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ShootingGame, FallingWordsGame, MatchingGame]}/>; }
-function Land11Screen({ onBack, onComplete }) { return <LandScreen landNum={11} words={LAND11_WORDS} color="#7C3AED" landName="Core Words 2" nextLand="Verbs"  story={LAND11_CONTENT.story} limerick={LAND11_CONTENT.limerick} joke={LAND11_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, DealOrNoDealGame, WheelOfFortuneGame]}/>; }
-function Land12Screen({ onBack, onComplete }) { return <LandScreen landNum={12} words={LAND12_WORDS} color="#F59E0B" landName="Verbs"        nextLand="Time"   story={LAND12_CONTENT.story} limerick={LAND12_CONTENT.limerick} joke={LAND12_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, LightningRoundGame]}/>; }
-function Land13Screen({ onBack, onComplete }) { return <LandScreen landNum={13} words={LAND13_WORDS} color="#3B82F6" landName="Time"         nextLand="Body"   story={LAND13_CONTENT.story} limerick={LAND13_CONTENT.limerick} joke={LAND13_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
-function Land14Screen({ onBack, onComplete }) { return <LandScreen landNum={14} words={LAND14_WORDS} color="#E8445A" landName="Body"         nextLand="Descriptions" story={LAND14_CONTENT.story} limerick={LAND14_CONTENT.limerick} joke={LAND14_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, FallingWordsGame]}/>; }
-function Land15Screen({ onBack, onComplete }) { return <LandScreen landNum={15} words={LAND15_WORDS} color="#8B5CF6" landName="Descriptions" nextLand="Shopping" story={LAND15_CONTENT.story} limerick={LAND15_CONTENT.limerick} joke={LAND15_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, FallingWordsGame]}/>; }
-function Land16Screen({ onBack, onComplete }) { return <LandScreen landNum={16} words={LAND16_WORDS} color="#10B981" landName="Shopping"     nextLand="Weather"  story={LAND16_CONTENT.story} limerick={LAND16_CONTENT.limerick} joke={LAND16_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[DealOrNoDealGame, QuizGame, LightningRoundGame]}/>; }
-function Land17Screen({ onBack, onComplete }) { return <LandScreen landNum={17} words={LAND17_WORDS} color="#F97316" landName="Weather"      nextLand="Core Words 3" story={LAND17_CONTENT.story} limerick={LAND17_CONTENT.limerick} joke={LAND17_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, QuizGame]}/>; }
-function Land18Screen({ onBack, onComplete }) { return <LandScreen landNum={18} words={LAND18_WORDS} color="#7C3AED" landName="Core Words 3" nextLand="Core Words 4" story={LAND18_CONTENT.story} limerick={LAND18_CONTENT.limerick} joke={LAND18_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, WheelOfFortuneGame, DealOrNoDealGame]}/>; }
-function Land19Screen({ onBack, onComplete }) { return <LandScreen landNum={19} words={LAND19_WORDS} color="#7C3AED" landName="Core Words 4" nextLand="Opinions" story={LAND19_CONTENT.story} limerick={LAND19_CONTENT.limerick} joke={LAND19_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]}/>; }
-function Land20Screen({ onBack, onComplete }) { return <LandScreen landNum={20} words={LAND20_WORDS} color="#E8445A" landName="Opinions"     nextLand="Travel"   story={LAND20_CONTENT.story} limerick={LAND20_CONTENT.limerick} joke={LAND20_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, LightningRoundGame, FallingWordsGame]}/>; }
-function Land21Screen({ onBack, onComplete }) { return <LandScreen landNum={21} words={LAND21_WORDS} color="#3B82F6" landName="Travel"       nextLand="Health"   story={LAND21_CONTENT.story} limerick={LAND21_CONTENT.limerick} joke={LAND21_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[DealOrNoDealGame, QuizGame, FallingWordsGame]}/>; }
-function Land22Screen({ onBack, onComplete }) { return <LandScreen landNum={22} words={LAND22_WORDS} color="#10B981" landName="Health"       nextLand="Social Life" story={LAND22_CONTENT.story} limerick={LAND22_CONTENT.limerick} joke={LAND22_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, WheelOfFortuneGame]}/>; }
-function Land23Screen({ onBack, onComplete }) { return <LandScreen landNum={23} words={LAND23_WORDS} color="#F59E0B" landName="Social Life"  nextLand="Technology" story={LAND23_CONTENT.story} limerick={LAND23_CONTENT.limerick} joke={LAND23_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, LightningRoundGame]}/>; }
-function Land24Screen({ onBack, onComplete }) { return <LandScreen landNum={24} words={LAND24_WORDS} color="#8B5CF6" landName="Technology"   nextLand="The Grand Final" story={LAND24_CONTENT.story} limerick={LAND24_CONTENT.limerick} joke={LAND24_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, DealOrNoDealGame, WheelOfFortuneGame]}/>; }
-function Land25Screen({ onBack, onComplete }) { return <LandScreen landNum={25} words={LAND25_WORDS} color="#7C3AED" landName="The Grand Final" nextLand="Mastery" story={LAND25_CONTENT.story} limerick={LAND25_CONTENT.limerick} joke={LAND25_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]}/>; }
+
+// ============================================================
+// NEW GAMES: TreasureMap / EscapeRoom / ChaseGame / MarketRush / RestaurantRush / MadLibs
+// All accept: { words, allWords, color, title, onComplete, emoji, isReplay, landId }
+// ============================================================
+
+function TreasureMapGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  // Player must tap clue markers in Spanish to match English prompts. 4 stops along path.
+  const stops = useMemo(()=>{
+    const picked = [...words].sort(()=>Math.random()-0.5).slice(0,4);
+    return picked.map((w,i)=>{
+      const others = (allWords||words).filter(x=>x.es!==w.es).sort(()=>Math.random()-0.5).slice(0,3);
+      const markers = [w, ...others].sort(()=>Math.random()-0.5);
+      return { target:w, markers, x: 50 + i*20 + (Math.random()-0.5)*10, y: 80 - i*22 + (Math.random()-0.5)*8 };
+    });
+  // eslint-disable-next-line
+  },[]);
+  const [stage, setStage] = useState(0);
+  const [wrong, setWrong] = useState(null);
+  const [path, setPath] = useState([{x:10,y:88}]);
+  const cur = stops[stage];
+  useEffect(()=>{ if(cur) speakEn(cur.target.en); /* eslint-disable-next-line */ },[stage]);
+  const tap = (m) => {
+    if(m.es===cur.target.es){
+      speakEs(cur.target.es);
+      setPath(p=>[...p,{x:cur.x,y:cur.y}]);
+      setTimeout(()=>{
+        if(stage<stops.length-1) setStage(s=>s+1);
+        else onComplete();
+      }, 700);
+    } else {
+      setWrong(m.es);
+      setTimeout(()=>setWrong(null), 600);
+    }
+  };
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🗺️ {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Stop {stage+1} of {stops.length}</div>
+      </div>
+      <div style={{padding:"12px 16px",position:"relative",zIndex:2}}>
+        <div style={{background:"white",borderRadius:14,padding:"10px 14px",border:`2px solid ${color}40`,textAlign:"center"}}>
+          <div style={{fontSize:11,color,fontWeight:800,letterSpacing:1.5}}>FIND THE WORD FOR:</div>
+          <div style={{fontSize:22,color:"#1C1917",...DS,fontWeight:900}}>{cur?.target.emoji} {cur?.target.en}</div>
+        </div>
+      </div>
+      <div style={{flex:1,position:"relative",margin:"8px 16px",borderRadius:18,overflow:"hidden",background:"linear-gradient(160deg,#FCE7C0,#F5D58E)",border:`2px dashed ${color}80`,minHeight:340}}>
+        {/* Cuenca map placeholder — rivers, plazas */}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{position:"absolute",inset:0,width:"100%",height:"100%"}}>
+          <path d="M 0,70 Q 30,60 50,68 T 100,72" stroke="#3B82F6" strokeWidth="2" fill="none" opacity="0.5"/>
+          <circle cx="20" cy="25" r="4" fill={color} opacity="0.4"/>
+          <circle cx="78" cy="35" r="3" fill={color} opacity="0.4"/>
+          <rect x="40" y="40" width="6" height="6" fill={color} opacity="0.4"/>
+          {/* Path so far */}
+          <polyline points={path.map(p=>`${p.x},${p.y}`).join(" ")} stroke={color} strokeWidth="1.2" strokeDasharray="2,1.5" fill="none"/>
+        </svg>
+        {/* Markers */}
+        {cur?.markers.map((m,i)=>{
+          const ang = (i/cur.markers.length) * Math.PI*2;
+          const mx = cur.x + Math.cos(ang)*18;
+          const my = cur.y + Math.sin(ang)*16;
+          return (
+            <button key={m.es+i} onClick={()=>tap(m)} style={{position:"absolute",left:`${mx}%`,top:`${my}%`,transform:"translate(-50%,-50%)",background:wrong===m.es?"#EF4444":"white",border:`3px solid ${wrong===m.es?"#EF4444":color}`,borderRadius:14,padding:"6px 10px",cursor:"pointer",fontSize:13,...DS,fontWeight:800,color:wrong===m.es?"white":"#1C1917",boxShadow:`0 4px 10px ${color}40`,whiteSpace:"nowrap"}}>📍 {m.es}</button>
+          );
+        })}
+        <div style={{position:"absolute",left:"6%",top:"82%",fontSize:24}}>🏃</div>
+        <div style={{position:"absolute",left:"86%",top:"6%",fontSize:24}}>🏆</div>
+      </div>
+    </CuencaBg>
+  );
+}
+
+function EscapeRoomGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  const pool = allWords || words;
+  const puzzles = useMemo(()=>[...words].sort(()=>Math.random()-0.5).slice(0,4), []); // eslint-disable-line
+  const [unlocked, setUnlocked] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const cur = puzzles[unlocked];
+  const options = useMemo(()=>cur?makeOptions(cur,pool,4):[], [unlocked]);
+  useEffect(()=>{ if(cur) speakEs(cur.es); /* eslint-disable-next-line */ },[unlocked]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt);
+    if(opt===cur.en){ speakEs(cur.es); }
+    setTimeout(()=>{
+      if(opt===cur.en){
+        if(unlocked+1>=puzzles.length){ setTimeout(onComplete, 800); setUnlocked(u=>u+1); }
+        else { setUnlocked(u=>u+1); setSelected(null); }
+      } else { setSelected(null); }
+    }, 1200);
+  };
+  const allOpen = unlocked >= puzzles.length;
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <style>{`@keyframes lockShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🔓 {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Locks opened: {unlocked}/{puzzles.length}</div>
+      </div>
+      <div style={{display:"flex",justifyContent:"center",gap:14,padding:"14px"}}>
+        {puzzles.map((_,i)=>(
+          <div key={i} style={{fontSize:36,filter:i<unlocked?"none":"grayscale(1) brightness(0.7)",animation:i===unlocked&&!allOpen?"lockShake 1.2s ease-in-out infinite":"none"}}>{i<unlocked?"🔓":"🔒"}</div>
+        ))}
+      </div>
+      {allOpen ? (
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",position:"relative",zIndex:1}}>
+          <div style={{fontSize:120,marginBottom:10}}>🚪</div>
+          <div style={{fontSize:22,color,...DS,fontWeight:900}}>You escaped!</div>
+        </div>
+      ) : (
+        <div style={{flex:1,padding:"8px 16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1}}>
+          <div style={{background:"white",borderRadius:18,padding:"18px 20px",width:"100%",maxWidth:400,textAlign:"center",boxShadow:`0 4px 20px ${color}25`,border:`2.5px solid ${color}`,marginBottom:18}}>
+            <div style={{fontSize:11,color,fontWeight:800,letterSpacing:1.5,marginBottom:4}}>PUZZLE {unlocked+1}</div>
+            <div style={{fontSize:44}}>{cur.emoji}</div>
+            <div style={{fontSize:30,color,...DS,fontWeight:900}}>{cur.es}</div>
+            <button onClick={()=>speakEs(cur.es)} style={{marginTop:6,background:`${color}15`,border:`1px solid ${color}30`,borderRadius:10,padding:"4px 12px",cursor:"pointer",fontSize:12,color,fontWeight:700,...DS}}>🔊</button>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
+            {options.map(opt=>(
+              <button key={opt} onClick={()=>pick(opt)} style={{padding:"14px",borderRadius:14,border:`2px solid ${!selected?color:opt===cur.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===cur.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:15,...DS,fontWeight:700}}>{opt}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </CuencaBg>
+  );
+}
+
+function ChaseGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [runnerY, setRunnerY] = useState(0); // 0=ground, negative = jump
+  const [speed, setSpeed] = useState(1); // multiplier for scenery
+  const [bgOffset, setBgOffset] = useState(0);
+  const word = words[idx];
+  const options = useMemo(()=>makeOptions(word, pool, 3),[idx]);
+  useEffect(()=>{ if(word) speakEs(word.es); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    const t = setInterval(()=>{ setBgOffset(o=>(o+ 4*speed)%200); }, 60);
+    return ()=>clearInterval(t);
+  },[speed]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt);
+    if(opt===word.en){
+      setRunnerY(-60);
+      setTimeout(()=>setRunnerY(0), 600);
+      setSpeed(s=>Math.min(s+0.15, 2.4));
+      speakEs(word.es);
+    } else {
+      setSpeed(s=>Math.max(s-0.3, 0.4));
+    }
+    setTimeout(()=>{
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); }
+      else onComplete();
+    }, 1300);
+  };
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <style>{`@keyframes runnerLegs{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-2px) rotate(2deg)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:3}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🏃 {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Speed: {"🚀".repeat(Math.round(speed*2))} · {idx+1}/{words.length}</div>
+      </div>
+      <div style={{padding:"12px 16px",position:"relative",zIndex:2}}>
+        <div style={{background:"white",borderRadius:14,padding:"10px 14px",border:`2px solid ${color}50`,textAlign:"center"}}>
+          <div style={{fontSize:32}}>{word.emoji}</div>
+          <div style={{fontSize:28,color,...DS,fontWeight:900}}>{word.es}</div>
+        </div>
+      </div>
+      {/* Scrolling Cuenca street */}
+      <div style={{height:160,position:"relative",overflow:"hidden",margin:"4px 12px",borderRadius:14,background:"linear-gradient(180deg,#A7D5F5 0%,#FEF3C7 60%,#92400E 100%)",border:`2px solid ${color}50`,zIndex:1}}>
+        {/* moving houses */}
+        {[0,200,400,600].map(off=>(
+          <svg key={off} viewBox="0 0 200 100" style={{position:"absolute",left:off-bgOffset,bottom:30,width:200,height:80,opacity:0.85}}>
+            <rect x="20" y="40" width="40" height="40" fill="#F59E0B"/>
+            <rect x="70" y="20" width="50" height="60" fill="#E8445A"/>
+            <rect x="130" y="35" width="50" height="45" fill="#7C3AED"/>
+            <polygon points="20,40 40,20 60,40" fill="#7F1D1D"/>
+            <polygon points="70,20 95,5 120,20" fill="#7F1D1D"/>
+            <polygon points="130,35 155,15 180,35" fill="#7F1D1D"/>
+          </svg>
+        ))}
+        {/* Runner */}
+        <div style={{position:"absolute",left:30,bottom:30+(-runnerY),fontSize:42,transition:"bottom 0.3s ease-out",animation:"runnerLegs 0.3s ease-in-out infinite",zIndex:3}}>🏃</div>
+        {/* Obstacles */}
+        {[120,260,400,540].map((o,i)=>(
+          <div key={i} style={{position:"absolute",left:o-bgOffset,bottom:30,fontSize:30,zIndex:2}}>{["🪨","🚧","🌵","📦"][i]}</div>
+        ))}
+        {/* Ground */}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,height:30,background:"#7F1D1D"}}/>
+      </div>
+      <div style={{padding:"12px 16px",display:"flex",flexDirection:"column",gap:8,position:"relative",zIndex:2}}>
+        {options.map(opt=>(
+          <button key={opt} onClick={()=>pick(opt)} style={{padding:"13px",borderRadius:14,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:15,...DS,fontWeight:700}}>{opt}</button>
+        ))}
+      </div>
+    </CuencaBg>
+  );
+}
+
+function MarketRushGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [time, setTime] = useState(4);
+  const word = words[idx];
+  const options = useMemo(()=>makeOptions(word, pool, 4),[idx]);
+  useEffect(()=>{ speakEs(word.es); setTime(4); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    if(selected) return;
+    if(time<=0){ pick(null); return; }
+    const t = setTimeout(()=>setTime(x=>x-0.1), 100);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line
+  },[time, selected]);
+  const pick = (opt)=>{
+    if(selected) return;
+    setSelected(opt||"timeout");
+    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); }
+      else onComplete();
+    }, 900);
+  };
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <style>{`@keyframes vendorBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}@keyframes slideIn{from{transform:translateX(120%)}to{transform:translateX(0)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🛒 {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Score {score}/{words.length} · Round {idx+1}</div>
+      </div>
+      <div style={{height:8,background:"rgba(0,0,0,0.06)"}}>
+        <div style={{height:"100%",width:`${(time/4)*100}%`,background:time<1.5?"linear-gradient(90deg,#EF4444,#F97316)":color,transition:"width 0.1s"}}/>
+      </div>
+      <div style={{padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1,flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
+          <div style={{fontSize:60,animation:"vendorBob 1s ease-in-out infinite"}}>👨‍🌾</div>
+          <div style={{background:"white",borderRadius:18,padding:"14px 20px",border:`3px solid ${color}`,boxShadow:`0 4px 12px ${color}30`,position:"relative"}}>
+            <div style={{fontSize:11,color,fontWeight:800,letterSpacing:1.5}}>VENDOR CALLS:</div>
+            <div style={{fontSize:30,color,...DS,fontWeight:900,whiteSpace:"nowrap"}}>{word.emoji} {word.es}!</div>
+            <div style={{position:"absolute",left:-8,top:24,width:0,height:0,borderTop:"8px solid transparent",borderBottom:"8px solid transparent",borderRight:`8px solid ${color}`}}/>
+          </div>
+        </div>
+        <div style={{width:"100%",maxWidth:420,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,animation:!selected?"slideIn 0.4s ease":"none"}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px 8px",borderRadius:14,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"white":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"white",cursor:"pointer",fontSize:14,...DS,fontWeight:700,color:"#1C1917"}}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </CuencaBg>
+  );
+}
+
+function RestaurantRushGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  const pool = allWords || words;
+  const [idx, setIdx] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [patience, setPatience] = useState(100);
+  const word = words[idx];
+  const tray = useMemo(()=>makeOptions(word, pool, 6),[idx]);
+  useEffect(()=>{ speakEs(word.es); setPatience(100); /* eslint-disable-next-line */ },[idx]);
+  useEffect(()=>{
+    if(selected) return;
+    if(patience<=0){ serve(null); return; }
+    const t = setTimeout(()=>setPatience(p=>p-2.5), 100);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line
+  },[patience, selected]);
+  const serve = (opt)=>{
+    if(selected) return;
+    setSelected(opt||"timeout");
+    if(opt===word.en){ setScore(s=>s+1); speakEs(word.es); }
+    setTimeout(()=>{
+      if(idx<words.length-1){ setIdx(i=>i+1); setSelected(null); }
+      else onComplete();
+    }, 900);
+  };
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <style>{`@keyframes customerFume{0%,100%{filter:none}50%{filter:hue-rotate(20deg) brightness(1.2)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px",position:"relative",zIndex:2}}>
+        <div style={{fontSize:16,color:"white",...DS}}>🍽️ {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Served {score}/{words.length}</div>
+      </div>
+      <div style={{padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1,flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}>
+          <div style={{fontSize:60,animation:patience<40?"customerFume 0.5s ease-in-out infinite":"none"}}>{patience>60?"😊":patience>30?"😐":"😠"}</div>
+          <div style={{background:"white",borderRadius:18,padding:"12px 18px",border:`3px solid ${color}`,boxShadow:`0 4px 12px ${color}30`}}>
+            <div style={{fontSize:11,color,fontWeight:800,letterSpacing:1.5}}>ORDER:</div>
+            <div style={{fontSize:24,color,...DS,fontWeight:900}}>"¡Quiero {word.es}!"</div>
+          </div>
+        </div>
+        <div style={{width:"100%",maxWidth:420,marginBottom:14}}>
+          <div style={{fontSize:11,color:"#92400E",fontWeight:800,marginBottom:4,...DS}}>PATIENCE</div>
+          <div style={{height:10,background:"rgba(0,0,0,0.08)",borderRadius:5,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${patience}%`,background:patience<30?"#EF4444":patience<60?"#F59E0B":"#10B981",transition:"width 0.1s"}}/>
+          </div>
+        </div>
+        <div style={{fontSize:11,color:"#78716C",marginBottom:6,...DS}}>SERVE THE RIGHT DISH:</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:10,width:"100%",maxWidth:420}}>
+          {tray.map(opt=>(
+            <button key={opt} onClick={()=>serve(opt)} style={{aspectRatio:"1/1",borderRadius:14,border:`2px solid ${!selected?color:opt===word.en?"#10B981":opt===selected?"#EF4444":"#E5E7EB"}`,background:!selected?"#FFF7E8":opt===word.en?"#D1FAE5":opt===selected?"#FEE2E2":"#FFF7E8",cursor:"pointer",fontSize:12,...DS,fontWeight:700,color:"#1C1917",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:4,textAlign:"center"}}>
+              <div style={{fontSize:24}}>🍽️</div>
+              <div style={{lineHeight:1.2}}>{opt}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </CuencaBg>
+  );
+}
+
+function MadLibsGame({ words, allWords, color, title, onComplete, emoji, isReplay, landId }) {
+  const pool = allWords || words;
+  // Pick 4 words to fill blanks in a Cuenca story
+  const picks = useMemo(()=>[...words].sort(()=>Math.random()-0.5).slice(0,4),[]); // eslint-disable-line
+  const [filled, setFilled] = useState([]); // chosen so far
+  const [done, setDone] = useState(false);
+  const cur = picks[filled.length];
+  const options = useMemo(()=>{
+    if(!cur) return [];
+    const wrongs = pool.filter(w=>w.es!==cur.es).sort(()=>Math.random()-0.5).slice(0,2).map(w=>w.es);
+    return [cur.es, ...wrongs].sort(()=>Math.random()-0.5);
+  // eslint-disable-next-line
+  },[filled.length]);
+  useEffect(()=>{ if(cur) speakEn(cur.en); /* eslint-disable-next-line */ },[filled.length]);
+  const pick = (es)=>{
+    if(es===cur.es){
+      speakEs(cur.es);
+      const next = [...filled, cur];
+      setFilled(next);
+      if(next.length>=picks.length) setTimeout(()=>setDone(true), 600);
+    }
+  };
+  const template = [
+    "Once upon a time in Cuenca, a brave traveler met a friendly ",
+    " who offered them some delicious ",
+    ". They wandered together through the plaza, learning about ",
+    " until they finally arrived at a beautiful ",
+    ". The end!",
+  ];
+  if(done) return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>📖 {title}</div>
+      </div>
+      <div style={{flex:1,padding:"20px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1}}>
+        <div style={{fontSize:48,marginBottom:8}}>📜</div>
+        <div style={{fontSize:14,color:"#92400E",fontWeight:800,letterSpacing:2,marginBottom:10,...DS}}>YOUR STORY</div>
+        <div style={{background:"white",borderRadius:16,padding:"20px 22px",maxWidth:420,boxShadow:`0 4px 18px ${color}30`,border:`2px solid ${color}40`,marginBottom:18,...DS,fontSize:16,color:"#1C1917",lineHeight:1.7}}>
+          {template.map((t,i)=>(<span key={i}>{t}{filled[i]&&<b style={{color,background:`${color}15`,padding:"2px 8px",borderRadius:8}}>{filled[i].es}</b>}</span>))}
+        </div>
+        <button onClick={()=>{ filled.forEach((w,i)=>setTimeout(()=>speakEs(w.es), i*1200)); }} style={{padding:"12px 22px",borderRadius:14,background:`${color}15`,border:`1.5px solid ${color}40`,color,cursor:"pointer",fontSize:14,fontWeight:800,...DS,marginBottom:12}}>🔊 Hear it</button>
+        <button onClick={onComplete} style={{padding:"14px 28px",borderRadius:16,background:`linear-gradient(135deg,${color},#F59E0B)`,color:"white",border:"none",cursor:"pointer",fontSize:15,fontWeight:800,...DS}}>Continue →</button>
+      </div>
+    </CuencaBg>
+  );
+  return (
+    <CuencaBg color={color}>
+      {FONT_LINK}
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <div style={{background:color,padding:"14px 16px"}}>
+        <div style={{fontSize:16,color:"white",...DS}}>📖 {title}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.85)"}}>Word {filled.length+1}/{picks.length}</div>
+      </div>
+      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:1}}>
+        <div style={{background:"white",borderRadius:16,padding:"16px",maxWidth:420,boxShadow:`0 4px 16px ${color}25`,border:`2px solid ${color}30`,marginBottom:18,...DS,fontSize:15,color:"#1C1917",lineHeight:1.7}}>
+          {template.map((t,i)=>(<span key={i}>{t}{filled[i] ? <b style={{color,background:`${color}15`,padding:"2px 8px",borderRadius:8}}>{filled[i].es}</b> : (i===filled.length ? <b style={{background:"#FEF3C7",padding:"2px 14px",borderRadius:8,color:"#92400E",border:`2px dashed ${color}`}}>___</b> : "___")}</span>))}
+        </div>
+        <div style={{background:"white",borderRadius:14,padding:"12px 16px",border:`2px solid ${color}40`,marginBottom:14,maxWidth:420,textAlign:"center"}}>
+          <div style={{fontSize:11,color,fontWeight:800,letterSpacing:1.5}}>PICK THE SPANISH WORD FOR:</div>
+          <div style={{fontSize:22,color:"#1C1917",...DS,fontWeight:900}}>{cur?.emoji} {cur?.en}</div>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8,width:"100%",maxWidth:420}}>
+          {options.map(opt=>(
+            <button key={opt} onClick={()=>pick(opt)} style={{padding:"14px",borderRadius:14,border:`2px solid ${color}40`,background:"white",cursor:"pointer",fontSize:16,...DS,fontWeight:800,color}}>{opt}</button>
+          ))}
+        </div>
+      </div>
+    </CuencaBg>
+  );
+}
+
+function Land2Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={2}  words={LAND2_WORDS}  color="#F97316" landName="Around Town" nextLand="Family"  story={LAND2_CONTENT.story}  limerick={LAND2_CONTENT.limerick}  joke={LAND2_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, TreasureMapGame]} isReplay={isReplay}/>; }
+function Land3Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={3}  words={LAND3_WORDS}  color="#F59E0B" landName="Family"      nextLand="Food"    story={LAND3_CONTENT.story}  limerick={LAND3_CONTENT.limerick}  joke={LAND3_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, QuizGame]} isReplay={isReplay}/>; }
+function Land4Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={4}  words={LAND4_WORDS}  color="#10B981" landName="Food"        nextLand="Feelings" story={LAND4_CONTENT.story}  limerick={LAND4_CONTENT.limerick}  joke={LAND4_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[RestaurantRushGame, FallingWordsGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land5Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={5}  words={LAND5_WORDS}  color="#3B82F6" landName="Feelings"    nextLand="Core Words 1" story={LAND5_CONTENT.story}  limerick={LAND5_CONTENT.limerick}  joke={LAND5_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[WheelOfFortuneGame, FallingWordsGame, QuizGame]} isReplay={isReplay}/>; }
+function Land6Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={6}  words={LAND6_WORDS}  color="#7C3AED" landName="Core Words 1" nextLand="School"  story={LAND6_CONTENT.story}  limerick={LAND6_CONTENT.limerick}  joke={LAND6_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land7Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={7}  words={LAND7_WORDS}  color="#E8445A" landName="School"      nextLand="Numbers" story={LAND7_CONTENT.story}  limerick={LAND7_CONTENT.limerick}  joke={LAND7_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, EscapeRoomGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land8Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={8}  words={LAND8_WORDS}  color="#F97316" landName="Numbers"     nextLand="Colors"  story={LAND8_CONTENT.story}  limerick={LAND8_CONTENT.limerick}  joke={LAND8_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, MarketRushGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land9Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={9}  words={LAND9_WORDS}  color="#8B5CF6" landName="Colors"      nextLand="Animals" story={LAND9_CONTENT.story}  limerick={LAND9_CONTENT.limerick}  joke={LAND9_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
+function Land10Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={10} words={LAND10_WORDS} color="#10B981" landName="Animals"     nextLand="Core Words 2" story={LAND10_CONTENT.story} limerick={LAND10_CONTENT.limerick} joke={LAND10_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ShootingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
+function Land11Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={11} words={LAND11_WORDS} color="#7C3AED" landName="Core Words 2" nextLand="Verbs"  story={LAND11_CONTENT.story} limerick={LAND11_CONTENT.limerick} joke={LAND11_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land12Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={12} words={LAND12_WORDS} color="#F59E0B" landName="Verbs"        nextLand="Time"   story={LAND12_CONTENT.story} limerick={LAND12_CONTENT.limerick} joke={LAND12_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land13Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={13} words={LAND13_WORDS} color="#3B82F6" landName="Time"         nextLand="Body"   story={LAND13_CONTENT.story} limerick={LAND13_CONTENT.limerick} joke={LAND13_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ChaseGame, MatchingGame, QuizGame]} isReplay={isReplay}/>; }
+function Land14Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={14} words={LAND14_WORDS} color="#E8445A" landName="Body"         nextLand="Descriptions" story={LAND14_CONTENT.story} limerick={LAND14_CONTENT.limerick} joke={LAND14_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land15Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={15} words={LAND15_WORDS} color="#8B5CF6" landName="Descriptions" nextLand="Shopping" story={LAND15_CONTENT.story} limerick={LAND15_CONTENT.limerick} joke={LAND15_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MadLibsGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land16Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={16} words={LAND16_WORDS} color="#10B981" landName="Shopping"     nextLand="Weather"  story={LAND16_CONTENT.story} limerick={LAND16_CONTENT.limerick} joke={LAND16_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MarketRushGame, DealOrNoDealGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land17Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={17} words={LAND17_WORDS} color="#F97316" landName="Weather"      nextLand="Core Words 3" story={LAND17_CONTENT.story} limerick={LAND17_CONTENT.limerick} joke={LAND17_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, MemoryFlipGame]} isReplay={isReplay}/>; }
+function Land18Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={18} words={LAND18_WORDS} color="#7C3AED" landName="Core Words 3" nextLand="Core Words 4" story={LAND18_CONTENT.story} limerick={LAND18_CONTENT.limerick} joke={LAND18_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, WheelOfFortuneGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land19Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={19} words={LAND19_WORDS} color="#7C3AED" landName="Core Words 4" nextLand="Opinions" story={LAND19_CONTENT.story} limerick={LAND19_CONTENT.limerick} joke={LAND19_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land20Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={20} words={LAND20_WORDS} color="#E8445A" landName="Opinions"     nextLand="Travel"   story={LAND20_CONTENT.story} limerick={LAND20_CONTENT.limerick} joke={LAND20_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MadLibsGame, LightningRoundGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land21Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={21} words={LAND21_WORDS} color="#3B82F6" landName="Travel"       nextLand="Health"   story={LAND21_CONTENT.story} limerick={LAND21_CONTENT.limerick} joke={LAND21_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, DealOrNoDealGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land22Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={22} words={LAND22_WORDS} color="#10B981" landName="Health"       nextLand="Social Life" story={LAND22_CONTENT.story} limerick={LAND22_CONTENT.limerick} joke={LAND22_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land23Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={23} words={LAND23_WORDS} color="#F59E0B" landName="Social Life"  nextLand="Technology" story={LAND23_CONTENT.story} limerick={LAND23_CONTENT.limerick} joke={LAND23_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land24Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={24} words={LAND24_WORDS} color="#8B5CF6" landName="Technology"   nextLand="The Grand Final" story={LAND24_CONTENT.story} limerick={LAND24_CONTENT.limerick} joke={LAND24_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ChaseGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land25Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={25} words={LAND25_WORDS} color="#7C3AED" landName="The Grand Final" nextLand="Mastery" story={LAND25_CONTENT.story} limerick={LAND25_CONTENT.limerick} joke={LAND25_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
 
 const LAND_SCREENS = {
   1:Land1Screen, 2:Land2Screen, 3:Land3Screen, 4:Land4Screen, 5:Land5Screen,
@@ -1852,7 +2407,8 @@ export default function App() {
   for(let i=1; i<=25; i++){
     if(screen === `land${i}`){
       const Comp = LAND_SCREENS[i];
-      return <Comp profile={profile} onBack={()=>setScreen("map")} onComplete={()=>completeLand(i)}/>;
+      const isReplay = (profile?.level||1) > i;
+      return <Comp profile={profile} onBack={()=>setScreen("map")} onComplete={()=>completeLand(i)} isReplay={isReplay}/>;
     }
   }
   return null;
