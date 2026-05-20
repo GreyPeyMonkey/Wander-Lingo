@@ -45,7 +45,71 @@ const LANDS = [
 ];
 
 const speakEs = (text) => { try{ const u=new SpeechSynthesisUtterance(text); u.lang="es-ES"; u.rate=0.85; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} };
-const speakEn = (text) => { try{ const u=new SpeechSynthesisUtterance(text); u.lang="en-US"; u.rate=0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} };
+const speakEn = (text) => { try{ const u=new SpeechSynthesisUtterance(text); u.lang="en-US"; u.rate=0.9; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} 
+// ============================================================
+// EXPLORER MODES + ACCESSIBLE AUDIO SYSTEM
+// ============================================================
+const EXPLORER_MODES = {
+  little:   { id:"little",   label:"Little Explorer",  emoji:"🌱", desc:"Slowest audio, longest timers, extra encouragement",  rate:0.7,  timerMult:1.8, textScale:1.12, autoEncourage:true  },
+  explorer: { id:"explorer", label:"Explorer",         emoji:"🧭", desc:"Normal pace, balanced challenge",                     rate:0.9,  timerMult:1.0, textScale:1.0,  autoEncourage:false },
+  serious:  { id:"serious",  label:"Serious Explorer", emoji:"🎓", desc:"Fast audio, shorter timers, fewer hints",              rate:1.05, timerMult:0.75,textScale:0.95, autoEncourage:false },
+};
+function getMode(profile) {
+  if (!profile) return EXPLORER_MODES.explorer;
+  try {
+    const stored = localStorage.getItem("wl_mode_" + profile.id);
+    if (stored && EXPLORER_MODES[stored]) return EXPLORER_MODES[stored];
+  } catch(e){}
+  return EXPLORER_MODES.explorer;
+}
+function setProfileMode(profile, modeId) {
+  if (!profile || !EXPLORER_MODES[modeId]) return;
+  try { localStorage.setItem("wl_mode_" + profile.id, modeId); } catch(e){}
+}
+// Pass current profile mode to game components via a tiny context-y helper (kept as a prop, no React Context to stay simple)
+
+// Queue-based audio sequence — uses speechSynthesis queueing
+function speakSeq(items) {
+  try {
+    window.speechSynthesis.cancel();
+    items.forEach(({text, lang, rate}) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang || "es-ES";
+      u.rate = rate || 0.9;
+      window.speechSynthesis.speak(u);
+    });
+  } catch(e){}
+}
+// Auto-read sequence for a question + options. Returns estimated ms duration.
+function autoReadQuestion(spanish, options, mode) {
+  const m = mode || EXPLORER_MODES.explorer;
+  const seq = [{ text: spanish, lang:"es-ES", rate: m.rate }];
+  (options||[]).forEach(opt => seq.push({ text: opt, lang:"en-US", rate: m.rate }));
+  speakSeq(seq);
+  // estimate duration: ~ chars/12 seconds per item at rate 0.9
+  return Math.round(((spanish.length + (options||[]).reduce((a,o)=>a+o.length,0)) / 11) * (1.1 / m.rate) * 1000) + 600;
+}
+function useAutoRead(spanish, options, deps, mode) {
+  useEffect(() => {
+    autoReadQuestion(spanish, options, mode);
+    // eslint-disable-next-line
+  }, deps);
+}
+function ReadAgainButton({ onReplay, color }) {
+  return (
+    <button onClick={onReplay} aria-label="Read again" style={{position:"absolute",top:14,right:14,background:"white",border:`2px solid ${color||"#7C3AED"}`,borderRadius:"50%",width:46,height:46,fontSize:22,cursor:"pointer",zIndex:20,boxShadow:`0 4px 12px ${(color||"#7C3AED")}55`,display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>🔊</button>
+  );
+}
+function EncouragementBubble({ correct, mode }) {
+  if (!mode?.autoEncourage) return null;
+  const msgs = correct ? ["¡Perfecto!","¡Muy bien!","¡Increíble!","¡Bravo!"] : ["¡Casi!","¡Try again!","¡Vamos!","Grayson dice keep going!"];
+  const text = msgs[Math.floor(Math.random()*msgs.length)];
+  return (
+    <div style={{position:"absolute",top:60,left:"50%",transform:"translateX(-50%)",background:correct?"#10B981":"#F59E0B",color:"white",borderRadius:18,padding:"10px 18px",fontSize:18,...DS,fontWeight:900,boxShadow:"0 6px 18px rgba(0,0,0,0.2)",zIndex:30,whiteSpace:"nowrap",animation:"popIn 0.3s ease"}}>{text}</div>
+  );
+}
+
+};
 
 const FONT_LINK = <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap');`}</style>;
 
@@ -591,87 +655,193 @@ function ShootingGame({ words, allWords, color, title, onComplete, emoji, isRepl
   );
 }
 
-function BossChallenge({ words, color, landName, nextLand, onComplete, isReplay, landId }) {
-  const [idx, setIdx] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [lava, setLava] = useState(0);
+function BossChallenge({ words, color, landName, nextLand, onComplete, isReplay, landId, profile }) {
+  const mode = getMode(profile);
+  const TOTAL_ROUNDS = Math.min(words.length, 8);
+  const [round, setRound] = useState(0);
+  const [phase, setPhase] = useState("reading"); // reading|answering|reveal
+  const [player, setPlayer] = useState({ platform:100, lastResult:null });
+  const [npcs, setNpcs] = useState(()=>[
+    { id:"djdollar", name:"DJ Dollar",       avatar:"😎", color:"#F59E0B", accuracy:0.35, speed:0.55, talkRight:"DEFINITELY!", talkWrong:"WHAT?!", platform:100, choice:null, result:null },
+    { id:"carlos",   name:"Carlos",          avatar:"🧔", color:"#92400E", accuracy:0.55, speed:1.6,  talkRight:"...sí?",       talkWrong:"...no?", platform:100, choice:null, result:null },
+    { id:"tambien",  name:"También Sis",     avatar:"👧", color:"#EC4899", accuracy:0.85, speed:0.95, talkRight:"También.",     talkWrong:"...también?", platform:100, choice:null, result:null },
+    { id:"abuela",   name:"Abuela",          avatar:"👵", color:"#7C3AED", accuracy:0.55, speed:1.25, talkRight:"Muy bien.",    talkWrong:"Ay, mijo.", platform:100, choice:null, result:null },
+  ]);
+  const [timeLeft, setTimeLeft] = useState(0);
   const [done, setDone] = useState(false);
-  const [shake, setShake] = useState(false);
-  const [reaction, setReaction] = useState(null); // "happy"|"shocked"
-  const shuffled = useState(()=>[...words].sort(()=>Math.random()-0.5))[0];
-  const word = shuffled[idx % shuffled.length];
-  const options = useMemo(()=>makeOptions(word, words, 4), [idx]);
-  useEffect(()=>{ if(word) speakEs(word.es); setReaction(null); /* eslint-disable-next-line */ },[idx]);
-  const pick = (opt)=>{
-    if(selected) return;
-    const correct = opt===word.en;
-    setSelected(opt);
-    if(!correct){
-      setLava(l=>Math.min(l+22, 100));
-      setShake(true); setReaction("shocked");
-      setTimeout(()=>setShake(false), 500);
-    } else { speakEs(word.es); setReaction("happy"); }
+  const word = words[round % words.length];
+  const options = useMemo(()=>makeOptions(word, words, 4), [round]);
+
+  // Auto-read on new round
+  useEffect(()=>{
+    if (done) return;
+    setPhase("reading");
+    const audioDur = autoReadQuestion(word.es, options, mode);
+    // Reset NPC state
+    setNpcs(prev => prev.map(n=>({...n, choice:null, result:null})));
+    setPlayer(p=>({...p, lastResult:null}));
+    const t = setTimeout(()=>{
+      setPhase("answering");
+      setTimeLeft(8 * mode.timerMult);
+    }, audioDur);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line
+  },[round]);
+
+  // Schedule NPC answers during the answering phase
+  useEffect(()=>{
+    if (phase !== "answering") return;
+    const timers = [];
+    setNpcs(prev => prev.map(npc => {
+      const right = Math.random() < npc.accuracy;
+      const wrongOpts = options.filter(o=>o!==word.en);
+      const choice = right ? word.en : (wrongOpts[Math.floor(Math.random()*wrongOpts.length)] || options[0]);
+      const delay = 600 + npc.speed * 1500 + Math.random()*800;
+      timers.push(setTimeout(()=>{
+        setNpcs(curr => curr.map(n => n.id===npc.id ? {...n, choice} : n));
+      }, delay));
+      return npc;
+    }));
+    return ()=>timers.forEach(clearTimeout);
+    // eslint-disable-next-line
+  },[phase, round]);
+
+  // Countdown
+  useEffect(()=>{
+    if (phase !== "answering") return;
+    if (player.lastResult !== null) return;
+    if (timeLeft <= 0) { lockIn(null); return; }
+    const t = setTimeout(()=>setTimeLeft(x=>Math.max(0,x-0.1)), 100);
+    return ()=>clearTimeout(t);
+    // eslint-disable-next-line
+  },[timeLeft, phase, player.lastResult]);
+
+  const lockIn = (opt)=>{
+    if (player.lastResult !== null) return;
+    const right = opt === word.en;
+    if (right) speakEs(word.es);
+    setPlayer(p=>({ platform: right ? Math.min(100, p.platform+4) : Math.max(0, p.platform-22), lastResult:right ? "right":"wrong" }));
+    setPhase("reveal");
+    // Resolve NPCs
     setTimeout(()=>{
-      setSelected(null);
-      const next = idx+1;
-      if(next>=words.length){ setDone(true); return; }
-      setIdx(next);
-    }, 1300);
+      setNpcs(prev => prev.map(npc=>{
+        const r = npc.choice === word.en;
+        return {...npc, result: r?"right":"wrong", platform: Math.max(0, r ? Math.min(100, npc.platform+4) : npc.platform-22)};
+      }));
+    }, 400);
+    // Next round or end
+    setTimeout(()=>{
+      const next = round+1;
+      if (next>=TOTAL_ROUNDS) { setDone(true); return; }
+      setRound(next);
+    }, 2400);
   };
-  if(done) return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
-      {FONT_LINK}
-      <style>{`@keyframes bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}@keyframes confettiDrop{0%{transform:translateY(-20px) rotate(0);opacity:0}10%{opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}`}</style>
-      {[...Array(20)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*7)%95}%`,top:-30,fontSize:20+(i%3)*6,animation:`confettiDrop ${3+i%4}s linear ${i*0.15}s infinite`,pointerEvents:"none"}}>{["⭐","✨","🎉","💛","🎊"][i%5]}</div>))}
-      <div style={{fontSize:84,animation:"bounce 0.7s ease infinite",marginBottom:16,position:"relative",zIndex:2}}>🎉</div>
-      <div style={{fontSize:34,color:"#FCD34D",...DS,fontWeight:900,marginBottom:8,zIndex:2}}>¡Felicidades!</div>
-      <div style={{fontSize:18,color:"white",marginBottom:4,...DS,zIndex:2}}>You completed {landName}!</div>
-      <div style={{fontSize:14,color:"rgba(255,255,255,0.7)",marginBottom:24,...DS,zIndex:2}}>{nextLand} is now unlocked! 🗺️</div>
-      <div style={{display:"flex",gap:16,marginBottom:24,alignItems:"flex-end",zIndex:2}}>
-        <img src="/characters/grayson.png" style={{height:120}} alt="" onError={e=>e.target.style.display="none"}/>
-        <img src="/characters/peyton.png" style={{height:104}} alt="" onError={e=>e.target.style.display="none"}/>
-      </div>
-      <button onClick={onComplete} style={{padding:"16px 48px",borderRadius:24,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:18,cursor:"pointer",...DS,fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)",zIndex:2}}>Continue to {nextLand} →</button>
-    </div>
-  );
-  return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A 0%,#2D1B69 50%,#3D1B0E 100%)",display:"flex",flexDirection:"column",transform:shake?"translateX(-8px)":"none",transition:"transform 0.1s",position:"relative",overflow:"hidden"}}>
-      {FONT_LINK}
-      <style>{`@keyframes lavaWobble{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-3px) scaleY(1.04)}}@keyframes bubble{0%{transform:translateY(0);opacity:0}30%{opacity:.8}100%{transform:translateY(-60px);opacity:0}}@keyframes pulseRed{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.6)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0)}}@keyframes charBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes charShock{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}`}</style>
-      <CuyOverlay visible={isReplay} landId={landId||1}/>
-      <div style={{background:"rgba(255,255,255,0.05)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12,position:"relative",zIndex:3}}>
-        <div style={{flex:1,fontSize:18,color:"white",...DS}}>🌋 BOSS — {landName}</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>{idx+1}/{words.length}</div>
-      </div>
-      <div style={{height:10,background:"rgba(255,255,255,0.1)",position:"relative",zIndex:3}}>
-        <div style={{height:"100%",width:`${lava}%`,background:"linear-gradient(90deg,#F97316,#EF4444)",transition:"width 0.5s"}}/>
-      </div>
-      <div style={{fontSize:12,color:lava>50?"#FCA5A5":"rgba(255,255,255,0.5)",textAlign:"center",padding:"4px 0",fontWeight:700,...DS,position:"relative",zIndex:3}}>🌋 Lava Level: {Math.round(lava)}%</div>
-      <div style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",alignItems:"center",position:"relative",zIndex:2}}>
-        <div style={{display:"flex",gap:14,marginBottom:12,alignItems:"flex-end"}}>
-          <img src="/characters/grayson.png" style={{height:80,filter:"drop-shadow(0 4px 12px rgba(124,58,237,0.6))",animation:reaction==="shocked"?"charShock 0.4s ease":"charBounce 1.6s ease-in-out infinite"}} alt="" onError={e=>e.target.style.display="none"}/>
-          <img src="/characters/peyton.png"  style={{height:68,filter:"drop-shadow(0 4px 12px rgba(37,99,235,0.6))",animation:reaction==="shocked"?"charShock 0.4s ease 0.05s":"charBounce 1.6s ease-in-out infinite 0.3s"}} alt="" onError={e=>e.target.style.display="none"}/>
-          {reaction && <div style={{fontSize:34,marginBottom:30}}>{reaction==="happy"?"🌟":"😱"}</div>}
-        </div>
-        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:24,padding:"24px 20px",width:"100%",maxWidth:400,textAlign:"center",border:`2px solid ${color}`,marginBottom:16,boxShadow:`0 4px 24px ${color}40`}}>
-          <div style={{fontSize:40,marginBottom:8}}>{word.emoji}</div>
-          <div style={{fontSize:30,color:"white",...DS,fontWeight:900}}>{word.es}</div>
-          <button onClick={()=>speakEs(word.es)} style={{marginTop:8,background:`${color}20`,border:`1px solid ${color}40`,borderRadius:10,padding:"6px 14px",cursor:"pointer",fontSize:13,color:"white",fontWeight:700,...DS}}>🔊</button>
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:400}}>
-          {options.map(opt=>(
-            <button key={opt} onClick={()=>pick(opt)} style={{padding:"16px",borderRadius:16,background:!selected?"rgba(255,255,255,0.1)":opt===word.en?"#D1FAE5":opt===selected?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.05)",border:`2px solid ${!selected?"rgba(255,255,255,0.25)":opt===word.en?"#10B981":opt===selected?"#EF4444":"rgba(255,255,255,0.1)"}`,cursor:"pointer",fontSize:16,...DS,fontWeight:700,color:!selected?"white":opt===word.en?"#10B981":opt===selected?"#FCA5A5":"rgba(255,255,255,0.4)"}}>{opt}</button>
+
+  // Done screen
+  if (done) {
+    const survivors = [{name:profile?.name||"You", avatar:profile?.avatar||"🌟", color:profile?.color||"#7C3AED", platform:player.platform, isYou:true}, ...npcs.map(n=>({name:n.name, avatar:n.avatar, color:n.color, platform:n.platform, isYou:false}))]
+      .sort((a,b)=>b.platform-a.platform);
+    const won = survivors[0].isYou;
+    return (
+      <div style={{minHeight:"100vh",background:`linear-gradient(160deg,#1C0A4A 0%,#2D1B69 50%,${won?"#10B981":"#7F1D1D"} 100%)`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,textAlign:"center",position:"relative",overflow:"hidden"}}>
+        {FONT_LINK}
+        <style>{`@keyframes confettiFall{from{transform:translateY(-20px) rotate(0);opacity:0}10%{opacity:1}to{transform:translateY(110vh) rotate(720deg);opacity:0}}@keyframes bigBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}`}</style>
+        {won && [...Array(28)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*7)%95}%`,top:-30,fontSize:18+(i%3)*8,animation:`confettiFall ${3+i%4}s linear ${i*0.12}s infinite`,pointerEvents:"none"}}>{["⭐","✨","🎉","💛","🏆","🎊"][i%6]}</div>))}
+        <div style={{fontSize:90,marginBottom:8,animation:"bigBounce 0.7s ease infinite",zIndex:2}}>{won?"🏆":"🌋"}</div>
+        <div style={{fontSize:30,color:won?"#FCD34D":"#FCA5A5",...DS,fontWeight:900,marginBottom:6,zIndex:2}}>{won?"¡Campeón!":"¡Buen intento!"}</div>
+        <div style={{fontSize:16,color:"white",marginBottom:24,zIndex:2,...DS}}>{won?`You beat the lava boss in ${landName}!`:`The lava won this round — try again!`}</div>
+        <div style={{display:"flex",gap:10,marginBottom:22,zIndex:2,flexWrap:"wrap",justifyContent:"center",maxWidth:420}}>
+          {survivors.map((p,i)=>(
+            <div key={p.name} style={{background:p.isYou?"rgba(252,211,77,0.18)":"rgba(255,255,255,0.08)",border:`2px solid ${p.isYou?"#FCD34D":"rgba(255,255,255,0.2)"}`,borderRadius:14,padding:"10px 12px",minWidth:90,textAlign:"center"}}>
+              <div style={{fontSize:13,color:"#FCD34D",fontWeight:800,...DS}}>#{i+1}</div>
+              <div style={{fontSize:28}}>{p.avatar}</div>
+              <div style={{fontSize:11,color:"white",fontWeight:700,...DS}}>{p.name}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)"}}>{Math.round(p.platform)}%</div>
+            </div>
           ))}
         </div>
+        <button onClick={onComplete} style={{padding:"16px 40px",borderRadius:22,background:"linear-gradient(135deg,#F59E0B,#F97316)",border:"none",color:"white",fontSize:17,cursor:"pointer",...DS,fontWeight:900,boxShadow:"0 8px 24px rgba(245,158,11,0.5)",zIndex:2}}>Continue to {nextLand} →</button>
       </div>
-      {/* Animated lava floor */}
-      <div style={{position:"absolute",left:0,right:0,bottom:0,height:`${Math.max(8, lava*0.7)}vh`,pointerEvents:"none",zIndex:1,animation:lava>0?"lavaWobble 1.2s ease-in-out infinite":"none"}}>
-        <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,rgba(239,68,68,0) 0%,#F97316 30%,#EF4444 60%,#7F1D1D 100%)"}}/>
-        <svg viewBox="0 0 400 40" preserveAspectRatio="none" style={{position:"absolute",top:-12,left:0,width:"100%",height:24}}>
-          <path d="M0,40 Q20,5 40,20 T80,20 T120,15 T160,25 T200,10 T240,22 T280,15 T320,28 T360,12 T400,20 L400,40 Z" fill="#F97316"/>
-        </svg>
-        {[...Array(6)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*16+5)%95}%`,bottom:0,fontSize:14,color:"#FCD34D",animation:`bubble ${1.2+i*0.2}s ease-in ${i*0.3}s infinite`}}>•</div>))}
+    );
+  }
+
+  const replay = ()=>autoReadQuestion(word.es, options, mode);
+  const allCompetitors = [
+    {id:"player", name:"You", avatar:profile?.avatar||"🌟", color:profile?.color||"#7C3AED", platform:player.platform, lastResult:player.lastResult, choice:null, isYou:true, talkRight:"¡Sí!", talkWrong:"😬"},
+    ...npcs.map(n=>({...n, isYou:false}))
+  ];
+  return (
+    <div style={{minHeight:"100vh",background:`linear-gradient(180deg,#1C0A4A 0%,#3D1B0E 100%)`,display:"flex",flexDirection:"column",position:"relative",overflow:"hidden",animation:player.lastResult==="wrong"?"shakeScreen 0.4s ease":""}}>
+      {FONT_LINK}
+      <style>{`@keyframes shakeScreen{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}@keyframes bubbleFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}@keyframes lavaPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.18)}}@keyframes thinkDot{0%,80%,100%{opacity:0.3}40%{opacity:1}}@keyframes popIn{0%{transform:scale(0.7);opacity:0}100%{transform:scale(1);opacity:1}}@keyframes characterShockMini{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}`}</style>
+      <CuyOverlay visible={isReplay} landId={landId||1}/>
+      <ReadAgainButton onReplay={replay} color="#FCD34D"/>
+      {/* Tiny status row */}
+      <div style={{padding:"10px 16px 6px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:5}}>
+        <div style={{fontSize:14,color:"#FCD34D",...DS,fontWeight:900}}>🌋 BOSS · {landName}</div>
+        <div style={{fontSize:12,color:"rgba(255,255,255,0.7)"}}>Round {round+1}/{TOTAL_ROUNDS}</div>
       </div>
+      {/* Question card — compact */}
+      <div style={{padding:"4px 16px 10px",position:"relative",zIndex:5}}>
+        <div style={{background:"rgba(255,255,255,0.08)",border:`2px solid ${color}`,borderRadius:18,padding:"12px 16px",textAlign:"center",boxShadow:`0 6px 24px ${color}55`}}>
+          <div style={{fontSize:11,color:"#FCD34D",fontWeight:800,letterSpacing:2,marginBottom:2,...DS}}>WHAT DOES THIS MEAN?</div>
+          <div style={{fontSize:30,marginBottom:0}}>{word.emoji}</div>
+          <div style={{fontSize:34,color:"white",...DS,fontWeight:900}}>{word.es}</div>
+        </div>
+        {phase==="answering" && (
+          <div style={{height:8,background:"rgba(255,255,255,0.1)",borderRadius:4,marginTop:8,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${(timeLeft/(8*mode.timerMult))*100}%`,background:timeLeft<2?"#EF4444":timeLeft<4?"#F59E0B":"#10B981",transition:"width 0.1s"}}/>
+          </div>
+        )}
+      </div>
+      {/* Arena: 4 platforms with floating answer bubbles in the scene */}
+      <div style={{flex:1,position:"relative",margin:"0 8px",overflow:"hidden",zIndex:2}}>
+        {/* Floating answer bubbles (only during answering) */}
+        {phase==="answering" && options.map((opt,i)=>{
+          const positions = [{l:"10%",t:"5%"},{l:"58%",t:"12%"},{l:"22%",t:"38%"},{l:"66%",t:"45%"}];
+          const p = positions[i] || positions[0];
+          return (
+            <button key={opt} onClick={()=>lockIn(opt)} style={{position:"absolute",left:p.l,top:p.t,background:"linear-gradient(135deg,#FFFFFF,#FEF3C7)",border:`3px solid ${color}`,borderRadius:60,padding:"14px 20px",cursor:"pointer",fontSize:15+i%2,...DS,fontWeight:800,color:"#1C1917",boxShadow:`0 6px 18px ${color}55`,animation:`bubbleFloat ${2.3+i*0.3}s ease-in-out infinite`,zIndex:6,maxWidth:160}}>
+              {opt}
+            </button>
+          );
+        })}
+        {phase==="reveal" && (
+          <div style={{position:"absolute",left:"50%",top:"10%",transform:"translateX(-50%)",background:player.lastResult==="right"?"#10B981":"#EF4444",color:"white",padding:"10px 22px",borderRadius:20,fontSize:18,...DS,fontWeight:900,zIndex:6,animation:"popIn 0.3s ease"}}>
+            {player.lastResult==="right" ? "¡Correct! ✅" : `Answer: ${word.en}`}
+          </div>
+        )}
+        {/* Platforms at bottom */}
+        <div style={{position:"absolute",bottom:90,left:0,right:0,display:"flex",justifyContent:"space-around",alignItems:"flex-end",padding:"0 6px",zIndex:4}}>
+          {[{...allCompetitors[0]}, ...npcs].map((p)=>(
+            <div key={p.id||"player"} style={{display:"flex",flexDirection:"column",alignItems:"center",width:78,position:"relative",transition:"transform 0.6s",transform:`translateY(${(100-p.platform)*0.6}px)`}}>
+              {/* Thought bubble or reaction */}
+              {phase==="answering" && p.choice && !p.isYou && (
+                <div style={{position:"absolute",top:-32,background:"white",border:"2px solid #7C3AED",borderRadius:12,padding:"3px 8px",fontSize:10,...DS,fontWeight:800,color:"#7C3AED",whiteSpace:"nowrap",animation:"popIn 0.3s ease"}}>chose!</div>
+              )}
+              {phase==="reveal" && !p.isYou && p.result && (
+                <div style={{position:"absolute",top:-34,background:p.result==="right"?"#10B981":"#EF4444",color:"white",borderRadius:12,padding:"3px 8px",fontSize:10,...DS,fontWeight:800,whiteSpace:"nowrap",animation:"popIn 0.3s ease"}}>{p.result==="right"?p.talkRight:p.talkWrong}</div>
+              )}
+              {phase==="answering" && !p.choice && !p.isYou && (
+                <div style={{position:"absolute",top:-26,fontSize:14,letterSpacing:2,color:"rgba(255,255,255,0.6)"}}><span style={{animation:"thinkDot 1.2s infinite"}}>.</span><span style={{animation:"thinkDot 1.2s infinite 0.2s"}}>.</span><span style={{animation:"thinkDot 1.2s infinite 0.4s"}}>.</span></div>
+              )}
+              <div style={{fontSize:32,filter:`drop-shadow(0 3px 6px ${p.color}80)`,animation:phase==="reveal"&&p.result==="wrong"?"characterShockMini 0.4s ease":"none"}}>{p.avatar}</div>
+              <div style={{fontSize:10,color:"white",...DS,fontWeight:800,marginTop:2,textAlign:"center",lineHeight:1.1}}>{p.name}</div>
+              <div style={{width:60,height:14,background:p.color,borderRadius:"6px 6px 0 0",marginTop:4,boxShadow:`0 -4px 8px ${p.color}80`}}/>
+            </div>
+          ))}
+        </div>
+        {/* Lava floor — fills based on average platform drop */}
+        <div style={{position:"absolute",left:0,right:0,bottom:0,height:90,zIndex:3,animation:"lavaPulse 1.5s ease-in-out infinite"}}>
+          <svg viewBox="0 0 400 80" preserveAspectRatio="none" style={{position:"absolute",top:-12,left:0,width:"100%",height:20}}>
+            <path d="M0,80 Q25,5 50,25 T100,15 T150,30 T200,10 T250,28 T300,18 T350,32 T400,20 L400,80 Z" fill="#F97316"/>
+          </svg>
+          <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#F97316 0%,#EF4444 60%,#7F1D1D 100%)"}}/>
+          {[...Array(5)].map((_,i)=>(<div key={i} style={{position:"absolute",left:`${(i*22+8)%96}%`,bottom:0,fontSize:14,color:"#FCD34D",animation:`bubbleFloat ${1+i*0.3}s ease-in-out ${i*0.4}s infinite`,opacity:0.7}}>•</div>))}
+        </div>
+      </div>
+      {/* Encouragement bubble */}
+      {phase==="reveal" && <EncouragementBubble correct={player.lastResult==="right"} mode={mode}/>}
     </div>
   );
 }
@@ -707,6 +877,8 @@ function RewardScreen({ kind, text, color, landName, onContinue }) {
 }
 
 function MyProfileScreen({ profile, familyCode, familyName, onBack }) {
+  const [mode, setMode] = useState(()=>getMode(profile).id);
+  const pick = (id)=>{ setMode(id); setProfileMode(profile, id); };
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#1C0A4A,#2D1B69)",display:"flex",flexDirection:"column"}}>
       {FONT_LINK}
@@ -714,23 +886,39 @@ function MyProfileScreen({ profile, familyCode, familyName, onBack }) {
         <button onClick={onBack} style={{background:"rgba(255,255,255,0.1)",border:"none",borderRadius:12,padding:"8px 12px",color:"white",cursor:"pointer",fontSize:20}}>←</button>
         <div style={{fontSize:20,color:"white",...DS}}>My Profile</div>
       </div>
-      <div style={{flex:1,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center"}}>
+      <div style={{flex:1,padding:"24px 20px",display:"flex",flexDirection:"column",alignItems:"center",overflowY:"auto"}}>
         <div style={{width:90,height:90,borderRadius:"50%",background:profile.color||T.purple,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:12,boxShadow:`0 8px 24px ${profile.color||T.purple}50`}}>{profile.avatar||"🌟"}</div>
         <div style={{fontSize:26,color:"white",...DS,marginBottom:4}}>{profile.name}</div>
-        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:24}}>Explorer · Land {profile.level||1}</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,width:"100%",maxWidth:360,marginBottom:24}}>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.5)",marginBottom:20}}>Explorer · Land {profile.level||1}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,width:"100%",maxWidth:360,marginBottom:20}}>
           {[{label:"Stars",value:profile.stars||0,icon:"⭐"},{label:"Land",value:profile.level||1,icon:"🗺️"},{label:"Streak",value:profile.streak||0,icon:"🔥"}].map(s=>(
             <div key={s.label} style={{background:"rgba(255,255,255,0.08)",borderRadius:16,padding:"14px 10px",textAlign:"center"}}>
               <div style={{fontSize:24}}>{s.icon}</div><div style={{fontSize:22,color:"white",...DS}}>{s.value}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.4)",fontWeight:700}}>{s.label}</div>
             </div>
           ))}
         </div>
-        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:18,padding:"16px 20px",width:"100%",maxWidth:360,marginBottom:16}}>
+        {/* Mode selector */}
+        <div style={{width:"100%",maxWidth:380,marginBottom:18}}>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.6)",fontWeight:800,letterSpacing:2,marginBottom:8,...DS}}>EXPLORER MODE</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {Object.values(EXPLORER_MODES).map(m=>(
+              <button key={m.id} onClick={()=>pick(m.id)} style={{padding:"14px 16px",borderRadius:16,background:mode===m.id?`linear-gradient(135deg,#F59E0B,#F97316)`:"rgba(255,255,255,0.08)",border:`2px solid ${mode===m.id?"#FCD34D":"rgba(255,255,255,0.15)"}`,cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left",color:"white"}}>
+                <div style={{fontSize:28}}>{m.emoji}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:15,...DS,fontWeight:800}}>{m.label}</div>
+                  <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{m.desc}</div>
+                </div>
+                {mode===m.id && <div style={{fontSize:18}}>✅</div>}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{background:"rgba(255,255,255,0.08)",borderRadius:18,padding:"16px 20px",width:"100%",maxWidth:360}}>
           <div style={{fontSize:12,color:"rgba(255,255,255,0.4)",fontWeight:700,marginBottom:4}}>FAMILY</div>
           <div style={{fontSize:18,color:"white",...DS}}>{familyName}</div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
             <div style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"6px 14px",fontSize:18,color:T.goldL,letterSpacing:3,fontWeight:900}}>{familyCode}</div>
-            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Share this code with your family!</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.4)"}}>Share with your family!</div>
           </div>
         </div>
       </div>
@@ -1052,7 +1240,7 @@ function Land1Screen({ profile, onBack, onComplete, isReplay }) {
   if(phase==="game2")    return <ShootingGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(4,8)} color={color} title="Greetings Shooting Game!" onComplete={()=>setPhase("joke")} emoji="🎯" isReplay={isReplay} landId={1}/>;
   if(phase==="joke")     return <RewardScreen kind="joke" text={LAND1_JOKE} color={color} landName="Greetings" onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
   if(phase==="game3")    return <FallingWordsGame allWords={LAND1_WORDS} words={LAND1_WORDS.slice(8,12)} color={color} title="Catch the Greetings!" onComplete={()=>setPhase("boss")} emoji="⬇️" isReplay={isReplay} landId={1}/>;
-  if(phase==="boss")     return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} isReplay={isReplay} landId={1}/>;
+  if(phase==="boss")     return <BossChallenge words={LAND1_WORDS} color={color} landName="Greetings" nextLand="Around Town" onComplete={onComplete} isReplay={isReplay} landId={1} profile={profile}/>;
   return null;
 }
 
@@ -1530,7 +1718,7 @@ const ALL_LAND_WORDS = {
 // ============================================================
 // LandScreen Template + QuizGame + Extra Game Components
 // ============================================================
-function LandScreen({ landNum, words, color, landName, nextLand, story, limerick, joke, onBack, onComplete, games, isReplay }) {
+function LandScreen({ landNum, words, color, landName, nextLand, story, limerick, joke, onBack, onComplete, games, isReplay, profile }) {
   const G1 = (games && games[0]) || MatchingGame;
   const G2 = (games && games[1]) || QuizGame;
   const G3 = (games && games[2]) || FallingWordsGame;
@@ -1617,7 +1805,7 @@ function LandScreen({ landNum, words, color, landName, nextLand, story, limerick
   if(phase==="game2")    return <G2 words={words.slice(4,8)}  allWords={words} color={color} title={`${landName} — Round 2!`} onComplete={()=>setPhase("joke")} emoji="🎯" isReplay={isReplay} landId={landNum}/>;
   if(phase==="joke")     return <RewardScreen kind="joke" text={joke} color={color} landName={landName} onContinue={()=>{setPhase("lesson3");setWordIdx(0);}}/>;
   if(phase==="game3")    return <G3 words={words.slice(8,12)} allWords={words} color={color} title={`${landName} — Round 3!`} onComplete={()=>setPhase("boss")} emoji="⬇️" isReplay={isReplay} landId={landNum}/>;
-  if(phase==="boss")     return <BossChallenge words={words} color={color} landName={landName} nextLand={nextLand} onComplete={onComplete} isReplay={isReplay} landId={landNum}/>;
+  if(phase==="boss")     return <BossChallenge words={words} color={color} landName={landName} nextLand={nextLand} onComplete={onComplete} isReplay={isReplay} landId={landNum} profile={profile}/>;
   return null;
 }
 
@@ -2288,30 +2476,30 @@ function MadLibsGame({ words, allWords, color, title, onComplete, emoji, isRepla
   );
 }
 
-function Land2Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={2}  words={LAND2_WORDS}  color="#F97316" landName="Around Town" nextLand="Family"  story={LAND2_CONTENT.story}  limerick={LAND2_CONTENT.limerick}  joke={LAND2_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, TreasureMapGame]} isReplay={isReplay}/>; }
-function Land3Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={3}  words={LAND3_WORDS}  color="#F59E0B" landName="Family"      nextLand="Food"    story={LAND3_CONTENT.story}  limerick={LAND3_CONTENT.limerick}  joke={LAND3_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, QuizGame]} isReplay={isReplay}/>; }
-function Land4Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={4}  words={LAND4_WORDS}  color="#10B981" landName="Food"        nextLand="Feelings" story={LAND4_CONTENT.story}  limerick={LAND4_CONTENT.limerick}  joke={LAND4_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[RestaurantRushGame, FallingWordsGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
-function Land5Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={5}  words={LAND5_WORDS}  color="#3B82F6" landName="Feelings"    nextLand="Core Words 1" story={LAND5_CONTENT.story}  limerick={LAND5_CONTENT.limerick}  joke={LAND5_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[WheelOfFortuneGame, FallingWordsGame, QuizGame]} isReplay={isReplay}/>; }
-function Land6Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={6}  words={LAND6_WORDS}  color="#7C3AED" landName="Core Words 1" nextLand="School"  story={LAND6_CONTENT.story}  limerick={LAND6_CONTENT.limerick}  joke={LAND6_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land7Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={7}  words={LAND7_WORDS}  color="#E8445A" landName="School"      nextLand="Numbers" story={LAND7_CONTENT.story}  limerick={LAND7_CONTENT.limerick}  joke={LAND7_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, EscapeRoomGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
-function Land8Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={8}  words={LAND8_WORDS}  color="#F97316" landName="Numbers"     nextLand="Colors"  story={LAND8_CONTENT.story}  limerick={LAND8_CONTENT.limerick}  joke={LAND8_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[FallingWordsGame, MarketRushGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land9Screen({ onBack, onComplete, isReplay })  { return <LandScreen landNum={9}  words={LAND9_WORDS}  color="#8B5CF6" landName="Colors"      nextLand="Animals" story={LAND9_CONTENT.story}  limerick={LAND9_CONTENT.limerick}  joke={LAND9_CONTENT.joke}  onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
-function Land10Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={10} words={LAND10_WORDS} color="#10B981" landName="Animals"     nextLand="Core Words 2" story={LAND10_CONTENT.story} limerick={LAND10_CONTENT.limerick} joke={LAND10_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ShootingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
-function Land11Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={11} words={LAND11_WORDS} color="#7C3AED" landName="Core Words 2" nextLand="Verbs"  story={LAND11_CONTENT.story} limerick={LAND11_CONTENT.limerick} joke={LAND11_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land12Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={12} words={LAND12_WORDS} color="#F59E0B" landName="Verbs"        nextLand="Time"   story={LAND12_CONTENT.story} limerick={LAND12_CONTENT.limerick} joke={LAND12_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, QuizGame, LightningRoundGame]} isReplay={isReplay}/>; }
-function Land13Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={13} words={LAND13_WORDS} color="#3B82F6" landName="Time"         nextLand="Body"   story={LAND13_CONTENT.story} limerick={LAND13_CONTENT.limerick} joke={LAND13_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ChaseGame, MatchingGame, QuizGame]} isReplay={isReplay}/>; }
-function Land14Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={14} words={LAND14_WORDS} color="#E8445A" landName="Body"         nextLand="Descriptions" story={LAND14_CONTENT.story} limerick={LAND14_CONTENT.limerick} joke={LAND14_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
-function Land15Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={15} words={LAND15_WORDS} color="#8B5CF6" landName="Descriptions" nextLand="Shopping" story={LAND15_CONTENT.story} limerick={LAND15_CONTENT.limerick} joke={LAND15_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MadLibsGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
-function Land16Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={16} words={LAND16_WORDS} color="#10B981" landName="Shopping"     nextLand="Weather"  story={LAND16_CONTENT.story} limerick={LAND16_CONTENT.limerick} joke={LAND16_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MarketRushGame, DealOrNoDealGame, LightningRoundGame]} isReplay={isReplay}/>; }
-function Land17Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={17} words={LAND17_WORDS} color="#F97316" landName="Weather"      nextLand="Core Words 3" story={LAND17_CONTENT.story} limerick={LAND17_CONTENT.limerick} joke={LAND17_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, FallingWordsGame, MemoryFlipGame]} isReplay={isReplay}/>; }
-function Land18Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={18} words={LAND18_WORDS} color="#7C3AED" landName="Core Words 3" nextLand="Core Words 4" story={LAND18_CONTENT.story} limerick={LAND18_CONTENT.limerick} joke={LAND18_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, WheelOfFortuneGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
-function Land19Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={19} words={LAND19_WORDS} color="#7C3AED" landName="Core Words 4" nextLand="Opinions" story={LAND19_CONTENT.story} limerick={LAND19_CONTENT.limerick} joke={LAND19_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land20Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={20} words={LAND20_WORDS} color="#E8445A" landName="Opinions"     nextLand="Travel"   story={LAND20_CONTENT.story} limerick={LAND20_CONTENT.limerick} joke={LAND20_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MadLibsGame, LightningRoundGame, FallingWordsGame]} isReplay={isReplay}/>; }
-function Land21Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={21} words={LAND21_WORDS} color="#3B82F6" landName="Travel"       nextLand="Health"   story={LAND21_CONTENT.story} limerick={LAND21_CONTENT.limerick} joke={LAND21_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[TreasureMapGame, DealOrNoDealGame, FallingWordsGame]} isReplay={isReplay}/>; }
-function Land22Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={22} words={LAND22_WORDS} color="#10B981" landName="Health"       nextLand="Social Life" story={LAND22_CONTENT.story} limerick={LAND22_CONTENT.limerick} joke={LAND22_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land23Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={23} words={LAND23_WORDS} color="#F59E0B" landName="Social Life"  nextLand="Technology" story={LAND23_CONTENT.story} limerick={LAND23_CONTENT.limerick} joke={LAND23_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MatchingGame, ShootingGame, LightningRoundGame]} isReplay={isReplay}/>; }
-function Land24Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={24} words={LAND24_WORDS} color="#8B5CF6" landName="Technology"   nextLand="The Grand Final" story={LAND24_CONTENT.story} limerick={LAND24_CONTENT.limerick} joke={LAND24_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[ChaseGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
-function Land25Screen({ onBack, onComplete, isReplay }) { return <LandScreen landNum={25} words={LAND25_WORDS} color="#7C3AED" landName="The Grand Final" nextLand="Mastery" story={LAND25_CONTENT.story} limerick={LAND25_CONTENT.limerick} joke={LAND25_CONTENT.joke} onBack={onBack} onComplete={onComplete} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land2Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={2}  words={LAND2_WORDS}  color="#F97316" landName="Around Town" nextLand="Family"  story={LAND2_CONTENT.story}  limerick={LAND2_CONTENT.limerick}  joke={LAND2_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, ShootingGame, TreasureMapGame]} isReplay={isReplay}/>; }
+function Land3Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={3}  words={LAND3_WORDS}  color="#F59E0B" landName="Family"      nextLand="Food"    story={LAND3_CONTENT.story}  limerick={LAND3_CONTENT.limerick}  joke={LAND3_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, ShootingGame, QuizGame]} isReplay={isReplay}/>; }
+function Land4Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={4}  words={LAND4_WORDS}  color="#10B981" landName="Food"        nextLand="Feelings" story={LAND4_CONTENT.story}  limerick={LAND4_CONTENT.limerick}  joke={LAND4_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[RestaurantRushGame, FallingWordsGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land5Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={5}  words={LAND5_WORDS}  color="#3B82F6" landName="Feelings"    nextLand="Core Words 1" story={LAND5_CONTENT.story}  limerick={LAND5_CONTENT.limerick}  joke={LAND5_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[WheelOfFortuneGame, FallingWordsGame, QuizGame]} isReplay={isReplay}/>; }
+function Land6Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={6}  words={LAND6_WORDS}  color="#7C3AED" landName="Core Words 1" nextLand="School"  story={LAND6_CONTENT.story}  limerick={LAND6_CONTENT.limerick}  joke={LAND6_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[TreasureMapGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land7Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={7}  words={LAND7_WORDS}  color="#E8445A" landName="School"      nextLand="Numbers" story={LAND7_CONTENT.story}  limerick={LAND7_CONTENT.limerick}  joke={LAND7_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[FallingWordsGame, EscapeRoomGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land8Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={8}  words={LAND8_WORDS}  color="#F97316" landName="Numbers"     nextLand="Colors"  story={LAND8_CONTENT.story}  limerick={LAND8_CONTENT.limerick}  joke={LAND8_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[FallingWordsGame, MarketRushGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land9Screen({ onBack, onComplete, isReplay, profile })  { return <LandScreen landNum={9}  words={LAND9_WORDS}  color="#8B5CF6" landName="Colors"      nextLand="Animals" story={LAND9_CONTENT.story}  limerick={LAND9_CONTENT.limerick}  joke={LAND9_CONTENT.joke}  onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
+function Land10Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={10} words={LAND10_WORDS} color="#10B981" landName="Animals"     nextLand="Core Words 2" story={LAND10_CONTENT.story} limerick={LAND10_CONTENT.limerick} joke={LAND10_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[ShootingGame, FallingWordsGame, EscapeRoomGame]} isReplay={isReplay}/>; }
+function Land11Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={11} words={LAND11_WORDS} color="#7C3AED" landName="Core Words 2" nextLand="Verbs"  story={LAND11_CONTENT.story} limerick={LAND11_CONTENT.limerick} joke={LAND11_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[TreasureMapGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land12Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={12} words={LAND12_WORDS} color="#F59E0B" landName="Verbs"        nextLand="Time"   story={LAND12_CONTENT.story} limerick={LAND12_CONTENT.limerick} joke={LAND12_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, QuizGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land13Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={13} words={LAND13_WORDS} color="#3B82F6" landName="Time"         nextLand="Body"   story={LAND13_CONTENT.story} limerick={LAND13_CONTENT.limerick} joke={LAND13_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[ChaseGame, MatchingGame, QuizGame]} isReplay={isReplay}/>; }
+function Land14Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={14} words={LAND14_WORDS} color="#E8445A" landName="Body"         nextLand="Descriptions" story={LAND14_CONTENT.story} limerick={LAND14_CONTENT.limerick} joke={LAND14_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MemoryFlipGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land15Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={15} words={LAND15_WORDS} color="#8B5CF6" landName="Descriptions" nextLand="Shopping" story={LAND15_CONTENT.story} limerick={LAND15_CONTENT.limerick} joke={LAND15_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MadLibsGame, QuizGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land16Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={16} words={LAND16_WORDS} color="#10B981" landName="Shopping"     nextLand="Weather"  story={LAND16_CONTENT.story} limerick={LAND16_CONTENT.limerick} joke={LAND16_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MarketRushGame, DealOrNoDealGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land17Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={17} words={LAND17_WORDS} color="#F97316" landName="Weather"      nextLand="Core Words 3" story={LAND17_CONTENT.story} limerick={LAND17_CONTENT.limerick} joke={LAND17_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, FallingWordsGame, MemoryFlipGame]} isReplay={isReplay}/>; }
+function Land18Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={18} words={LAND18_WORDS} color="#7C3AED" landName="Core Words 3" nextLand="Core Words 4" story={LAND18_CONTENT.story} limerick={LAND18_CONTENT.limerick} joke={LAND18_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, WheelOfFortuneGame, DealOrNoDealGame]} isReplay={isReplay}/>; }
+function Land19Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={19} words={LAND19_WORDS} color="#7C3AED" landName="Core Words 4" nextLand="Opinions" story={LAND19_CONTENT.story} limerick={LAND19_CONTENT.limerick} joke={LAND19_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land20Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={20} words={LAND20_WORDS} color="#E8445A" landName="Opinions"     nextLand="Travel"   story={LAND20_CONTENT.story} limerick={LAND20_CONTENT.limerick} joke={LAND20_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MadLibsGame, LightningRoundGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land21Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={21} words={LAND21_WORDS} color="#3B82F6" landName="Travel"       nextLand="Health"   story={LAND21_CONTENT.story} limerick={LAND21_CONTENT.limerick} joke={LAND21_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[TreasureMapGame, DealOrNoDealGame, FallingWordsGame]} isReplay={isReplay}/>; }
+function Land22Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={22} words={LAND22_WORDS} color="#10B981" landName="Health"       nextLand="Social Life" story={LAND22_CONTENT.story} limerick={LAND22_CONTENT.limerick} joke={LAND22_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MemoryFlipGame, EscapeRoomGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land23Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={23} words={LAND23_WORDS} color="#F59E0B" landName="Social Life"  nextLand="Technology" story={LAND23_CONTENT.story} limerick={LAND23_CONTENT.limerick} joke={LAND23_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MatchingGame, ShootingGame, LightningRoundGame]} isReplay={isReplay}/>; }
+function Land24Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={24} words={LAND24_WORDS} color="#8B5CF6" landName="Technology"   nextLand="The Grand Final" story={LAND24_CONTENT.story} limerick={LAND24_CONTENT.limerick} joke={LAND24_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[ChaseGame, DealOrNoDealGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
+function Land25Screen({ onBack, onComplete, isReplay, profile }) { return <LandScreen landNum={25} words={LAND25_WORDS} color="#7C3AED" landName="The Grand Final" nextLand="Mastery" story={LAND25_CONTENT.story} limerick={LAND25_CONTENT.limerick} joke={LAND25_CONTENT.joke} onBack={onBack} onComplete={onComplete} profile={profile} games={[MemoryFlipGame, LightningRoundGame, WheelOfFortuneGame]} isReplay={isReplay}/>; }
 
 const LAND_SCREENS = {
   1:Land1Screen, 2:Land2Screen, 3:Land3Screen, 4:Land4Screen, 5:Land5Screen,
